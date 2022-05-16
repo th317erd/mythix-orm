@@ -1,9 +1,15 @@
 'use strict';
 
-const Types = require('./types');
-const Model = require('./model');
+const Helpers     = require('./helpers');
+const Model       = require('./model');
+const QueryEngine = require('./query-engine');
+const Types       = require('./types');
+const Utils       = require('./utils');
 
 module.exports = {
-  Types,
+  Helpers,
   Model,
+  QueryEngine,
+  Types,
+  Utils,
 };

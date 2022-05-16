@@ -30,4 +30,10 @@ describe('BigIntType', () => {
     expect(type.toString()).toEqual('BIGINT(11)');
     expect(type.length).toEqual(11);
   });
+
+  it('can cast to type', () => {
+    let value = Types.BIGINT.castToType('1234');
+    expect(typeof value).toEqual('bigint');
+    expect(value).toEqual(BigInt(1234));
+  });
 });

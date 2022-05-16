@@ -1,5 +1,7 @@
 'use strict';
 
+const MiscUtils = require('../utils/misc-utils');
+
 class Type {
   static wrapConstructor(TypeKlass) {
     let func = function(...args) {
@@ -14,6 +16,8 @@ class Type {
         value:        TypeKlass,
       },
     });
+
+    MiscUtils.copyClassStaticProps(TypeKlass, func);
 
     return func;
   }

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node ./node_modules/.bin/jasmine",
+    "test-debug": "node --inspect-brk ./node_modules/.bin/jasmine",
     "test-watch": "watch 'node ./node_modules/.bin/jasmine' . --wait=1 --interval=1"
   },
   "repository": {

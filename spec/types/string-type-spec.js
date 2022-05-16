@@ -18,4 +18,14 @@ describe('StringType', () => {
     expect(type.toString()).toEqual('VARCHAR(123)');
     expect(type.length).toBe(123);
   });
+
+  it('can cast to type', () => {
+    let value = Types.STRING.castToType(123);
+    expect(typeof value).toEqual('string');
+    expect(value).toEqual('123');
+
+    value = Types.STRING.castToType({});
+    expect(typeof value).toEqual('string');
+    expect(value).toEqual('[object Object]');
+  });
 });

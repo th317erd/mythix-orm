@@ -3,6 +3,10 @@
 const Type = require('./type');
 
 class BigIntType extends Type {
+  static castToType(value) {
+    return BigInt(value);
+  }
+
   constructor(length) {
     super(length);
 

@@ -16,4 +16,16 @@ describe('IntegerType', () => {
     let type = Types.INTEGER();
     expect(type.toString()).toEqual('INTEGER');
   });
+
+  it('can cast to type', () => {
+    let value = Types.INTEGER.castToType('1234');
+    expect(typeof value).toEqual('number');
+    expect(value).toEqual(1234);
+
+    value = Types.INTEGER.castToType('-1234.6');
+    expect(typeof value).toEqual('number');
+    expect(value).toEqual(-1235);
+
+    expect(() => Types.INTEGER.castToType('derp')).toThrow(new TypeError('IntegerType::castToType: value provided ("derp") can not be cast into an integer'));
+  });
 });
