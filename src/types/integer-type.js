@@ -4,9 +4,12 @@ const Type = require('./type');
 
 class IntegerType extends Type {
   static castToType(value) {
+    if (value == null)
+      return value;
+
     let number = parseFloat(('' + value).replace(/[^\d.e-]/g, ''));
     if (!isFinite(number))
-      throw new TypeError(`IntegerType::castToType: value provided ("${value}") can not be cast into an integer`);
+      throw new TypeError(`IntegerType::castToType: Value provided ("${value}") can not be cast into an integer.`);
 
     return Math.round(number);
   }

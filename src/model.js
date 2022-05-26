@@ -1,13 +1,139 @@
 'use strict';
 
+const { iterateStaticProps } = require('./utils/misc-utils');
+const Inflection = require('inflection');
+
 class Model {
+  static getConnection() {
+    if (typeof this._getConnection === 'function')
+      return this._getConnection();
+
+    return null;
+  }
+
+  static initializeModel(Model, connection) {
+    Model._getConnection = function() {
+      return connection;
+    };
+
+    // Initialize model fields
+    Model.iterateFields(({ field, fieldName }) => {
+      field.fieldName = fieldName;
+    });
+
+    return Model;
+  }
+
+  static getTablePrefix() {
+    return '';
+  }
+
+  static getTableName() {
+    let tableName = this.getPluralName().toLowerCase();
+    return `${this.getTablePrefix() || ''}${tableName}`;
+  }
+
+  static getModelName() {
+    return this.name;
+  }
+
+  static getSingularName() {
+    return this.getModelName();
+  }
+
+  static getPluralName() {
+    return Inflection.pluralize(this.getSingularName());
+  }
+
   static getFields() {
     return this.fields;
   }
 
-  static getField(fieldName) {
+  static iterateFields(callback) {
     let fields = this.getFields();
-    return fields[fieldName];
+    if (!fields || typeof callback !== 'function')
+      return [];
+
+    const stop = () => {
+      _stop = true;
+    };
+
+    let fieldNames = Object.keys(fields);
+    let results = [];
+    let _stop = false;
+
+    for (let i = 0, il = fieldNames.length; i < il; i++) {
+      let fieldName = fieldNames[i];
+      let field = fields[fieldName];
+
+      if (field.fieldName)
+        fieldName = field.fieldName;
+      else
+        field.fieldName = fieldName;
+
+      let result = callback({ field, fieldName, fields, stop, index: i });
+
+      if (_stop)
+        break;
+
+      results.push(result);
+    }
+
+    return results;
+  }
+
+  static getField(findFieldName) {
+    let fields = this.getFields();
+    if (!fields)
+      return;
+
+    if (Array.isArray(fields)) {
+      let foundField;
+
+      this.iterateFields(({ field, fieldName, stop }) => {
+        if (fieldName === findFieldName) {
+          foundField = field;
+          stop();
+        }
+      });
+
+      return foundField;
+    } else {
+      return fields[findFieldName];
+    }
+  }
+
+  static hasField(fieldName) {
+    return !!this.getField(fieldName);
+  }
+
+  static getPrimaryKeyField() {
+    if (this._primaryKeyField)
+      return this._primaryKeyField;
+
+    let primaryKeyField;
+    this.iterateFields(({ field, stop }) => {
+      if (field.primaryKey) {
+        primaryKeyField = field;
+        return stop();
+      }
+    });
+
+    Object.defineProperties(this, {
+      '_primaryKeyField': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        primaryKeyField,
+      },
+    });
+
+    return primaryKeyField;
+  }
+
+  static getPrimaryKeyFieldName() {
+    let primaryKeyField = this.getPrimaryKeyField();
+    return primaryKeyField.fieldName;
   }
 
   constructor(data) {
@@ -34,23 +160,18 @@ class Model {
       },
     });
 
-    this._constructor(this.getFields(), data);
+    this._constructor(data);
   }
 
-  _constructor(fields, data) {
-    this._constructFields(fields);
-    this._initializeModelData(fields, data);
+  _constructor(data) {
+    this._constructFields();
+    this._initializeModelData(data);
   }
 
-  _constructFields(fields) {
-    let fieldNames = Object.keys(fields || {});
-
-    for (let i = 0, il = fieldNames.length; i < il; i++) {
-      let fieldName   = fieldNames[i];
-      let field       = fields[fieldName];
-
+  _constructFields() {
+    this.iterateFields(({ field, fieldName }) => {
       this._constructField(fieldName, field);
-    }
+    });
   }
 
   _constructField(fieldName, field) {
@@ -68,28 +189,31 @@ class Model {
     });
   }
 
-  _initializeModelData(fields, data) {
-    let fieldNames  = Object.keys(fields || {});
-    let fieldData   = this._fieldData;
+  _initializeModelData(data) {
+    let fieldData = this._fieldData;
 
     // First initialize field values from data
     if (data) {
-      for (let i = 0, il = fieldNames.length; i < il; i++) {
-        let fieldName   = fieldNames[i];
+      this.iterateFields(({ fieldName }) => {
         let fieldValue  = (data) ? data[fieldName] : undefined;
-
         fieldData[fieldName] = fieldValue;
-      }
+      });
     }
 
     // Next initialize default values
-    for (let i = 0, il = fieldNames.length; i < il; i++) {
-      let fieldName   = fieldNames[i];
-      let field       = fields[fieldName];
-      let fieldValue  = (data) ? data[fieldName] : undefined;
-
+    this.iterateFields(({ field, fieldName }) => {
+      let fieldValue = (data) ? data[fieldName] : undefined;
       this._initializeFieldData(fieldName, field, fieldValue, data);
-    }
+    });
+  }
+
+  _castFieldValue(field, value) {
+    let type = field.type;
+    if (!type)
+      return value;
+
+    let connection = this.getConnection();
+    return type.castToType(value, this, connection);
   }
 
   _initializeFieldData(fieldName, field, fieldValue, data) {
@@ -124,7 +248,7 @@ class Model {
         defaultValue = undefined;
     }
 
-    fieldData[fieldName] = defaultValue;
+    fieldData[fieldName] = this._castFieldValue(field, defaultValue);
   }
 
   _getDirtyFields() {
@@ -159,19 +283,6 @@ class Model {
     this.setDataValue(fieldName, value);
   }
 
-  getFields() {
-    return this.constructor.getFields();
-  }
-
-  getField(fieldName) {
-    return this.constructor.getField(fieldName);
-  }
-
-  hasField(fieldName) {
-    let fields = this.getFields();
-    return (Object.prototype.hasOwnProperty.call(fields, fieldName));
-  }
-
   isDirty() {
     return (Object.keys(this._dirtyFieldData).length > 0);
   }
@@ -190,9 +301,45 @@ class Model {
   }
 
   setDataValue(fieldName, value) {
-    let dirtyFieldData = this._dirtyFieldData;
-    dirtyFieldData[fieldName] = value;
+    let fieldData       = this._fieldData;
+    let dirtyFieldData  = this._dirtyFieldData;
+    let field           = this.getField(fieldName);
+
+    if (!field)
+      throw new Error(`${this.getModelName()}::setDataValue: Unable to find field named ${fieldName}.`);
+
+    let newValue = this._castFieldValue(field, value);
+
+    // If the values are exactly the same,
+    // then we are no longer dirty, and
+    // can just return
+    if (fieldData[fieldName] === newValue) {
+      delete dirtyFieldData[fieldName];
+      return;
+    }
+
+    dirtyFieldData[fieldName] = newValue;
   }
 }
+
+const staticMethodToSkip = [
+  'initializeModel',
+];
+
+// Make static methods callable from an instance
+// by extending the prototype
+iterateStaticProps(Model, ({ value, key, prototype }) => {
+  if (typeof value !== 'function')
+    return;
+
+  if (staticMethodToSkip.indexOf(key) >= 0)
+    return;
+
+  if (!(key in prototype)) {
+    prototype[key] = function(...args) {
+      return value.apply(this.constructor, args);
+    };
+  }
+});
 
 module.exports = Model;

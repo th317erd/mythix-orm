@@ -4,6 +4,15 @@ const Type = require('./type');
 
 class BooleanType extends Type {
   static castToType(value) {
+    if (value == null)
+      return value;
+
+    if (value === 'true')
+      return true;
+
+    if (value === 'false')
+      return false;
+
     return !!value;
   }
 

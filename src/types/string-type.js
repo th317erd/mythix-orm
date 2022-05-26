@@ -6,6 +6,9 @@ const DEFAULT_STRING_LENGTH = 256;
 
 class StringType extends Type {
   static castToType(value) {
+    if (value == null)
+      return value;
+
     return ('' + value);
   }
 

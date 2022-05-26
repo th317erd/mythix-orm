@@ -223,8 +223,12 @@ function createFieldProxy(fieldName, field, contextFetcher) {
 
   const fieldContextGetHandler = function(target, propName, receiver) {
     let operator = getContextOperator.call(this, propName, CONTEXT_FLAG_FIELD);
-    if (!operator)
-      throw new Error(`QueryEngine: Unknown operator "${propName}"`);
+    if (!operator) {
+      if (propName.match(/[A-Z]/))
+        throw new Error(`QueryEngine: Unknown operator "${propName}"`);
+
+      return this.modelContextGetHandler(target, propName, receiver);
+    }
 
     return createOperatorProxy(propName, operator, fetchFieldContext);
   };

@@ -27,5 +27,11 @@ describe('StringType', () => {
     value = Types.STRING.castToType({});
     expect(typeof value).toEqual('string');
     expect(value).toEqual('[object Object]');
+
+    value = Types.STRING.castToType(undefined);
+    expect(value).toBe(undefined);
+
+    value = Types.STRING.castToType(null);
+    expect(value).toBe(null);
   });
 });

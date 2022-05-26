@@ -1,10 +1,10 @@
 'use strict';
 
 const Type                      = require('./type');
-const { BIGINT, BigIntType }    = require('./bigint');
-const { BOOLEAN, BooleanType }  = require('./boolean');
-const { INTEGER, IntegerType }  = require('./integer');
-const { STRING, StringType }    = require('./string');
+const { BIGINT, BigIntType }    = require('./bigint-type');
+const { BOOLEAN, BooleanType }  = require('./boolean-type');
+const { INTEGER, IntegerType }  = require('./integer-type');
+const { STRING, StringType }    = require('./string-type');
 
 module.exports = {
   BigIntType,

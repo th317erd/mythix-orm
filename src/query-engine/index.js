@@ -1,7 +1,13 @@
 'use strict';
 
-const query = require('./query');
+const QueryEngineBase = require('./query-engine-base');
+const QueryEngine     = require('./query-engine');
+const ModelScope      = require('./model-scope');
+const FieldScope      = require('./field-scope');
 
 module.exports = {
-  query,
+  QueryEngineBase,
+  QueryEngine,
+  ModelScope,
+  FieldScope,
 };

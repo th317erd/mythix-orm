@@ -4,9 +4,10 @@
   "description": "ORM for Mythix framework",
   "main": "index.js",
   "scripts": {
+    "coverage": "clear ; node ./node_modules/.bin/nyc ./node_modules/.bin/jasmine",
     "test": "node ./node_modules/.bin/jasmine",
     "test-debug": "node --inspect-brk ./node_modules/.bin/jasmine",
-    "test-watch": "watch 'node ./node_modules/.bin/jasmine' . --wait=1 --interval=1"
+    "test-watch": "watch 'clear ; node ./node_modules/.bin/jasmine' . --wait=1 --interval=1"
   },
   "repository": {
     "type": "git",
@@ -22,9 +23,20 @@
   "devDependencies": {
     "@spothero/eslint-plugin-spothero": "github:spothero/eslint-plugin-spothero",
     "eslint": "^8.13.0",
-    "jasmine": "^4.1.0"
+    "jasmine": "^4.1.0",
+    "nyc": "^15.1.0"
   },
   "dependencies": {
-    "nife": "^1.6.0"
+    "inflection": "^1.13.2",
+    "nife": "^1.7.0"
+  },
+  "nyc": {
+    "reporter": [
+      "text",
+      "html"
+    ],
+    "exclude": [
+      "spec/**"
+    ]
   }
 }

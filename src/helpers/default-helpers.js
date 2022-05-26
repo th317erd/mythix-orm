@@ -6,8 +6,9 @@ const FLAG_ON_UPDATE      = 0x04;
 const FLAG_ON_STORE       = 0x06;
 const FLAG_REMOTE         = 0x08;
 
-function defaultValueFlags(func, flagsObj) {
+function defaultValueFlags(func, _flagsObj) {
   let flags = FLAG_ON_INITIALIZE;
+  let flagsObj = _flagsObj || {};
 
   if (flagsObj.onCreate === true)
     flags |= FLAG_ON_CREATE;
