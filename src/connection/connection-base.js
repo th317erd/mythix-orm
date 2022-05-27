@@ -1,5 +1,7 @@
 'use strict';
 
+const Utils = require('../utils');
+
 class ConnectionBase {
   constructor(options) {
     Object.defineProperties(this, {
@@ -32,8 +34,26 @@ class ConnectionBase {
     }
   }
 
+  parseQualifiedName(str) {
+    return Utils.parseQualifiedName(str);
+  }
+
   getModel(modelName) {
-    return this.models[modelName];
+    let def = this.parseQualifiedName(modelName);
+    return this.models[def.modelName];
+  }
+
+  getField(fieldName, modelName) {
+    let def = this.parseQualifiedName(fieldName);
+    if (def.modelName == null)
+      def.modelName = modelName;
+
+    let Model = this.getModel(def.modelName);
+    if (!Model)
+      return;
+
+    // TODO: Need to recursively walk through fields
+    return Model.getField(def.fields[0]);
   }
 }
 

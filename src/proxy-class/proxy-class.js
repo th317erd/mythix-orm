@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable max-classes-per-file */
 /* eslint-disable lines-between-class-members */
 

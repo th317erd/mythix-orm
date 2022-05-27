@@ -1,7 +1,8 @@
 'use strict';
 
-const { iterateStaticProps } = require('./utils/misc-utils');
-const Inflection = require('inflection');
+const { iterateStaticProps }  = require('./utils/misc-utils');
+const Type                    = require('./types/type');
+const Inflection              = require('inflection');
 
 class Model {
   static getConnection() {
@@ -19,6 +20,7 @@ class Model {
     // Initialize model fields
     Model.iterateFields(({ field, fieldName }) => {
       field.fieldName = fieldName;
+      field.Model = Model;
     });
 
     return Model;
@@ -163,6 +165,10 @@ class Model {
     this._constructor(data);
   }
 
+  getModelClass() {
+    return this.constructor;
+  }
+
   _constructor(data) {
     this._constructFields();
     this._initializeModelData(data);
@@ -170,6 +176,7 @@ class Model {
 
   _constructFields() {
     this.iterateFields(({ field, fieldName }) => {
+      field.type = Type.instantiateType(this.getModelClass(), this, field.type);
       this._constructField(fieldName, field);
     });
   }
@@ -212,8 +219,7 @@ class Model {
     if (!type)
       return value;
 
-    let connection = this.getConnection();
-    return type.castToType(value, this, connection);
+    return type.castToType({ value });
   }
 
   _initializeFieldData(fieldName, field, fieldValue, data) {

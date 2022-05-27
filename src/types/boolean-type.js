@@ -3,7 +3,7 @@
 const Type = require('./type');
 
 class BooleanType extends Type {
-  static castToType(value) {
+  static castToType({ value }) {
     if (value == null)
       return value;
 

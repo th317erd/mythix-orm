@@ -47,6 +47,7 @@ describe('Utils::misc', () => {
         static fields = [];
       }
 
+      // eslint-disable-next-line no-unused-vars
       function test(arg1, arg2, arg3) {}
 
       Utils.copyStaticProps(Test, test);

@@ -4,11 +4,11 @@ const Nife = require('nife');
 const Type = require('./type');
 
 class ModelType extends Type {
-  static castToType(value, modelInstance, connection) {
-    if (!modelInstance)
-      throw new TypeError('ModelType::castToType: Model instance is required to cast.');
+  static castToType({ value, typeInstance, connection }) {
+    if (!typeInstance)
+      throw new TypeError('ModelType::castToType: Type instance is required to cast.');
 
-    let Model = modelInstance.getTargetModel(connection);
+    let Model = typeInstance.getTargetModel(connection);
     if (value instanceof Model)
       return value;
 

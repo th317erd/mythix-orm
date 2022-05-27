@@ -94,14 +94,14 @@ class DefaultValuesModel extends Model {
 class ArrayFieldsModel extends Model {
   static fields = [
     {
-      fieldName:  'id',
       type:       Types.BIGINT,
+      fieldName:  'id',
       allowNull:  false,
       primaryKey: true,
     },
     {
-      fieldName:  'test',
       type:       Types.STRING(64),
+      fieldName:  'test',
       allowNull:  true,
       index:      true,
     },
@@ -460,6 +460,7 @@ describe('Model', () => {
       class TestModel extends Model {
         static fields = {
           'test': {
+            type: Types.STRING(128),
             get() {
               return this.getDataValue('test') || 'derp';
             },
