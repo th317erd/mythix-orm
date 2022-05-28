@@ -52,8 +52,7 @@ class ConnectionBase {
     if (!Model)
       return;
 
-    // TODO: Need to recursively walk through fields
-    return Model.getField(def.fields[0]);
+    return Model.getField(def.fieldNames[0]);
   }
 }
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const Type = require('./type');
+const Type = require('../type');
 
 class BooleanType extends Type {
   static castToType({ value }) {

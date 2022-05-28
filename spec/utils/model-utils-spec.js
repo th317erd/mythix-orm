@@ -4,9 +4,25 @@
 
 /* global describe, it, expect */
 
-const { Utils } = require('../../src');
+const UUID            = require('uuid');
+const { Utils }       = require('../../src');
+const { UUID_REGEXP } = require('../support/test-helpers');
 
 describe('Utils::model', () => {
+  describe('isUUID', () => {
+    it('should be able to generate and verify UUID V1', () => {
+      let value = UUID.v1();
+      expect(value).toMatch(UUID_REGEXP);
+      expect(Utils.isUUID(value)).toEqual(true);
+    });
+
+    it('should be able to generate and verify UUID V4', () => {
+      let value = UUID.v4();
+      expect(value).toMatch(UUID_REGEXP);
+      expect(Utils.isUUID(value)).toEqual(true);
+    });
+  });
+
   describe('sanitizeFieldString', () => {
     it('should strip all but certain characters', () => {
       expect(Utils.sanitizeFieldString('"User"::  derp-y ... _field !$%%^#@$^ 2')).toEqual('User:derpy._field2');
@@ -14,25 +30,25 @@ describe('Utils::model', () => {
   });
 
   describe('parseQualifiedName', () => {
-    it('should be able to parse model name and fields', () => {
+    it('should be able to parse model name and fieldNames', () => {
       expect(Utils.parseQualifiedName('"User"::  derp-y ... _field !$%%^#@$^ 2')).toEqual({
         modelName:  'User',
-        fields:     [ 'derpy', '_field2' ],
+        fieldNames: [ 'derpy', '_field2' ],
       });
 
       expect(Utils.parseQualifiedName('  ::  derp-y ... _field !$%%^#@$^ 2')).toEqual({
         modelName:  undefined,
-        fields:     [ 'derpy', '_field2' ],
+        fieldNames: [ 'derpy', '_field2' ],
       });
 
       expect(Utils.parseQualifiedName('field')).toEqual({
         modelName:  undefined,
-        fields:     [ 'field' ],
+        fieldNames: [ 'field' ],
       });
 
       expect(Utils.parseQualifiedName('field.id')).toEqual({
         modelName:  undefined,
-        fields:     [ 'field', 'id' ],
+        fieldNames: [ 'field', 'id' ],
       });
     });
   });

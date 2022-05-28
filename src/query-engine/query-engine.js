@@ -1,12 +1,12 @@
 'use strict';
 
-const ProxyClass = require('../proxy-class');
+const ProxyClass      = require('../proxy-class');
 const QueryEngineBase = require('./query-engine-base');
-const ModelScope = require('./model-scope');
-const FieldScope = require('./field-scope');
+const ModelScope      = require('./model-scope');
+const FieldScope      = require('./field-scope');
 
 class QueryEngine extends QueryEngineBase {
-  getModelClass() {
+  getModel() {
     return ModelScope;
   }
 

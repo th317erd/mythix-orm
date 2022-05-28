@@ -30,35 +30,6 @@ class User extends Model {
       allowNull:  true,
       index:      true,
     },
-    // 'roleID': {
-    //   type:        Types.Foreign('Role.id', { allowNull: false }),
-    //   allowNull:   false,
-    //   foreignKey:  'Role.id',
-    //   onDelete:    'CASCADE',
-    //   onUpdate:    'CASCADE',
-    // },
-    // 'roles': {
-    //                hasOne
-    //    type:       Types.Model('User.roleID'),
-    //                hasOneThrough (not poly)
-    //    type:       Types.Model('UserRole.roleID', 'UserRole.userID'),
-    //                hasOneThrough (poly)
-    //    type:       Types.Models('UserRole.roleID', 'UserRole.target'),
-    //                hasManyThrough (not poly)
-    //    type:       Types.Models('UserRole.roleID', 'UserRole.userID'),
-    //                hasManyThrough (poly)
-    //    type:       Types.Models('UserRole.roleID', 'UserRole.target'),
-    //                hasMany
-    //    type:       Types.Models('Role.userID'),
-
-    //    That is all...
-    //    hese associations, when combined with their target fields on target models
-    //    will be enough to know all combined relationships.
-    //    the tradeoff here is that all fields in the DB must be defined,
-    //    however, this is probably a good thing as there won't be any
-    //    "automagic" that might confuse users, require more guessing,
-    //    and might require much more configuration.
-    // },
   };
 }
 
@@ -483,6 +454,27 @@ describe('Model', () => {
       model.test = 'hello';
       expect(TestModel.fields.test.set).toHaveBeenCalled();
       expect(model.test).toEqual('hello');
+    });
+
+    it('has injected methods from a virtual field', () => {
+      class VirtualFieldTest extends Model {
+        static fields = {
+          'id': {
+            type:       Types.BIGINT,
+            allowNull:  false,
+            primaryKey: true,
+          },
+          'role': {
+            type:       Types.Model('User:id'),
+          },
+        };
+      }
+
+      let instance = new VirtualFieldTest();
+      expect(instance.createRole).toBeInstanceOf(Function);
+      expect(instance.getRole).toBeInstanceOf(Function);
+      expect(instance.updateRole).toBeInstanceOf(Function);
+      expect(instance.destroyRole).toBeInstanceOf(Function);
     });
   });
 

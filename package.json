@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "inflection": "^1.13.2",
-    "nife": "^1.7.0"
+    "nife": "^1.7.0",
+    "uuid": "^8.3.2"
   },
   "nyc": {
     "reporter": [

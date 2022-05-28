@@ -92,7 +92,7 @@ describe('QueryEngine', () => {
   });
 
   it('can chain query conditions', () => {
-    let context = query.User('id').EQ(1).AND.firstName.EQ('Test').AND.NOT.lastName.EQ('Stuff')._getRawQuery();
+    let context = query.User.id.EQ(1).AND.firstName.EQ('Test').AND.NOT.lastName.EQ('Stuff')._getRawQuery();
 
     expect(context).toBeInstanceOf(Array);
     expect(context.length).toEqual(6);

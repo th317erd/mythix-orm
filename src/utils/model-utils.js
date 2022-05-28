@@ -1,30 +1,48 @@
 'use strict';
 
+const UUID = require('uuid');
+
+function isUUID(value) {
+  return UUID.validate(value);
+}
+
 function sanitizeFieldString(str) {
   return ('' + str).replace(/[^\w:.]+/g, '').replace(/([:.])+/g, '$1');
 }
 
 function parseQualifiedName(str) {
-  let fields = [];
+  let fieldNames = [];
   let modelName;
 
   let parts = sanitizeFieldString(str).split(/:/).filter(Boolean);
   if (parts.length > 1) {
     modelName = parts[0];
-    fields = parts.slice(1).join('').split(/\.+/g).filter(Boolean);
+    fieldNames = parts.slice(1).join('').split(/\.+/g).filter(Boolean);
   } else {
-    fields = parts.join('').split(/\.+/g).filter(Boolean);
+    fieldNames = parts.join('').split(/\.+/g).filter(Boolean);
 
-    if (fields.length === 1 && fields[0].match(/^[A-Z]/)) {
-      modelName = fields[0];
-      fields = [];
+    if (fieldNames.length === 1 && fieldNames[0].match(/^[A-Z]/)) {
+      modelName = fieldNames[0];
+      fieldNames = [];
     }
   }
 
-  return { modelName, fields };
+  return { modelName, fieldNames };
+}
+
+function injectModelMethod(modelInstance, method, methodName, fullMethodName) {
+  modelInstance[fullMethodName] = method;
+
+  if (!Object.prototype.hasOwnProperty.call(modelInstance, methodName)) {
+    modelInstance[methodName] = function(...args) {
+      return method.apply(this, args);
+    };
+  }
 }
 
 module.exports = {
-  sanitizeFieldString,
+  isUUID,
   parseQualifiedName,
+  sanitizeFieldString,
+  injectModelMethod,
 };

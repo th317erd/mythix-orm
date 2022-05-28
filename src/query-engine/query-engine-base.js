@@ -3,8 +3,8 @@
 const ProxyClass = require('../proxy-class');
 
 class QueryEngineBase extends ProxyClass {
-  getModelClass() {
-    return this.getQueryEngine().getModelClass();
+  getModel() {
+    return this.getQueryEngine().getModel();
   }
 
   getFieldClass() {
@@ -31,7 +31,7 @@ class QueryEngineBase extends ProxyClass {
   }
 
   _newModelScope(context, Model) {
-    let ModelScopeClass = this.getModelClass();
+    let ModelScopeClass = this.getModel();
     return new ModelScopeClass(this._inheritContext(context, 'model', { Model, modelName: Model.getModelName() }));
   }
 

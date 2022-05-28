@@ -13,6 +13,9 @@ class Model {
   }
 
   static initializeModel(Model, connection) {
+    if (Model.mythixInitialized)
+      return Model;
+
     Model._getConnection = function() {
       return connection;
     };
@@ -21,6 +24,18 @@ class Model {
     Model.iterateFields(({ field, fieldName }) => {
       field.fieldName = fieldName;
       field.Model = Model;
+
+      if (typeof field.type.onModelInitialize === 'function')
+        field.type.onModelInitialize(Model, field, field.type);
+    });
+
+    Object.defineProperties(Model, {
+      'mythixInitialized': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        true,
+      },
     });
 
     return Model;
@@ -33,6 +48,10 @@ class Model {
   static getTableName() {
     let tableName = this.getPluralName().toLowerCase();
     return `${this.getTablePrefix() || ''}${tableName}`;
+  }
+
+  static getModel() {
+    return this;
   }
 
   static getModelName() {
@@ -72,6 +91,9 @@ class Model {
         fieldName = field.fieldName;
       else
         field.fieldName = fieldName;
+
+      if (field.type.uninitializedType || field.type.mythixType || field.type._initialized !== true)
+        field.type = Type.instantiateType(this.getModel(), this, field, field.type);
 
       let result = callback({ field, fieldName, fields, stop, index: i });
 
@@ -165,10 +187,6 @@ class Model {
     this._constructor(data);
   }
 
-  getModelClass() {
-    return this.constructor;
-  }
-
   _constructor(data) {
     this._constructFields();
     this._initializeModelData(data);
@@ -176,8 +194,10 @@ class Model {
 
   _constructFields() {
     this.iterateFields(({ field, fieldName }) => {
-      field.type = Type.instantiateType(this.getModelClass(), this, field.type);
-      this._constructField(fieldName, field);
+      if (!field.type.isVirtual())
+        this._constructField(fieldName, field);
+
+      field.type.onModelInstantiated(this, field, field.type);
     });
   }
 

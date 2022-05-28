@@ -1,6 +1,6 @@
 'use strict';
 
-const Type = require('./type');
+const Type = require('../type');
 
 const DEFAULT_STRING_LENGTH = 256;
 

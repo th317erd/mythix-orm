@@ -5,23 +5,20 @@ const MiscUtils = require('../utils/misc-utils');
 class Type {
   static uninitializedType = true;
 
-  static instantiateType(Model, modelInstance, _Type) {
+  static instantiateType(Model, modelInstance, field, _Type) {
     let Type = _Type;
     if (!Type)
       throw new TypeError('Type::instantiateType: Provided field "type" is empty, but "type" is required.');
 
     if (Type.uninitializedType) {
       Type = new Type();
-
-      Type.setModelInstance(modelInstance);
-      Type.setModel(Model);
     } else if (Type.mythixType) {
       let typeFunc = Type;
       Type = typeFunc();
-
-      Type.setModelInstance(modelInstance);
-      Type.setModel(Model);
     }
+
+    if (Type._initialized !== true)
+      Type.initialize(Model, modelInstance, field);
 
     return Type;
   }
@@ -30,12 +27,15 @@ class Type {
     return false;
   }
 
+  static onModelInitialize() {
+  }
+
   static wrapConstructor(TypeKlass) {
-    let func = function(...args) {
+    let TypeWrapper = function(...args) {
       return new TypeKlass(...args);
     };
 
-    Object.defineProperties(func, {
+    Object.defineProperties(TypeWrapper, {
       'mythixType': {
         writable:     true,
         enumberable:  false,
@@ -44,9 +44,9 @@ class Type {
       },
     });
 
-    MiscUtils.copyStaticProps(TypeKlass, func);
+    MiscUtils.copyStaticProps(TypeKlass, TypeWrapper);
 
-    return func;
+    return TypeWrapper;
   }
 
   constructor(...args) {
@@ -57,19 +57,45 @@ class Type {
         configurable: true,
         value:        args,
       },
-      '_modelInstance': {
-        writable:     true,
-        enumberable:  false,
-        configurable: true,
-        value:        null,
-      },
       '_Model': {
         writable:     true,
         enumberable:  false,
         configurable: true,
         value:        null,
       },
+      '_modelInstance': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        null,
+      },
+      '_field': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        null,
+      },
+      '_initialized': {
+        enumberable:  false,
+        configurable: true,
+        get:          () => {
+          return !!(this._Model && this._modelInstance && this._field);
+        },
+        set:          () => {},
+      },
     });
+  }
+
+  isRelational() {
+    return false;
+  }
+
+  isVirtual() {
+    return this.constructor.isVirtual();
+  }
+
+  onModelInitialize(...args) {
+    return this.constructor.onModelInitialize(...args);
   }
 
   getModelInstance() {
@@ -80,6 +106,14 @@ class Type {
     this._modelInstance = modelInstance;
   }
 
+  getField() {
+    return this._field;
+  }
+
+  setField(field) {
+    this._field = field;
+  }
+
   getModel() {
     let Model = this._Model;
     if (!Model) {
@@ -87,7 +121,7 @@ class Type {
       if (!modelInstance)
         return;
 
-      Model = modelInstance.getModelClass();
+      Model = modelInstance.getModel();
     }
 
     return Model;
@@ -95,6 +129,14 @@ class Type {
 
   setModel(Model) {
     this._Model = Model;
+  }
+
+  getConnection() {
+    let modelInstance = this.getModelInstance();
+    if (!modelInstance)
+      return null;
+
+    return modelInstance.getConnection();
   }
 
   castToType(params) {
@@ -105,14 +147,29 @@ class Type {
       this.constructor,
       Object.assign({}, params || {}, {
         typeInstance: this,
-        connection:   (modelInstance) ? modelInstance.getConnection() : (Model && Model.getConnection()),
+        connection:   this.getConnection(),
         Model,
         modelInstance,
       }),
     );
   }
 
-  initialize(/* modelInstance, connection */) {
+  initialize(Model, modelInstance, field) {
+    if (!Model)
+      throw new TypeError(`${this.constructor.name}::initialize: "Model" is required.`);
+
+    if (!modelInstance)
+      throw new TypeError(`${this.constructor.name}::initialize: "modelInstance" is required.`);
+
+    if (!field)
+      throw new TypeError(`${this.constructor.name}::initialize: "field" is required.`);
+
+    this.setModel(Model);
+    this.setModelInstance(modelInstance);
+    this.setField(field);
+  }
+
+  onModelInstantiated(/* modelInstance, field, type */) {
   }
 }
 
