@@ -4,11 +4,11 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { SQLiteConnection } = require('../../src/connection/sqlite-connection');
+const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
 const {
   Role,
   User,
-} = require('../support/models');
+} = require('../../support/models');
 
 describe('SQLiteConnection', () => {
   let connection;
@@ -46,12 +46,6 @@ describe('SQLiteConnection', () => {
   describe('escapeID', () => {
     it('can escape a string value', () => {
       expect(connection.escapeID('test.derp')).toEqual('"test"."derp"');
-    });
-  });
-
-  describe('generatorCreateTableStatement', () => {
-    it('can generate a create table statement', async () => {
-      expect(await connection.generatorCreateTableStatement(User)).toEqual('CREATE TABLE IF NOT EXISTS "users" (  "id" VARCHAR(36) PRIMARY KEY,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
     });
   });
 });

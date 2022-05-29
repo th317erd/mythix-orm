@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach */
+/* global describe, it, beforeEach */
 
 const SQLConnectionBase = require('../../src/connection/sql-connection-base');
 const {
@@ -11,10 +11,8 @@ const {
 } = require('../support/models');
 
 describe('SQLConnectionBase', () => {
-  let connection;
-
   beforeEach(() => {
-    connection = new SQLConnectionBase({
+    new SQLConnectionBase({
       models: [
         User,
         Role,

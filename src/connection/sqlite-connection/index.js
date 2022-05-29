@@ -5,4 +5,5 @@ const SQLiteQueryGenerator  = require('./sqlite-query-generator');
 
 module.exports = {
   SQLiteConnection,
+  SQLiteQueryGenerator,
 };
