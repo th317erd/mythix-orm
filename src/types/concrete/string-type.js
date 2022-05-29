@@ -18,8 +18,19 @@ class StringType extends Type {
     this.length = length || DEFAULT_STRING_LENGTH;
   }
 
+  toConnectionType(connection) {
+    switch (connection.dialect) {
+      case 'sqlite':
+        return this.toString();
+      default:
+        return this.toString();
+    }
+  }
+
   toString(connection) {
-    return (connection) ? connection.typeToString(this) : `VARCHAR(${this.length})`;
+    return (connection)
+      ? this.toConnectionType(connection)
+      : `VARCHAR(${this.length})`;
   }
 }
 

@@ -5,6 +5,10 @@ const MiscUtils = require('../utils/misc-utils');
 class Type {
   static uninitializedType = true;
 
+  static clone() {
+    return this;
+  }
+
   static instantiateType(Model, modelInstance, field, _Type) {
     let Type = _Type;
     if (!Type)
@@ -84,6 +88,10 @@ class Type {
         set:          () => {},
       },
     });
+  }
+
+  clone() {
+    return new this.constructor(...this._args);
   }
 
   isRelational() {

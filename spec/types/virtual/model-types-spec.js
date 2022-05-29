@@ -5,144 +5,14 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { Model, Types, ConnectionBase } = require('../../../src');
-
-class User extends Model {
-  static fields = {
-    'id': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'firstName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
-    },
-    'lastName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
-    },
-    'roles': {
-      type:       Types.Models('UserRole:role', 'UserRole:user'),
-    },
-    'userThing': {
-      type:       Types.Model('UserThing:user'),
-    },
-    'userThingRole': {
-      type:       Types.Model('Role', 'userThing.role'),
-    },
-  };
-}
-
-// find source ->
-
-// [
-//   { 'UserThing', 'userID' },
-//   { 'User', 'id' },
-//   { 'UserThing', 'roleThingID' },
-//   { 'RoleThing', 'id' },
-//   { 'RoleThing', 'roleID' },
-//   { 'Role', 'id' },
-// ]
-
-class Role extends Model {
-  static fields = {
-    'id': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'name': {
-      type:       Types.STRING(64),
-      allowNull:  false,
-      index:      true,
-    },
-    'user': {
-      type:       Types.Model('UserRole:user', 'UserRoles:role'),
-    },
-  };
-}
-
-class UserRole extends Model {
-  static fields = {
-    'id': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'roleID': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      index:      true,
-    },
-    'userID': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      index:      true,
-    },
-    'role': {
-      type:       Types.Model('Role:id', 'roleID'),
-    },
-    'user': {
-      type:       Types.Model('User:id', 'userID'),
-    },
-  };
-}
-
-class UserThing extends Model {
-  static fields = {
-    'id': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'userID': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      index:      true,
-    },
-    'roleThingID': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      index:      true,
-    },
-    'roleThing': {
-      type:       Types.Model('RoleThing', 'roleThingID'),
-    },
-    'role': {
-      type:       Types.Model('Role', 'roleThing.role'),
-    },
-    'user': {
-      type:       Types.Model('User:id', 'userID'),
-    },
-  };
-}
-
-class RoleThing extends Model {
-  static fields = {
-    'id': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'roleID': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      index:      true,
-    },
-    'userThing': {
-      type:       Types.Model('UserThing', 'UserThing:roleThing'),
-    },
-    'role': {
-      type:       Types.Model('Role:id', 'roleID'),
-    },
-    'user': {
-      type:       Types.Model('User', 'UserThing:user'),
-    },
-  };
-}
+const { Types, ConnectionBase } = require('../../../src');
+const {
+  Role,
+  RoleThing,
+  User,
+  UserRole,
+  UserThing,
+} = require('../../support/models');
 
 describe('ModelType', () => {
   it('can construct from class', () => {
@@ -195,89 +65,131 @@ describe('Model relations', () => {
     let user        = new User();
     let rolesField  = user.getField('roles');
 
-    let result = rolesField.type.getTargetRelationPath(connection);
+    let result = rolesField.type.getJoinableRelations(connection);
     expect(result).toEqual([
       {
-        modelName:  'UserRole',
-        fieldNames: [ 'roleID' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserRole',
+        sourceFieldName:  'roleID',
+        targetModelName:  'Role',
+        targetFieldName:  'id',
       },
       {
-        modelName:  'Role',
-        fieldNames: [ 'id' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserRole',
+        sourceFieldName:  'userID',
+        targetModelName:  'User',
+        targetFieldName:  'id',
       },
     ]);
   });
 
-  it('can recursively parse target relations #2', () => {
+  it('can recursively parse relations #2', () => {
     let user                = new User();
     let userThingRoleField  = user.getField('userThingRole');
 
-    let result = userThingRoleField.type.getTargetRelationPath(connection);
+    let result = userThingRoleField.type.getJoinableRelations(connection);
     expect(result).toEqual([
       {
-        modelName:  'Role',
-        fieldNames: [ 'id' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserThing',
+        sourceFieldName:  'userID',
+        targetModelName:  'User',
+        targetFieldName:  'id',
+      },
+      {
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserThing',
+        sourceFieldName:  'roleThingID',
+        targetModelName:  'RoleThing',
+        targetFieldName:  'id',
+      },
+      {
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'RoleThing',
+        sourceFieldName:  'roleID',
+        targetModelName:  'Role',
+        targetFieldName:  'id',
       },
     ]);
   });
 
-  it('can recursively parse source relations #1', () => {
+  it('can recursively parse relations #3', () => {
     let user        = new User();
     let rolesField  = user.getField('roles');
 
-    let result = rolesField.type.getSourceRelationPath(connection);
+    let result = rolesField.type.getJoinableRelations(connection);
     expect(result).toEqual([
       {
-        modelName:  'User',
-        fieldNames: [ 'id' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserRole',
+        sourceFieldName:  'roleID',
+        targetModelName:  'Role',
+        targetFieldName:  'id',
       },
       {
-        modelName:  'UserRole',
-        fieldNames: [ 'userID' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserRole',
+        sourceFieldName:  'userID',
+        targetModelName:  'User',
+        targetFieldName:  'id',
       },
     ]);
   });
 
-  fit('can recursively parse source relations #2', () => {
+  it('can recursively parse relations #4', () => {
     let user                = new User();
     let userThingRoleField  = user.getField('userThingRole');
 
-    let result = userThingRoleField.type.getFullRelationPath(connection);
-    console.log('RESULT: ', result);
-
+    let result = userThingRoleField.type.getJoinableRelations(connection);
     expect(result).toEqual([
       {
-        modelName:  'User',
-        fieldNames: [ 'id' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserThing',
+        sourceFieldName:  'userID',
+        targetModelName:  'User',
+        targetFieldName:  'id',
       },
       {
-        modelName:  'UserRole',
-        fieldNames: [ 'userID' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'UserThing',
+        sourceFieldName:  'roleThingID',
+        targetModelName:  'RoleThing',
+        targetFieldName:  'id',
+      },
+      {
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'RoleThing',
+        sourceFieldName:  'roleID',
+        targetModelName:  'Role',
+        targetFieldName:  'id',
       },
     ]);
   });
 
-  it('can recursively parse full relations', () => {
-    let user        = new User();
-    let rolesField  = user.getField('roles');
+  it('can recursively parse relations #5', () => {
+    let user  = new User();
+    let field = user.getField('primaryRole');
 
-    let result = rolesField.type.getFullRelationPath(connection);
+    let result = field.type.getJoinableRelations(connection);
     expect(result).toEqual([
       {
-        modelName:  'UserRole',
-        fieldNames: [ 'roleID' ],
-      },
-      {
-        modelName:  'Role',
-        fieldNames: [ 'id' ],
-      },
-      {
-        modelName:  'User',
-        fieldNames: [ 'id' ],
-      },
-      {
-        modelName:  'UserRole',
-        fieldNames: [ 'userID' ],
+        relationType:     'target',
+        fieldIndex:       0,
+        sourceModelName:  'User',
+        sourceFieldName:  'primaryRoleID',
+        targetModelName:  'Role',
+        targetFieldName:  'id',
       },
     ]);
   });

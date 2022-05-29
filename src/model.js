@@ -5,6 +5,16 @@ const Type                    = require('./types/type');
 const Inflection              = require('inflection');
 
 class Model {
+  static cloneFields() {
+    let clonedFields = {};
+
+    this.iterateFields(({ field, fieldName }) => {
+      clonedFields[fieldName] = Object.assign({}, field, { type: field.type.clone() });
+    });
+
+    return clonedFields;
+  }
+
   static getConnection() {
     if (typeof this._getConnection === 'function')
       return this._getConnection();
@@ -12,8 +22,34 @@ class Model {
     return null;
   }
 
+  static _getQueryEngineClass = function() {
+    return this.getConnection().getQueryEngineClass();
+  };
+
+  static getQueryEngineClass() {
+    return this._getQueryEngineClass();
+  }
+
+  static getUnscopedQueryEngine() {
+    let QueryEngineClass  = this.getQueryEngineClass();
+    let queryEngine       = new QueryEngineClass({
+      connection: this.getConnection(),
+    });
+
+    return queryEngine[this.getModelName()];
+  }
+
+  static defaultScope(queryEngine) {
+    return queryEngine;
+  }
+
+  static getQueryEngine() {
+    let queryEngine = this.getUnscopedQueryEngine();
+    return this.defaultScope(queryEngine);
+  }
+
   static initializeModel(Model, connection) {
-    if (Model.mythixInitialized)
+    if (Object.prototype.hasOwnProperty.call(Model, 'mythixInitialized') && Model.mythixInitialized)
       return Model;
 
     Model._getConnection = function() {
@@ -35,6 +71,14 @@ class Model {
         enumberable:  false,
         configurable: true,
         value:        true,
+      },
+      'where': {
+        enumberable:  false,
+        configurable: true,
+        get:          () => {
+          return Model.getQueryEngine();
+        },
+        set:          () => {},
       },
     });
 
@@ -71,6 +115,23 @@ class Model {
   }
 
   static iterateFields(callback) {
+    const sortFieldNames = (fieldNames, fields) => {
+      return fieldNames.sort((a, b) => {
+        let x = fields[a];
+        let y = fields[b];
+
+        if (x.primaryKey)
+          return -1;
+        else if (y.primaryKey)
+          return 1;
+
+        if (a === b)
+          return 0;
+
+        return (a < b) ? -1 : 1;
+      });
+    };
+
     let fields = this.getFields();
     if (!fields || typeof callback !== 'function')
       return [];
@@ -80,6 +141,10 @@ class Model {
     };
 
     let fieldNames = Object.keys(fields);
+    let isArray = Array.isArray(fields);
+    if (!isArray)
+      fieldNames = sortFieldNames(fieldNames, fields);
+
     let results = [];
     let _stop = false;
 
@@ -87,10 +152,14 @@ class Model {
       let fieldName = fieldNames[i];
       let field = fields[fieldName];
 
-      if (field.fieldName)
+      if (field.fieldName) {
         fieldName = field.fieldName;
-      else
+      } else {
+        if (isArray)
+          throw new Error(`${this.name}::iterateFields: "fieldName" is missing on field index ${i}.`);
+
         field.fieldName = fieldName;
+      }
 
       if (field.type.uninitializedType || field.type.mythixType || field.type._initialized !== true)
         field.type = Type.instantiateType(this.getModel(), this, field, field.type);
@@ -269,7 +338,7 @@ class Model {
       };
 
       if (shouldRunDefaultValueOnInitialize())
-        defaultValue = defaultValue.call(this, { field, fieldName, fieldValue, data });
+        defaultValue = defaultValue({ field, fieldName, fieldValue, data, modelInstance: this });
       else
         defaultValue = undefined;
     }
@@ -350,6 +419,9 @@ class Model {
 
 const staticMethodToSkip = [
   'initializeModel',
+  'cloneFields',
+  'mythixInitialized',
+  'where',
 ];
 
 // Make static methods callable from an instance

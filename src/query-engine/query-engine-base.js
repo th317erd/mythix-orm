@@ -4,11 +4,11 @@ const ProxyClass = require('../proxy-class');
 
 class QueryEngineBase extends ProxyClass {
   getModel() {
-    return this.getQueryEngine().getModel();
+    return this.getQueryEngineClass().getModel();
   }
 
   getFieldClass() {
-    return this.getQueryEngine().getFieldClass();
+    return this.getQueryEngineClass().getFieldClass();
   }
 
   _inheritContext(context, name, ...args) {
@@ -32,12 +32,30 @@ class QueryEngineBase extends ProxyClass {
 
   _newModelScope(context, Model) {
     let ModelScopeClass = this.getModel();
-    return new ModelScopeClass(this._inheritContext(context, 'model', { Model, modelName: Model.getModelName() }));
+    let extra           = {};
+    let modelName       = Model.getModelName();
+
+    if (!context.rootModelName)
+      extra.rootModelName = modelName;
+
+    let newContext  = this._inheritContext(context, 'model', { Model, modelName }, extra);
+    let newScope    = new ModelScopeClass(newContext);
+
+    this._addToQuery({ operator: 'MODEL' }, newContext);
+
+    return newScope;
   }
 
   _newFieldScope(context, Field) {
     let FieldScopeClass = this.getFieldClass();
-    return new FieldScopeClass(this._inheritContext(context, 'field', { Field, fieldName: Field.fieldName }));
+    let fieldName       = Field.fieldName;
+
+    let newContext  = this._inheritContext(context, 'field', { Field, fieldName });
+    let newScope    = new FieldScopeClass(newContext);
+
+    this._addToQuery({ operator: 'FIELD', fieldName }, newContext);
+
+    return newScope;
   }
 
   constructor(context) {
@@ -64,12 +82,12 @@ class QueryEngineBase extends ProxyClass {
     });
   }
 
-  _addToQuery(queryPart) {
-    let currentQuery = this.currentContext.query;
+  _addToQuery(queryPart, _context) {
+    let currentQuery = (_context || this.currentContext).query;
 
     currentQuery.push(
       this._inheritContext(
-        this.currentContext,
+        _context || this.currentContext,
         null,
         queryPart,
         {
@@ -88,7 +106,7 @@ class QueryEngineBase extends ProxyClass {
     return this.currentContext.connection;
   }
 
-  getQueryEngine() {
+  getQueryEngineClass() {
     return this.currentContext.queryEngineScope;
   }
 }

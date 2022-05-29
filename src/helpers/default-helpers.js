@@ -1,7 +1,5 @@
 'use strict';
 
-
-
 const FLAG_ON_INITIALIZE  = 0x01;
 const FLAG_ON_CREATE      = 0x02;
 const FLAG_ON_UPDATE      = 0x04;

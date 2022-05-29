@@ -2,141 +2,252 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeAll, beforeEach */
+/* global describe, it, expect, beforeAll */
+
+const { ConnectionBase } = require('../../src');
 
 const {
-  Model,
-  QueryEngine,
-  Types,
-  ConnectionBase,
-} = require('../../src');
-
-class User extends Model {
-  static fields = {
-    'id': {
-      type:       Types.BIGINT,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'firstName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      partIndex:      true,
-    },
-    'lastName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      partIndex:      true,
-    },
-  };
-}
+  Role,
+  User,
+  ScopedUser,
+} = require('../support/models');
 
 describe('QueryEngine', () => {
-  let connection;
-  let query;
-
   beforeAll(() => {
-    connection = new ConnectionBase({
+    new ConnectionBase({
       models: [
         User,
+        Role,
+        ScopedUser,
       ],
     });
   });
 
-  beforeEach(() => {
-    query = new QueryEngine({
-      connection,
+  const getContext = (context, extraFields) => {
+    let data = {
+      rootModelName:  context.rootModelName,
+      modelName:      context.modelName,
+      fieldName:      context.fieldName,
+      operator:       context.operator,
+      value:          context.value,
+      and:            context.and,
+      or:             context.or,
+    };
+
+    if (extraFields) {
+      extraFields.forEach((fieldName) => {
+        data[fieldName] = context[fieldName];
+      });
+    }
+
+    return data;
+  };
+
+  it('can set a default scope on a model', () => {
+    let context = ScopedUser.where.id.EQ('test')._getRawQuery();
+
+    expect(context).toBeInstanceOf(Array);
+    expect(context.length).toEqual(5);
+
+    expect(getContext(context[0])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      undefined,
+      operator:       'MODEL',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[1])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      'firstName',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[2])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      'firstName',
+      operator:       'EQ',
+      value:          'Bob',
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[3])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      'id',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[4])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      'id',
+      operator:       'EQ',
+      value:          'test',
+      and:            true,
+      or:             false,
+    });
+  });
+
+  it('can unscope default scope on a model', () => {
+    let context = ScopedUser.where.unscoped().id.EQ('test')._getRawQuery();
+
+    expect(context).toBeInstanceOf(Array);
+    expect(context.length).toEqual(3);
+
+    expect(getContext(context[0])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      undefined,
+      operator:       'MODEL',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[1])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      'id',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[2])).toEqual({
+      rootModelName:  'ScopedUser',
+      modelName:      'ScopedUser',
+      fieldName:      'id',
+      operator:       'EQ',
+      value:          'test',
+      and:            true,
+      or:             false,
     });
   });
 
   it('can construct a query context with a model sub-key', () => {
-    let context = query.User.id.EQ('test')._getRawQuery();
+    let context = User.where.id.EQ('test')._getRawQuery();
 
     expect(context).toBeInstanceOf(Array);
-    expect(context.length).toEqual(1);
+    expect(context.length).toEqual(3);
 
-    expect({
-      modelName:  context[0].modelName,
-      fieldName:  context[0].fieldName,
-      operator:   context[0].operator,
-      value:      context[0].value,
-      and:        context[0].and,
-      or:         context[0].or,
-    }).toEqual({
-      modelName:  'User',
-      fieldName:  'id',
-      operator:   'EQ',
-      value:      'test',
-      and:        true,
-      or:         false,
+    expect(getContext(context[0])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      undefined,
+      operator:       'MODEL',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[1])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'id',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[2])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'id',
+      operator:       'EQ',
+      value:          'test',
+      and:            true,
+      or:             false,
     });
   });
 
   it('can construct a query context with a model call', () => {
-    let context = query.User('id').EQ('test')._getRawQuery();
+    let context = User.where('id').EQ('test')._getRawQuery();
 
     expect(context).toBeInstanceOf(Array);
-    expect(context.length).toEqual(1);
+    expect(context.length).toEqual(3);
 
-    expect({
-      modelName:  context[0].modelName,
-      fieldName:  context[0].fieldName,
-      operator:   context[0].operator,
-      value:      context[0].value,
-    }).toEqual({
-      modelName:  'User',
-      fieldName:  'id',
-      operator:   'EQ',
-      value:      'test',
+    expect(getContext(context[0])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      undefined,
+      operator:       'MODEL',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[1])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'id',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[2])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'id',
+      operator:       'EQ',
+      value:          'test',
+      and:            true,
+      or:             false,
     });
   });
 
   it('can chain query conditions', () => {
-    let context = query.User.id.EQ(1).AND.firstName.EQ('Test').AND.NOT.lastName.EQ('Stuff')._getRawQuery();
+    let context = User.where.id.EQ(1).AND.firstName.EQ('Test').AND.NOT.lastName.EQ('Stuff')._getRawQuery();
 
     expect(context).toBeInstanceOf(Array);
-    expect(context.length).toEqual(6);
+    expect(context.length).toEqual(10);
+
+    expect(getContext(context[0])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      undefined,
+      operator:       'MODEL',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[1])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'id',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+    });
 
     // 0
-    expect({
-      modelName:  context[0].modelName,
-      fieldName:  context[0].fieldName,
-      operator:   context[0].operator,
-      value:      context[0].value,
-      partIndex:  context[0].partIndex,
-    }).toEqual({
-      modelName:  'User',
-      fieldName:  'id',
-      operator:   'EQ',
-      value:      1,
-      partIndex:  0,
+    expect(getContext(context[2])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'id',
+      operator:       'EQ',
+      value:          1,
+      and:            true,
+      or:             false,
     });
 
-    // 1
-    expect({
-      operator:   context[1].operator,
-      partIndex:  context[1].partIndex,
-    }).toEqual({
-      operator:   'AND',
-      partIndex:  1,
-    });
-
-    // 2
-    expect({
-      modelName:  context[2].modelName,
-      fieldName:  context[2].fieldName,
-      operator:   context[2].operator,
-      value:      context[2].value,
-      partIndex:  context[2].partIndex,
-    }).toEqual({
-      modelName:  'User',
-      fieldName:  'firstName',
-      operator:   'EQ',
-      value:      'Test',
-      partIndex:  2,
-    });
-
-    // 3
     expect({
       operator:   context[3].operator,
       partIndex:  context[3].partIndex,
@@ -145,34 +256,70 @@ describe('QueryEngine', () => {
       partIndex:  3,
     });
 
-    // 4
-    expect({
-      operator:   context[4].operator,
-      partIndex:  context[4].partIndex,
-    }).toEqual({
-      operator:   'NOT',
-      partIndex:  4,
+    expect(getContext(context[4], [ 'partIndex' ])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'firstName',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+      partIndex:      4,
     });
 
-    // 5
+    expect(getContext(context[5])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'firstName',
+      operator:       'EQ',
+      value:          'Test',
+      and:            true,
+      or:             false,
+    });
+
+    expect(getContext(context[6], [ 'partIndex' ])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      undefined,
+      operator:       'AND',
+      value:          undefined,
+      and:            true,
+      or:             false,
+      partIndex:      6,
+    });
+
     expect({
-      modelName:  context[5].modelName,
-      fieldName:  context[5].fieldName,
-      operator:   context[5].operator,
-      value:      context[5].value,
-      partIndex:  context[5].partIndex,
+      operator:   context[7].operator,
+      partIndex:  context[7].partIndex,
     }).toEqual({
-      modelName:  'User',
-      fieldName:  'lastName',
-      operator:   'EQ',
-      value:      'Stuff',
-      partIndex:  5,
+      operator:   'NOT',
+      partIndex:  7,
+    });
+
+    expect(getContext(context[8], [ 'partIndex' ])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'lastName',
+      operator:       'FIELD',
+      value:          undefined,
+      and:            true,
+      or:             false,
+      partIndex:      8,
+    });
+
+    expect(getContext(context[9])).toEqual({
+      rootModelName:  'User',
+      modelName:      'User',
+      fieldName:      'lastName',
+      operator:       'EQ',
+      value:          'Stuff',
+      and:            true,
+      or:             false,
     });
   });
 
-  // it('can chain query field names', () => {
-  //   let query = QueryEngine.query(User);
-  //   let context = query.User('id').roles.name.EQ('admin').AND.NOT.roles.name.EQ('booger')._getRawQuery();
+  // it('can chain query conditions from more than one model', () => {
+  //   let context = query.User.id.EQ(1).AND.firstName.EQ('Test').AND.NOT.lastName.EQ('Stuff').AND.Role.id.EQ(User.)._getRawQuery();
 
   //   expect(context).toBeInstanceOf(Array);
   //   expect(context.length).toEqual(6);
@@ -183,13 +330,70 @@ describe('QueryEngine', () => {
   //     fieldName:  context[0].fieldName,
   //     operator:   context[0].operator,
   //     value:      context[0].value,
-  //     partIndex:      context[0].partIndex,
+  //     partIndex:  context[0].partIndex,
   //   }).toEqual({
   //     modelName:  'User',
   //     fieldName:  'id',
   //     operator:   'EQ',
   //     value:      1,
-  //     partIndex:      0,
+  //     partIndex:  0,
+  //   });
+
+  //   // 1
+  //   expect({
+  //     operator:   context[1].operator,
+  //     partIndex:  context[1].partIndex,
+  //   }).toEqual({
+  //     operator:   'AND',
+  //     partIndex:  1,
+  //   });
+
+  //   // 2
+  //   expect({
+  //     modelName:  context[2].modelName,
+  //     fieldName:  context[2].fieldName,
+  //     operator:   context[2].operator,
+  //     value:      context[2].value,
+  //     partIndex:  context[2].partIndex,
+  //   }).toEqual({
+  //     modelName:  'User',
+  //     fieldName:  'firstName',
+  //     operator:   'EQ',
+  //     value:      'Test',
+  //     partIndex:  2,
+  //   });
+
+  //   // 3
+  //   expect({
+  //     operator:   context[3].operator,
+  //     partIndex:  context[3].partIndex,
+  //   }).toEqual({
+  //     operator:   'AND',
+  //     partIndex:  3,
+  //   });
+
+  //   // 4
+  //   expect({
+  //     operator:   context[4].operator,
+  //     partIndex:  context[4].partIndex,
+  //   }).toEqual({
+  //     operator:   'NOT',
+  //     partIndex:  4,
+  //   });
+
+  //   // 5
+  //   expect({
+  //     modelName:  context[5].modelName,
+  //     fieldName:  context[5].fieldName,
+  //     operator:   context[5].operator,
+  //     value:      context[5].value,
+  //     partIndex:  context[5].partIndex,
+  //   }).toEqual({
+  //     modelName:  'User',
+  //     fieldName:  'lastName',
+  //     operator:   'EQ',
+  //     value:      'Stuff',
+  //     partIndex:  5,
   //   });
   // });
 

@@ -19,8 +19,19 @@ class IntegerType extends Type {
     return Math.round(number);
   }
 
+  toConnectionType(connection) {
+    switch (connection.dialect) {
+      case 'sqlite':
+        return 'INTEGER';
+      default:
+        return this.toString();
+    }
+  }
+
   toString(connection) {
-    return (connection) ? connection.typeToString(this) : 'INTEGER';
+    return (connection)
+      ? this.toConnectionType(connection)
+      : 'INTEGER';
   }
 }
 

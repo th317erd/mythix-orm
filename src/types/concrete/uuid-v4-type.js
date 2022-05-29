@@ -23,8 +23,19 @@ class UUIDV4Type extends Type {
     return value;
   }
 
+  toConnectionType(connection) {
+    switch (connection.dialect) {
+      case 'sqlite':
+        return this.toString();
+      default:
+        return this.toString();
+    }
+  }
+
   toString(connection) {
-    return (connection) ? connection.typeToString(this) : 'VARCHAR(36)';
+    return (connection)
+      ? this.toConnectionType(connection)
+      : 'VARCHAR(36)';
   }
 }
 

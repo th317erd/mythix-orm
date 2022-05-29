@@ -4,42 +4,11 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { ConnectionBase, Model, Types } = require('../../src');
-
-class User extends Model {
-  static fields = {
-    'id': {
-      type:       Types.BIGINT,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'firstName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
-    },
-    'lastName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
-    },
-  };
-}
-
-class Role extends Model {
-  static fields = {
-    'id': {
-      type:       Types.BIGINT,
-      allowNull:  false,
-      primaryKey: true,
-    },
-    'name': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
-    },
-  };
-}
+const { ConnectionBase } = require('../../src');
+const {
+  Role,
+  User,
+} = require('../support/models');
 
 describe('ConnectionBase', () => {
   let connection;
@@ -50,6 +19,37 @@ describe('ConnectionBase', () => {
         User,
         Role,
       ],
+    });
+  });
+
+  describe('Model', () => {
+    describe('where', () => {
+      it('should be able to get a query engine from where', () => {
+        let User = connection.getModel('User');
+
+        expect(User.where._getRawQuery()[0].rootModelName).toEqual('User');
+        expect(User.where._getRawQuery()[0].Model.getModelName()).toEqual('User');
+      });
+    });
+
+    describe('getUnscopedQueryEngine', () => {
+      it('should be able to get a query engine from getUnscopedQueryEngine', () => {
+        let User = connection.getModel('User');
+        let user = new User();
+
+        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].rootModelName).toEqual('User');
+        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('User');
+      });
+    });
+
+    describe('getQueryEngine', () => {
+      it('should be able to get a query engine from getQueryEngine', () => {
+        let User = connection.getModel('User');
+        let user = new User();
+
+        expect(user.getQueryEngine()._getRawQuery()[0].rootModelName).toEqual('User');
+        expect(user.getQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('User');
+      });
     });
   });
 

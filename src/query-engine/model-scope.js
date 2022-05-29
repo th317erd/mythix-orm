@@ -9,7 +9,7 @@ class ModelScope extends QueryEngineBase {
     return Model.getField(fieldName);
   }
 
-  _getQueryEngine() {
+  _getQueryEngineClass() {
     return this.currentContext.queryEngine;
   }
 
@@ -28,6 +28,10 @@ class ModelScope extends QueryEngineBase {
 
     let lowerScope = this._fetchScope('queryEngine');
     return lowerScope[prop];
+  }
+
+  unscoped() {
+    return this.currentContext.queryEngineScope.unscoped(this.currentContext);
   }
 
   NOT = ProxyClass.autoCall(function() {

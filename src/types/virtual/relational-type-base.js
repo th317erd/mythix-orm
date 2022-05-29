@@ -58,9 +58,12 @@ class RelationalTypeBase extends Type {
   }
 
   getFullyQualifiedName(qualifiedName) {
-    let def = ModelUtils.parseQualifiedName(qualifiedName);
+    let def = (Nife.isEmpty(qualifiedName)) ? {} : ModelUtils.parseQualifiedName(qualifiedName);
     if (!def.modelName)
       def.modelName = this.getModel().getModelName();
+
+    if (!def.modelName)
+      console.log('Failed getting model name: ', qualifiedName);
 
     if (Nife.isEmpty(def.fieldNames)) {
       let pkName = this.getModel().getPrimaryKeyFieldName();
@@ -68,98 +71,100 @@ class RelationalTypeBase extends Type {
         throw new Error(`${this.constructor.name}::getFullyQualifiedName: Error while attempting to parse qualified name "${qualifiedName}" on field "${this.getModel().getModelName()}.${this.getField().fieldName}": No field was specified, and no primary key was found for the model. Without a primary key on the model you MUST specify a field name.`);
 
       def.fieldNames = [ pkName ];
-    } else if (def.fieldNames.length > 1) {
-      console.warn(`${this.constructor.name}::getFullyQualifiedName: Warning: Found multiple qualified field names: "${qualifiedName}" = ${JSON.stringify(def.fieldNames)}. Did you use a "." when you should have use a ":"?`);
     }
 
     return def;
   }
 
-  _getModelPath(connection, relationType, def, _path) {
-    let path = _path || [];
+  _getModelRelations(connection, _relations) {
+    let relations = _relations || [];
+    if (relations.length > MAX_RECURSE_DEPTH)
+      throw new Error(`${this.constructor.name}::_getModelRelations: Depth limit exceeded chasing virtual fields.`);
 
-    if (path.length > MAX_RECURSE_DEPTH)
-      throw new Error(`${this.constructor.name}::_getModelPath: Depth limit exceeded chasing virtual fields.`);
+    let fieldRelations = [
+      this.getFullyQualifiedName(this.getTargetRelation()),
+      this.getFullyQualifiedName(this.getSourceRelation()),
+    ];
 
-    let field = connection.getField(def.fieldNames[0], def.modelName);
-    if (!field)
-      throw new Error(`${this.constructor.name}::_getModelPath: Attempted to fetch "${def.modelName}.${def.fieldNames[0]}" and failed.`);
+    for (let j = 0, jl = fieldRelations.length; j < jl; j++) {
+      let def         = fieldRelations[j];
+      let fieldNames  = def.fieldNames;
+      let modelName   = def.modelName;
 
-    let fieldType = field.type;
-    if (fieldType.isRelational()) {
-      let targetRelation = fieldType.getTargetRelation();
-      let sourceRelation = fieldType.getSourceRelation();
-      let relation;
+      for (let i = 0, il = fieldNames.length; i < il; i++) {
+        let fieldName = fieldNames[i];
+        let field     = connection.getField(fieldName, modelName);
+        if (!field)
+          throw new Error(`${this.constructor.name}::_getModelRelations: Attempted to fetch "${modelName}.${fieldName}" and failed.`);
 
-      if (relationType === 'target') {
-        this._getModelPath(
-          connection,
-          'source',
-          fieldType.getFullyQualifiedName(sourceRelation),
-          path,
-        );
+        let fieldType = field.type;
+        if (fieldType.isRelational()) {
+          modelName = fieldType._getModelRelations(
+            connection,
+            relations,
+          );
+        } else if (fieldType.isVirtual()) {
+          throw new Error(`${this.constructor.name}::_getModelRelations: Encountered an unexpected virtual field "${modelName}.${fieldName}".`);
+        } else {
+          let sourceModelName = fieldRelations[1].modelName;
+          let sourceFieldName = fieldRelations[1].fieldNames[0];
+          if (sourceFieldName === fieldName && sourceModelName === modelName)
+            continue;
 
-        relation = targetRelation;
-      } else {
-        this._getModelPath(
-          connection,
-          'target',
-          fieldType.getFullyQualifiedName(targetRelation),
-          path,
-        );
+          let sourceField = connection.getField(sourceFieldName, sourceModelName);
+          if (!sourceField)
+            throw new Error(`${this.constructor.name}::_getModelRelations: Attempted to fetch "${sourceModelName}.${sourceFieldName}" and failed.`);
 
-        relation = sourceRelation;
+          let sourceFieldType = sourceField.type;
+          if (sourceFieldType.isRelational() || sourceFieldType.isVirtual())
+            continue;
+
+          relations.push({
+            relationType:     (j === 1) ? 'source' : 'target',
+            fieldIndex:       i,
+            sourceModelName:  sourceModelName,
+            sourceFieldName:  sourceFieldName,
+            targetModelName:  modelName,
+            targetFieldName:  fieldName,
+          });
+
+          break;
+        }
       }
-
-      return fieldType._getModelPath(
-        connection,
-        relationType,
-        fieldType.getFullyQualifiedName(relation),
-        path,
-      );
-    } else if (field.type.isVirtual()) {
-      throw new Error(`${this.constructor.name}::_getModelPath: Encountered an unexpected virtual field "${def.modelName}.${def.fieldNames[0]}".`);
-    } else {
-      path.push(def);
     }
 
-    return path;
+    return fieldRelations[0].modelName;
   }
 
-  getTargetRelationPath(connection, _path) {
-    if (!connection)
-      throw new TypeError(`${this.constructor.name}::getTargetRelationPath: Must have a valid "connection" to get the requested model.`);
+  removeDuplicatesFromRelations(relations) {
+    const removeDuplicates = (relations) => {
+      let map = {};
 
-    return this._getModelPath(
+      for (let i = 0, il = relations.length; i < il; i++) {
+        let part = relations[i];
+        let key = `${part.targetModelName}.${part.sourceModelName}.${part.targetFieldName}.${part.sourceFieldName}.${part.relationType}.${part.fieldIndex}`;
+
+        map[key] = part;
+      }
+
+      return Array.from(Object.values(map));
+    };
+
+    return removeDuplicates(relations);
+  }
+
+  getJoinableRelations(connection) {
+    if (!connection)
+      throw new TypeError(`${this.constructor.name}::getJoinableRelations: Must have a valid "connection" to get the requested model.`);
+
+    let relations = [];
+
+    this._getModelRelations(
       connection,
-      'target',
-      this.getFullyQualifiedName(this.targetRelation),
-      _path,
+      relations,
     );
-  }
 
-  getSourceRelationPath(connection, _path) {
-    if (!connection)
-      throw new TypeError(`${this.constructor.name}::getSourceRelationPath: Must have a valid "connection" to get the requested model.`);
-
-    return this._getModelPath(
-      connection,
-      'source',
-      this.getFullyQualifiedName(this.sourceRelation),
-      _path,
-    );
-  }
-
-  getFullRelationPath(connection) {
-    if (!connection)
-      throw new TypeError(`${this.constructor.name}::getFullRelationPath: Must have a valid "connection" to get the requested model.`);
-
-    let fullPath = [];
-
-    this.getTargetRelationPath(connection, fullPath);
-    this.getSourceRelationPath(connection, fullPath);
-
-    return fullPath;
+    return this.removeDuplicatesFromRelations(relations);
   }
 
   toString() {

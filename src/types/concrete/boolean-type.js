@@ -16,8 +16,19 @@ class BooleanType extends Type {
     return !!value;
   }
 
+  toConnectionType(connection) {
+    switch (connection.dialect) {
+      case 'sqlite':
+        return 'BOOLEAN';
+      default:
+        return this.toString();
+    }
+  }
+
   toString(connection) {
-    return (connection) ? connection.typeToString(this) : 'BOOLEAN';
+    return (connection)
+      ? this.toConnectionType(connection)
+      : 'BOOLEAN';
   }
 }
 

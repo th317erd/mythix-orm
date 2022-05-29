@@ -6,6 +6,10 @@ const ModelScope      = require('./model-scope');
 const FieldScope      = require('./field-scope');
 
 class QueryEngine extends QueryEngineBase {
+  static isQueryContext(value) {
+    return !!(value && value.isQueryContext);
+  }
+
   getModel() {
     return ModelScope;
   }
@@ -19,7 +23,18 @@ class QueryEngine extends QueryEngineBase {
       throw new TypeError('QueryEngine::constructor: "context" required.');
 
     let queryRoot = [];
-    let context = Object.assign({ queryRoot, query: queryRoot }, _context, { currentScopeName: 'queryEngine' });
+    let context = Object.assign(
+      {
+        queryRoot,
+        query: queryRoot,
+      },
+      _context,
+      {
+        currentScopeName: 'queryEngine',
+        isQueryContext:   true,
+      },
+    );
+
     context.queryEngineContext = context;
 
     super(context);
@@ -40,6 +55,19 @@ class QueryEngine extends QueryEngineBase {
       throw new Error(`QueryEngine::Model: Requested model "${modelName}" not found.`);
 
     return this._newModelScope(this.currentContext, model);
+  }
+
+  unscoped(context) {
+    let QueryEngineClass  = this.constructor;
+    let currentContext    = context || this.currentContext;
+    let queryEngine       = new QueryEngineClass({
+      connection: currentContext.connection,
+    });
+
+    if (currentContext.rootModelName)
+      queryEngine = queryEngine[currentContext.rootModelName];
+
+    return queryEngine;
   }
 
   [ProxyClass.MISSING](target, prop) {
