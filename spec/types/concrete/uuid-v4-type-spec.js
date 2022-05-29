@@ -8,6 +8,30 @@ const { Types }       = require('../../../src');
 const { UUID_REGEXP } = require('../../support/test-helpers');
 
 describe('UUIDV4Type', () => {
+  describe('toConnectionType', () => {
+    it('can convert to connection type when dialect is "sqlite"', () => {
+      let type = new Types.UUIDV4Type();
+      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('VARCHAR(36)');
+    });
+
+    it('can convert to connection type when dialect is undefined', () => {
+      let type = new Types.UUIDV4Type();
+      expect(type.toConnectionType({ dialect: undefined })).toEqual('VARCHAR(36)');
+    });
+  });
+
+  describe('toString', () => {
+    it('can convert to connection type when dialect is "sqlite"', () => {
+      let type = new Types.UUIDV4Type();
+      expect(type.toString({ dialect: 'sqlite' })).toEqual('VARCHAR(36)');
+    });
+
+    it('can convert to connection type when dialect is undefined', () => {
+      let type = new Types.UUIDV4Type();
+      expect(type.toString({ dialect: undefined })).toEqual('VARCHAR(36)');
+    });
+  });
+
   it('can construct from class', () => {
     let type = new Types.UUIDV4Type();
     expect(type.toString()).toEqual('VARCHAR(36)');

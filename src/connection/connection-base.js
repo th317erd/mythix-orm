@@ -89,11 +89,11 @@ class ConnectionBase {
   }
 
   async start() {
-    throw new Error(`${this.constructor.name}::start: Child class is required to implement "start"`);
+    throw new Error(`${this.constructor.name}::start: Child class is required to implement "start".`);
   }
 
   async stop() {
-    throw new Error(`${this.constructor.name}::stop: Child class is required to implement "stop"`);
+    throw new Error(`${this.constructor.name}::stop: Child class is required to implement "stop".`);
   }
 }
 

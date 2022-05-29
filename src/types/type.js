@@ -141,8 +141,13 @@ class Type {
 
   getConnection() {
     let modelInstance = this.getModelInstance();
-    if (!modelInstance)
+    if (!modelInstance) {
+      let Model = this.getModel();
+      if (Model)
+        return Model.getConnection();
+
       return null;
+    }
 
     return modelInstance.getConnection();
   }

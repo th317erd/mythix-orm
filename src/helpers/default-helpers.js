@@ -24,6 +24,8 @@ function defaultValueFlags(func, _flagsObj) {
 
   if (flagsObj.onInitialize === false)
     flags = flags & ~FLAG_ON_INITIALIZE;
+  else if (flags > 1)
+    flags = flags & ~FLAG_ON_INITIALIZE;
 
   func.mythixFlags = flags;
 
@@ -34,8 +36,12 @@ const AUTO_INCREMENT = defaultValueFlags(function(context) {
   return context.connection.getDefaultFieldValue('AUTO_INCREMENT');
 }, { remote: true });
 
-const NOW = defaultValueFlags(function(context) {
-  return context.connection.getDefaultFieldValue('NOW');
+const DATETIME_NOW = defaultValueFlags(function(context) {
+  return context.connection.getDefaultFieldValue('DATETIME_NOW');
+}, { remote: true });
+
+const DATE_NOW = defaultValueFlags(function(context) {
+  return context.connection.getDefaultFieldValue('DATE_NOW');
 }, { remote: true });
 
 module.exports = {
@@ -46,5 +52,6 @@ module.exports = {
   FLAG_REMOTE,
   defaultValueFlags,
   AUTO_INCREMENT,
-  NOW,
+  DATETIME_NOW,
+  DATE_NOW,
 };

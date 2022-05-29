@@ -15,6 +15,35 @@ class QueryGeneratorBase {
     });
   }
 
+  async generateSelectQuery(queryEngine) {
+
+  }
+
+  getFieldDefaultValue(field, fieldName) {
+    if (field.defaultValue === undefined)
+      return;
+
+    let defaultValue      = field.defaultValue;
+    let useDefaultKeyword = true;
+
+    if (typeof defaultValue === 'function') {
+      defaultValue = defaultValue({ field, fieldName, connection: this.connection });
+      if (!((field.defaultValue.mythixFlags || 0) & FLAG_REMOTE)) {
+        defaultValue = this.connection.escape(defaultValue);
+      } else if (typeof defaultValue === 'string' && defaultValue.charAt(0) === '!') {
+        useDefaultKeyword = false;
+        defaultValue = defaultValue.substring(1);
+      }
+    } else {
+      defaultValue = this.connection.escape(defaultValue);
+    }
+
+    if (useDefaultKeyword)
+      return `DEFAULT ${defaultValue}`;
+    else
+      return `${defaultValue}`;
+  }
+
   async generatorCreateTableStatement(Model/*, options */) {
     let fieldParts = [];
 
@@ -33,20 +62,11 @@ class QueryGeneratorBase {
 
         if (field.allowNull === false)
           constraintParts.push('NOT NULL');
-
-        if (field.defaultValue !== undefined) {
-          let defaultValue = field.defaultValue;
-          if (typeof defaultValue === 'function') {
-            defaultValue = defaultValue({ field, fieldName, connection: this });
-            if (!((field.defaultValue.mythixFlags || 0) & FLAG_REMOTE))
-              defaultValue = this.connection.escape(defaultValue);
-          } else {
-            defaultValue = this.connection.escape(defaultValue);
-          }
-
-          constraintParts.push(`DEFAULT ${defaultValue}`);
-        }
       }
+
+      let defaultValue = this.getFieldDefaultValue(field, fieldName);
+      if (defaultValue !== undefined)
+        constraintParts.push(defaultValue);
 
       constraintParts = constraintParts.join(' ');
       if (Nife.isNotEmpty(constraintParts))

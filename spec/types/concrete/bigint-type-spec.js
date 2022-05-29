@@ -7,6 +7,30 @@
 const { Types } = require('../../../src');
 
 describe('BigIntType', () => {
+  describe('toConnectionType', () => {
+    it('can convert to connection type when dialect is "sqlite"', () => {
+      let type = new Types.BigIntType();
+      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('BIGINT');
+    });
+
+    it('can convert to connection type when dialect is undefined', () => {
+      let type = new Types.BigIntType(6);
+      expect(type.toConnectionType({ dialect: undefined })).toEqual('BIGINT(6)');
+    });
+  });
+
+  describe('toString', () => {
+    it('can convert to connection type when dialect is "sqlite"', () => {
+      let type = new Types.BigIntType();
+      expect(type.toString({ dialect: 'sqlite' })).toEqual('BIGINT');
+    });
+
+    it('can convert to connection type when dialect is undefined', () => {
+      let type = new Types.BigIntType(6);
+      expect(type.toString({ dialect: undefined })).toEqual('BIGINT(6)');
+    });
+  });
+
   it('can construct from class', () => {
     let type = new Types.BigIntType();
     expect(type.toString()).toEqual('BIGINT');

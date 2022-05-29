@@ -49,6 +49,14 @@ class RelationalTypeBase extends Type {
     return true;
   }
 
+  getTargetModel(connection) {
+    if (!connection)
+      throw new TypeError(`${this.constructor.name}::getTargetModel: Must have a valid "connection" to get the requested model.`);
+
+    let def = this.getFullyQualifiedName(this.getTargetRelation());
+    return connection.getModel(def.modelName);
+  }
+
   getTargetRelation() {
     return this.targetRelation;
   }
@@ -155,7 +163,7 @@ class RelationalTypeBase extends Type {
 
   getJoinableRelations(connection) {
     if (!connection)
-      throw new TypeError(`${this.constructor.name}::getJoinableRelations: Must have a valid "connection" to get the requested model.`);
+      throw new TypeError(`${this.constructor.name}::getJoinableRelations: Must have a valid "connection" to get field relations.`);
 
     let relations = [];
 

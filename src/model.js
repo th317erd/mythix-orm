@@ -1,16 +1,40 @@
 'use strict';
 
+const Nife                    = require('nife');
 const { iterateStaticProps }  = require('./utils/misc-utils');
 const Type                    = require('./types/type');
 const Inflection              = require('inflection');
+const { FLAG_ON_INITIALIZE }  = require('./helpers/default-helpers');
 
 class Model {
-  static cloneFields() {
-    let clonedFields = {};
+  static cloneFields(mergeFields) {
+    let isArray       = Array.isArray(this.getFields());
+    let clonedFields  = (isArray) ? [] : {};
 
     this.iterateFields(({ field, fieldName }) => {
-      clonedFields[fieldName] = Object.assign({}, field, { type: field.type.clone() });
+      let fieldCopy = Object.assign({}, field, { type: field.type.clone() });
+
+      if (isArray)
+        clonedFields.push(fieldCopy);
+      else
+        clonedFields[fieldName] = fieldCopy;
     });
+
+    if (mergeFields) {
+      this.iterateFields(({ field, fieldName }) => {
+        let fieldCopy = Object.assign({}, field, { type: field.type.clone() });
+
+        if (isArray) {
+          let currentFieldIndex = clonedFields.findIndex((thisField) => (thisField.fieldName === fieldName));
+          if (currentFieldIndex >= 0)
+            clonedFields[currentFieldIndex] = fieldCopy;
+          else
+            clonedFields.push(fieldCopy);
+        } else {
+          clonedFields[fieldName] = fieldCopy;
+        }
+      }, mergeFields);
+    }
 
     return clonedFields;
   }
@@ -90,7 +114,7 @@ class Model {
   }
 
   static getTableName() {
-    let tableName = this.getPluralName().toLowerCase();
+    let tableName = Nife.camelCaseToSnakeCase(this.getPluralName());
     return `${this.getTablePrefix() || ''}${tableName}`;
   }
 
@@ -114,7 +138,7 @@ class Model {
     return this.fields;
   }
 
-  static iterateFields(callback) {
+  static iterateFields(callback, _fields) {
     const sortFieldNames = (fieldNames, fields) => {
       return fieldNames.sort((a, b) => {
         let x = fields[a];
@@ -132,7 +156,7 @@ class Model {
       });
     };
 
-    let fields = this.getFields();
+    let fields = (_fields) ? _fields : this.getFields();
     if (!fields || typeof callback !== 'function')
       return [];
 
@@ -160,6 +184,9 @@ class Model {
 
         field.fieldName = fieldName;
       }
+
+      if (!field.type)
+        throw new Error(`${this.name}::iterateFields: "type" not found on "${this.name}.${fieldName}". "type" is required for all fields.`);
 
       if (field.type.uninitializedType || field.type.mythixType || field.type._initialized !== true)
         field.type = Type.instantiateType(this.getModel(), this, field, field.type);
@@ -327,11 +354,12 @@ class Model {
 
     if (typeof defaultValue === 'function') {
       const shouldRunDefaultValueOnInitialize = () => {
-        if (defaultValue.mythixFlags == null)
+        // No flags means we are running on initialize
+        if (!defaultValue.mythixFlags)
           return true;
 
-        // Zero, or one means we want to run on initialize
-        if (defaultValue.mythixFlags < 2)
+        // Are we running on initialize?
+        if (defaultValue.mythixFlags & FLAG_ON_INITIALIZE)
           return true;
 
         return false;
@@ -401,7 +429,7 @@ class Model {
     let field           = this.getField(fieldName);
 
     if (!field)
-      throw new Error(`${this.getModelName()}::setDataValue: Unable to find field named ${fieldName}.`);
+      throw new Error(`${this.getModelName()}::setDataValue: Unable to find field named "${fieldName}".`);
 
     let newValue = this._castFieldValue(field, value);
 

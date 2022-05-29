@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "inflection": "^1.13.2",
+    "moment": "^2.29.3",
     "nife": "^1.7.0",
     "sqlstring": "^2.3.3",
     "uuid": "^8.3.2"
@@ -39,7 +40,8 @@
       "html"
     ],
     "exclude": [
-      "spec/**"
+      "spec/**",
+      "src/proxy-class/proxy-class.js"
     ]
   }
 }

@@ -48,4 +48,30 @@ describe('SQLiteConnection', () => {
       expect(connection.escapeID('test.derp')).toEqual('"test"."derp"');
     });
   });
+
+  describe('dialect', () => {
+    it('can return dialect', () => {
+      expect(SQLiteConnection.dialect).toEqual('sqlite');
+      expect(connection.dialect).toEqual('sqlite');
+    });
+  });
+
+  describe('start', () => {
+    it('can initiate a :memory: DB connection', async () => {
+      expect(connection.db).toBe(null);
+      await connection.start();
+      expect(connection.db).not.toBe(null);
+    });
+  });
+
+  describe('stop', () => {
+    it('can shutdown a DB connection', async () => {
+      expect(connection.db).toBe(null);
+      await connection.start();
+      expect(connection.db).not.toBe(null);
+
+      await connection.stop();
+      expect(connection.db).toBe(null);
+    });
+  });
 });

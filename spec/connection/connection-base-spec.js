@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach */
+/* global describe, it, expect, beforeEach, fail */
 
 const { ConnectionBase } = require('../../src');
 const {
@@ -87,6 +87,30 @@ describe('ConnectionBase', () => {
       let field = connection.getField('User:firstName');
       expect(field.fieldName).toEqual('firstName');
       expect(field.Model.getModelName()).toEqual('User');
+    });
+  });
+
+  describe('start', () => {
+    it('should throw an unimplemented error', async () => {
+      try {
+        await connection.start();
+        fail('unreachable');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('ConnectionBase::start: Child class is required to implement "start".');
+      }
+    });
+  });
+
+  describe('stop', () => {
+    it('should throw an unimplemented error', async () => {
+      try {
+        await connection.stop();
+        fail('unreachable');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('ConnectionBase::stop: Child class is required to implement "stop".');
+      }
     });
   });
 });

@@ -13,7 +13,8 @@ const {
   FLAG_REMOTE,
   defaultValueFlags,
   AUTO_INCREMENT,
-  NOW,
+  DATETIME_NOW,
+  DATE_NOW,
 } = require('../../src/helpers/default-helpers');
 
 describe('DefaultHelpers', () => {
@@ -24,32 +25,32 @@ describe('DefaultHelpers', () => {
 
   it('can set create flag on a default method', () => {
     let func = defaultValueFlags(function() {}, { onCreate: true });
-    expect(func.mythixFlags).toEqual(FLAG_ON_INITIALIZE | FLAG_ON_CREATE);
+    expect(func.mythixFlags).toEqual(FLAG_ON_CREATE);
   });
 
   it('can set update flag on a default method', () => {
     let func = defaultValueFlags(function() {}, { onUpdate: true });
-    expect(func.mythixFlags).toEqual(FLAG_ON_INITIALIZE | FLAG_ON_UPDATE);
+    expect(func.mythixFlags).toEqual(FLAG_ON_UPDATE);
   });
 
   it('can set store flag on a default method', () => {
     let func = defaultValueFlags(function() {}, { onStore: true });
-    expect(func.mythixFlags).toEqual(FLAG_ON_INITIALIZE | FLAG_ON_STORE);
+    expect(func.mythixFlags).toEqual(FLAG_ON_STORE);
   });
 
   it('can set remote flag on a default method', () => {
     let func = defaultValueFlags(function() {}, { remote: true });
-    expect(func.mythixFlags).toEqual(FLAG_ON_INITIALIZE | FLAG_REMOTE);
+    expect(func.mythixFlags).toEqual(FLAG_REMOTE);
   });
 
   it('can remove initialize flag on a default method', () => {
-    let func = defaultValueFlags(function() {}, { onCreate: true, onInitialize: false });
-    expect(func.mythixFlags).toEqual(FLAG_ON_CREATE);
+    let func = defaultValueFlags(function() {}, { onInitialize: false });
+    expect(func.mythixFlags).toEqual(0);
   });
 
   describe('AUTO_INCREMENT', () => {
     it('should have the correct flags set', () => {
-      expect(AUTO_INCREMENT.mythixFlags).toEqual(FLAG_REMOTE | FLAG_ON_INITIALIZE);
+      expect(AUTO_INCREMENT.mythixFlags).toEqual(FLAG_REMOTE);
     });
 
     it('should call connection to get value', () => {
@@ -66,9 +67,9 @@ describe('DefaultHelpers', () => {
     });
   });
 
-  describe('NOW', () => {
+  describe('DATETIME_NOW', () => {
     it('should have the correct flags set', () => {
-      expect(NOW.mythixFlags).toEqual(FLAG_REMOTE | FLAG_ON_INITIALIZE);
+      expect(DATETIME_NOW.mythixFlags).toEqual(FLAG_REMOTE);
     });
 
     it('should call connection to get value', () => {
@@ -80,8 +81,27 @@ describe('DefaultHelpers', () => {
         },
       };
 
-      let connectionDefaultType = NOW(context);
-      expect(connectionDefaultType).toEqual('NOW');
+      let connectionDefaultType = DATETIME_NOW(context);
+      expect(connectionDefaultType).toEqual('DATETIME_NOW');
+    });
+  });
+
+  describe('DATE_NOW', () => {
+    it('should have the correct flags set', () => {
+      expect(DATE_NOW.mythixFlags).toEqual(FLAG_REMOTE);
+    });
+
+    it('should call connection to get value', () => {
+      let context = {
+        connection: {
+          getDefaultFieldValue: (type) => {
+            return type;
+          },
+        },
+      };
+
+      let connectionDefaultType = DATE_NOW(context);
+      expect(connectionDefaultType).toEqual('DATE_NOW');
     });
   });
 });

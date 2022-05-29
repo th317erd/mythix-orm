@@ -40,6 +40,7 @@ function onSaveDefaultValue() {
 class DefaultValuesModel extends Model {
   static fields = {
     'id': {
+      fieldName:    'id',
       type:         Types.BIGINT,
       allowNull:    false,
       primaryKey:   true,
@@ -48,12 +49,14 @@ class DefaultValuesModel extends Model {
       },
     },
     'name': {
+      fieldName:    'name',
       type:         Types.STRING,
       allowNull:    false,
       primaryKey:   true,
       defaultValue: 'derp',
     },
     'onlyOnSave': {
+      fieldName:    'onlyOnSave',
       type:         Types.STRING,
       allowNull:    false,
       primaryKey:   true,
@@ -87,6 +90,103 @@ describe('Model', () => {
     callback(Klass, 'static');
     callback(new Klass(), 'instance');
   };
+
+  describe('cloneFields', () => {
+    it('should be able to clone object fields', () => {
+      let clonedFields = DefaultValuesModel.cloneFields();
+      expect(typeof clonedFields).toEqual('object');
+
+      let keys = Object.keys(clonedFields).sort();
+      expect(keys.length).toEqual(3);
+      expect(keys).toEqual([ 'id', 'name', 'onlyOnSave' ]);
+
+      expect(clonedFields.id).not.toBe(DefaultValuesModel.fields['id']);
+      expect(clonedFields.name).not.toBe(DefaultValuesModel.fields['name']);
+      expect(clonedFields.onlyOnSave).not.toBe(DefaultValuesModel.fields['onlyOnSave']);
+
+      expect(clonedFields.id.fieldName).toEqual(DefaultValuesModel.fields['id'].fieldName);
+      expect(clonedFields.name.fieldName).toEqual(DefaultValuesModel.fields['name'].fieldName);
+      expect(clonedFields.onlyOnSave.fieldName).toEqual(DefaultValuesModel.fields['onlyOnSave'].fieldName);
+    });
+
+    it('should be able to clone array fields', () => {
+      let clonedFields = ArrayFieldsModel.cloneFields();
+      expect(Array.isArray(clonedFields)).toEqual(true);
+
+      expect(clonedFields.length).toEqual(2);
+      expect(Nife.pluck('fieldName', clonedFields)).toEqual([ 'id', 'test' ]);
+
+      expect(typeof clonedFields[0]).toEqual('object');
+      expect(typeof clonedFields[1]).toEqual('object');
+
+      expect(clonedFields[0]).not.toBe(ArrayFieldsModel.fields[0]);
+      expect(clonedFields[1]).not.toBe(ArrayFieldsModel.fields[1]);
+
+      expect(clonedFields[0].fieldName).toEqual(ArrayFieldsModel.fields[0].fieldName);
+      expect(clonedFields[1].fieldName).toEqual(ArrayFieldsModel.fields[1].fieldName);
+    });
+
+    it('should be able to clone object fields adding extra fields', () => {
+      let clonedFields = DefaultValuesModel.cloneFields({
+        'derp': {
+          fieldName:  'derp',
+          type:       Types.INTEGER,
+        },
+      });
+
+      expect(typeof clonedFields).toEqual('object');
+
+      let keys = Object.keys(clonedFields).sort();
+      expect(Object.keys(DefaultValuesModel.fields).length).toEqual(3);
+      expect(keys.length).toEqual(4);
+      expect(keys).toEqual([ 'derp', 'id', 'name', 'onlyOnSave' ]);
+
+      expect(clonedFields.id).not.toBe(DefaultValuesModel.fields['id']);
+      expect(clonedFields.name).not.toBe(DefaultValuesModel.fields['name']);
+      expect(clonedFields.onlyOnSave).not.toBe(DefaultValuesModel.fields['onlyOnSave']);
+      expect(typeof clonedFields.derp).toEqual('object');
+
+      expect(clonedFields.id.fieldName).toEqual(DefaultValuesModel.fields['id'].fieldName);
+      expect(clonedFields.name.fieldName).toEqual(DefaultValuesModel.fields['name'].fieldName);
+      expect(clonedFields.onlyOnSave.fieldName).toEqual(DefaultValuesModel.fields['onlyOnSave'].fieldName);
+      expect(clonedFields.derp.fieldName).toEqual('derp');
+    });
+
+    it('should be able to clone array fields adding extra fields', () => {
+      let clonedFields = ArrayFieldsModel.cloneFields([
+        {
+          fieldName:  'derp',
+          type:       Types.STRING(128),
+        },
+        {
+          fieldName: 'id',
+          type:       Types.INTEGER,
+          allowNull:  true,
+          hello:      'world',
+        },
+      ]);
+
+      expect(Array.isArray(clonedFields)).toEqual(true);
+
+      expect(clonedFields.length).toEqual(3);
+      expect(Nife.pluck('fieldName', clonedFields)).toEqual([ 'id', 'test', 'derp' ]);
+
+      expect(typeof clonedFields[0]).toEqual('object');
+      expect(typeof clonedFields[1]).toEqual('object');
+      expect(typeof clonedFields[2]).toEqual('object');
+
+      expect(clonedFields[0]).not.toBe(ArrayFieldsModel.fields[0]);
+      expect(clonedFields[1]).not.toBe(ArrayFieldsModel.fields[1]);
+
+      expect(clonedFields[0].fieldName).toEqual(ArrayFieldsModel.fields[0].fieldName);
+      expect(clonedFields[1].fieldName).toEqual(ArrayFieldsModel.fields[1].fieldName);
+      expect(clonedFields[2].fieldName).toEqual('derp');
+
+      expect(clonedFields[0].fieldName).toEqual('id');
+      expect(clonedFields[0].hello).toEqual('world');
+      expect(clonedFields[0].allowNull).toEqual(true);
+    });
+  });
 
   describe('getModelName', () => {
     instanceAndStaticTests(User, (target, type) => {
@@ -192,6 +292,43 @@ describe('Model', () => {
         expect(fieldNames).toEqual([]);
       });
     });
+
+    class BadTypeModel extends Model {
+      static fields = {
+        'name': {
+          fieldName:  'name',
+          allowNull:  false,
+        },
+      };
+    }
+
+    it('should throw an error if "type" is empty (static)', () => {
+      expect(() => BadTypeModel.iterateFields(() => {})).toThrow(new Error('BadTypeModel::iterateFields: "type" not found on "BadTypeModel.name". "type" is required for all fields.'));
+    });
+
+    it('should throw an error if "type" is empty (instance)', () => {
+      expect(() => new BadTypeModel()).toThrow(new Error('BadTypeModel::iterateFields: "type" not found on "BadTypeModel.name". "type" is required for all fields.'));
+    });
+
+    it('should throw an error with no "fieldName" when fields are an array', () => {
+      class BadModel extends Model {
+        static fields = [
+          {
+            type:       Types.UUIDV4,
+            allowNull:  false,
+            primaryKey: true,
+          },
+        ];
+      }
+
+      expect(() => {
+        BadModel.iterateFields(() => {});
+      }).toThrow(new Error('BadModel::iterateFields: "fieldName" is missing on field index 0.'));
+
+      expect(() => {
+        new BadModel();
+      }).toThrow(new Error('BadModel::iterateFields: "fieldName" is missing on field index 0.'));
+    });
   });
 
   describe('getField', () => {
@@ -287,14 +424,86 @@ describe('Model', () => {
 
     class OtherUser extends User {
       static getTablePrefix() {
-        return 'Table_';
+        return 'table_';
       }
     }
 
     instanceAndStaticTests(OtherUser, (target, type) => {
       it(`should be able to get the table name for the model (${type})`, () => {
-        expect(target.getTableName()).toEqual('Table_otherusers');
+        expect(target.getTableName()).toEqual('table_other_users');
       });
+    });
+  });
+
+  describe('_castFieldValue', () => {
+    it('should be able cast a value', () => {
+      let user = new User();
+      expect(user._castFieldValue({ type: { castToType: () => 'derp' } }, 'hello')).toEqual('derp');
+    });
+
+    it('should return value if type is empty', () => {
+      let user = new User();
+      expect(user._castFieldValue({ type: null }, null)).toBe(null);
+      expect(user._castFieldValue({ type: null }, undefined)).toBe(undefined);
+      expect(user._castFieldValue({ type: null }, 'derp')).toBe('derp');
+    });
+  });
+
+  describe('getDataValue', () => {
+    it('should be able get a value', () => {
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      expect(user.getDataValue('firstName')).toEqual('Bob');
+    });
+
+    it('should be able get a dirty value', () => {
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      expect(user.getDataValue('lastName')).toEqual('Pickle');
+      expect(user._fieldData.lastName).toEqual('Pickle');
+      expect(user._dirtyFieldData.lastName).toBe(undefined);
+
+      user.lastName = 'Mustard';
+
+      expect(user._fieldData.lastName).toEqual('Pickle');
+      expect(user._dirtyFieldData.lastName).toBe('Mustard');
+      expect(user.getDataValue('lastName')).toEqual('Mustard');
+      expect(user.lastName).toEqual('Mustard');
+      expect(user.changes).toEqual({
+        lastName: { previous: 'Pickle', current: 'Mustard' },
+      });
+    });
+  });
+
+  describe('setDataValue', () => {
+    it('should be able set a value', () => {
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      expect(user.firstName).toEqual('Bob');
+
+      user.setDataValue('firstName', 'Booger');
+
+      expect(user.firstName).toEqual('Booger');
+      expect(user._fieldData.firstName).toEqual('Bob');
+      expect(user._dirtyFieldData.firstName).toBe('Booger');
+    });
+
+    it('should throw an error if the field does not exist', () => {
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      expect(() => user.setDataValue('invalid', 'Booger')).toThrow(new Error('User::setDataValue: Unable to find field named "invalid".'));
+    });
+
+    it('should clear dirty state if field is set back to original value', () => {
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+
+      user.firstName = 'Booger';
+
+      expect(user.firstName).toEqual('Booger');
+      expect(user._fieldData.firstName).toEqual('Bob');
+      expect(user._dirtyFieldData.firstName).toBe('Booger');
+
+      user.firstName = 'Bob';
+
+      expect(user.firstName).toEqual('Bob');
+      expect(user._fieldData.firstName).toEqual('Bob');
+      expect(user._dirtyFieldData.firstName).toBe(undefined);
     });
   });
 

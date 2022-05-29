@@ -30,19 +30,23 @@ class ModelsType extends RelationalTypeBase {
       throw new TypeError('ModelsType::castToType: Type instance is required to cast.');
 
     if (value == null)
-      return value;
+      return [];
 
     let Model = typeInstance.getTargetModel(connection);
     if (!Model)
       throw new TypeError('ModelsType::castToType: Failed when attempting to fetch the required model.');
 
-    if (value instanceof Model)
-      return value;
+    let values = Nife.toArray(value).filter(Boolean).map((value, index) => {
+      if (value instanceof Model)
+        return value;
 
-    if (!Nife.instanceOf(value, 'object'))
-      throw new TypeError('ModelsType::castToType: Unable to cast provided value. Value must be a model instance, or a raw object.');
+      if (!Nife.instanceOf(value, 'object'))
+        throw new TypeError(`ModelsType::castToType: Unable to cast provided value at index ${index}. Value must be a model instance, or a raw object.`);
 
-    return new Model(value);
+      return new Model(value);
+    });
+
+    return values;
   }
 
   isManyRelation() {

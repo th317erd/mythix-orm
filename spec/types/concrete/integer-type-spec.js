@@ -7,6 +7,30 @@
 const { Types } = require('../../../src');
 
 describe('IntegerType', () => {
+  describe('toConnectionType', () => {
+    it('can convert to connection type when dialect is "sqlite"', () => {
+      let type = new Types.IntegerType();
+      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('INTEGER');
+    });
+
+    it('can convert to connection type when dialect is undefined', () => {
+      let type = new Types.IntegerType();
+      expect(type.toConnectionType({ dialect: undefined })).toEqual('INTEGER');
+    });
+  });
+
+  describe('toString', () => {
+    it('can convert to connection type when dialect is "sqlite"', () => {
+      let type = new Types.IntegerType();
+      expect(type.toString({ dialect: 'sqlite' })).toEqual('INTEGER');
+    });
+
+    it('can convert to connection type when dialect is undefined', () => {
+      let type = new Types.IntegerType();
+      expect(type.toString({ dialect: undefined })).toEqual('INTEGER');
+    });
+  });
+
   it('can construct from class', () => {
     let type = new Types.IntegerType();
     expect(type.toString()).toEqual('INTEGER');
@@ -25,6 +49,12 @@ describe('IntegerType', () => {
     value = Types.INTEGER.castToType({ value: '-1234.6' });
     expect(typeof value).toEqual('number');
     expect(value).toEqual(-1235);
+
+    value = Types.INTEGER.castToType({ value: undefined });
+    expect(value).toBe(undefined);
+
+    value = Types.INTEGER.castToType({ value: null });
+    expect(value).toBe(null);
 
     expect(() => Types.INTEGER.castToType({ value: 'derp' })).toThrow(new TypeError('IntegerType::castToType: Value provided ("derp") can not be cast into an integer.'));
   });

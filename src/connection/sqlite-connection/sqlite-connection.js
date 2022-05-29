@@ -36,6 +36,7 @@ class SQLiteConnection extends SQLConnectionBase {
       return;
 
     await this.db.close();
+    this.db = null;
   }
 
   escape(value) {
@@ -54,9 +55,11 @@ class SQLiteConnection extends SQLConnectionBase {
   getDefaultFieldValue(type) {
     switch (type) {
       case 'AUTO_INCREMENT':
-        return 'AUTOINCREMENT';
-      case 'NOW':
-        return '(DATETIME(\'now\'))';
+        return '!AUTOINCREMENT';
+      case 'DATETIME_NOW':
+        return '(datetime(\'now\'))';
+      case 'DATE_NOW':
+        return '(date(\'now\'))';
       default:
         return type;
     }
