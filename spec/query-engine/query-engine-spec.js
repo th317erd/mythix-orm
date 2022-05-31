@@ -6,21 +6,18 @@
 
 const { ConnectionBase, QueryEngine } = require('../../src');
 
-const {
-  Role,
-  User,
-  ScopedUser,
-} = require('../support/models');
-
 describe('QueryEngine', () => {
+  let User;
+  let ScopedUser;
+
   beforeAll(() => {
-    new ConnectionBase({
-      models: [
-        User,
-        Role,
-        ScopedUser,
-      ],
+    let connection = new ConnectionBase({
+      models: require('../support/models'),
     });
+
+    let models = connection.getModels();
+    User = models.User;
+    ScopedUser = models.ScopedUser;
   });
 
   const getContext = (context, extraFields) => {

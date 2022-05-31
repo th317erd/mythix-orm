@@ -4,62 +4,27 @@
 
 /* global describe, it, expect, beforeEach */
 
-const Types                 = require('../../../src/types');
-const { SQLiteConnection }  = require('../../../src/connection/sqlite-connection');
-const {
-  Role,
-  User,
-  UserThing,
-  RoleThing,
-} = require('../../support/models');
+const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
 
-class ExtendedUser extends User {
-  static fields = User.cloneFields({
-    'id': {
-      type:         Types.INTEGER,
-      defaultValue: Types.INTEGER.Default.AUTO_INCREMENT,
-      primaryKey:   true,
-      allowNull:    false,
-      unique:       true, // should be ignored when create table query is generated
-    },
-    'createdAt': {
-      type:         Types.DATETIME,
-      defaultValue: Types.DATETIME.Default.NOW,
-      allowNull:    false,
-    },
-    'email': {
-      type:         Types.STRING(256),
-      allowNull:    false,
-      unique:       true,
-    },
-    'primaryRole': {
-      type:         Types.STRING(256),
-      defaultValue: () => {
-        return 'user';
-      },
-      allowNull:    false,
-    },
-    'playerType': {
-      type:         Types.STRING(256),
-      defaultValue: 'wizard',
-      allowNull:    false,
-    },
-  });
-}
-
-fdescribe('SQLiteQueryGenerator', () => {
+describe('SQLiteQueryGenerator', () => {
   let connection;
+  let User;
+  let Role;
+  let UserThing;
+  let RoleThing;
+  let ExtendedUser;
 
   beforeEach(() => {
     connection = new SQLiteConnection({
-      models: [
-        ExtendedUser,
-        Role,
-        RoleThing,
-        User,
-        UserThing,
-      ],
+      models: require('../../support/models'),
     });
+
+    let models = connection.getModels();
+    User = models.User;
+    Role = models.Role;
+    UserThing = models.UserThing;
+    RoleThing = models.RoleThing;
+    ExtendedUser = models.ExtendedUser;
   });
 
   describe('generatorCreateTableStatement', () => {

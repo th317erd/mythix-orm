@@ -71,6 +71,10 @@ class ConnectionBase {
     return Utils.parseQualifiedName(str);
   }
 
+  getModels() {
+    return Object.assign({}, this.models);
+  }
+
   getModel(modelName) {
     let def = this.parseQualifiedName(modelName);
     return this.models[def.modelName];

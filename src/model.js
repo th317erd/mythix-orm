@@ -76,24 +76,40 @@ class Model {
     return this.defaultScope(queryEngine);
   }
 
-  static initializeModel(Model, connection) {
-    if (Object.prototype.hasOwnProperty.call(Model, 'mythixInitialized') && Model.mythixInitialized)
-      return Model;
+  static initializeModel(_Model, connection) {
+    let ConnectionModel = _Model;
 
-    Model._getConnection = function() {
-      return connection;
-    };
+    if (Object.prototype.hasOwnProperty.call(ConnectionModel, 'mythixInitialized') && ConnectionModel.mythixInitialized)
+      return ConnectionModel;
+
+    let modelName = ConnectionModel.getModelName();
+
+    // Unfortunately we have no choice but to use
+    // eval to get the correct class name
+
+    // eslint-disable-next-line no-eval
+    let classBuilderFunc = eval(`(function(ConnectionModel, connection) {
+      return class ${modelName} extends ConnectionModel {
+        static fields = Model.cloneFields(ConnectionModel.fields);
+
+        static _getConnection = function() {
+          return connection;
+        };
+      };
+    })`);
+
+    ConnectionModel = classBuilderFunc(ConnectionModel, connection);
 
     // Initialize model fields
-    Model.iterateFields(({ field, fieldName }) => {
+    ConnectionModel.iterateFields(({ field, fieldName }) => {
       field.fieldName = fieldName;
-      field.Model = Model;
+      field.Model = ConnectionModel;
 
       if (typeof field.type.onModelInitialize === 'function')
-        field.type.onModelInitialize(Model, field, field.type);
+        field.type.onModelInitialize(ConnectionModel, field, field.type);
     });
 
-    Object.defineProperties(Model, {
+    Object.defineProperties(ConnectionModel, {
       'mythixInitialized': {
         writable:     true,
         enumberable:  false,
@@ -104,13 +120,13 @@ class Model {
         enumberable:  false,
         configurable: true,
         get:          () => {
-          return Model.getQueryEngine();
+          return ConnectionModel.getQueryEngine();
         },
         set:          () => {},
       },
     });
 
-    return Model;
+    return ConnectionModel;
   }
 
   static getTablePrefix() {
@@ -479,6 +495,16 @@ iterateStaticProps(Model, ({ value, key, prototype }) => {
       return value.apply(this.constructor, args);
     };
   }
+});
+
+Object.defineProperties(Model, {
+  'where': {
+    enumberable:  false,
+    configurable: true,
+    get:          () => {
+      throw new Error('Model::where: This is a raw uninitialized model. You need to fetch an initialized model from a connection in order to use "where".');
+    },
+  },
 });
 
 module.exports = Model;
