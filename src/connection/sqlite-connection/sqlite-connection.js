@@ -1,7 +1,6 @@
 'use strict';
 
 const Database              = require('better-sqlite3');
-const SqlString             = require('sqlstring');
 const SQLConnectionBase     = require('../sql-connection-base');
 const SQLiteQueryGenerator  = require('./sqlite-query-generator');
 
@@ -37,19 +36,6 @@ class SQLiteConnection extends SQLConnectionBase {
 
     await this.db.close();
     this.db = null;
-  }
-
-  escape(value) {
-    if (value === true)
-      return 'TRUE';
-    else if (value === false)
-      return 'FALSE';
-
-    return SqlString.escape(value);
-  }
-
-  escapeID(value) {
-    return SqlString.escapeId(value).replace(/`/g, '"');
   }
 
   getDefaultFieldValue(type) {

@@ -24,22 +24,22 @@ describe('SQLiteConnection', () => {
 
   describe('escape', () => {
     it('can escape a string value', () => {
-      expect(connection.escape('test "hello";')).toEqual('\'test \\"hello\\";\'');
+      expect(connection.escape(User.fields.id, 'test "hello";')).toEqual('\'test \\"hello\\";\'');
     });
 
     it('can escape a integer value', () => {
-      expect(connection.escape(10)).toEqual('10');
-      expect(connection.escape(-10)).toEqual('-10');
+      expect(connection.escape(User.fields.id, 10)).toEqual('10');
+      expect(connection.escape(User.fields.id, -10)).toEqual('-10');
     });
 
     it('can escape a number value', () => {
-      expect(connection.escape(10.345)).toEqual('10.345');
-      expect(connection.escape(-10.345)).toEqual('-10.345');
+      expect(connection.escape(User.fields.id, 10.345)).toEqual('10.345');
+      expect(connection.escape(User.fields.id, -10.345)).toEqual('-10.345');
     });
 
     it('can escape a boolean value', () => {
-      expect(connection.escape(true)).toEqual('TRUE');
-      expect(connection.escape(false)).toEqual('FALSE');
+      expect(connection.escape(User.fields.id, true)).toEqual('TRUE');
+      expect(connection.escape(User.fields.id, false)).toEqual('FALSE');
     });
   });
 

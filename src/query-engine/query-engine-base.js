@@ -3,12 +3,12 @@
 const ProxyClass = require('../proxy-class');
 
 class QueryEngineBase extends ProxyClass {
-  getModel() {
-    return this.getQueryEngineClass().getModel();
+  getModelScopeClass() {
+    return this.getQueryEngineScope().getModelScopeClass();
   }
 
-  getFieldClass() {
-    return this.getQueryEngineClass().getFieldClass();
+  getFieldScopeClass() {
+    return this.getQueryEngineScope().getFieldScopeClass();
   }
 
   _inheritContext(context, name, ...args) {
@@ -26,19 +26,32 @@ class QueryEngineBase extends ProxyClass {
     return this.currentContext[`${name}Context`];
   }
 
-  _fetchScope(scopeName) {
-    return this.currentContext[`${scopeName}Scope`];
+  _fetchScope(scopeName, fallbackScopeName) {
+    let context = this._getRawQueryContext();
+    let scope = context[`${scopeName}Scope`];
+    if (!scope)
+      scope = context[`${fallbackScopeName}Scope`];
+
+    return scope;
   }
 
-  _newModelScope(context, Model) {
-    let ModelScopeClass = this.getModel();
+  _newQueryEngineScope(context, props) {
+    const QueryEngine = this.getQueryEngineClass();
+    let newContext    = this._inheritContext(context, 'queryEngine', props || {});
+    let newScope      = new QueryEngine(newContext);
+
+    return newScope;
+  }
+
+  _newModelScope(context, Model, props) {
+    let ModelScopeClass = this.getModelScopeClass();
     let extra           = {};
     let modelName       = Model.getModelName();
 
     if (!context.rootModelName)
       extra.rootModelName = modelName;
 
-    let newContext  = this._inheritContext(context, 'model', { Model, modelName }, extra);
+    let newContext  = this._inheritContext(context, 'model', { Model, modelName }, props || {}, extra);
     let newScope    = new ModelScopeClass(newContext);
 
     this._addToQuery({ operator: 'MODEL' }, newContext);
@@ -46,11 +59,11 @@ class QueryEngineBase extends ProxyClass {
     return newScope;
   }
 
-  _newFieldScope(context, Field) {
-    let FieldScopeClass = this.getFieldClass();
+  _newFieldScope(context, Field, props) {
+    let FieldScopeClass = this.getFieldScopeClass();
     let fieldName       = Field.fieldName;
 
-    let newContext  = this._inheritContext(context, 'field', { Field, fieldName });
+    let newContext  = this._inheritContext(context, 'field', props || {}, { Field, fieldName });
     let newScope    = new FieldScopeClass(newContext);
 
     this._addToQuery({ operator: 'FIELD', fieldName }, newContext);
@@ -69,6 +82,9 @@ class QueryEngineBase extends ProxyClass {
 
     context[`${context.currentScopeName || 'queryEngine'}Scope`] = this;
     context[`${context.currentScopeName || 'queryEngine'}Context`] = context;
+
+    if (!context.rootContext)
+      context.rootContext = context;
 
     // console.log(`Creating new ${this.constructor.name} scope: `, context, Object.getPrototypeOf(context));
 
@@ -98,6 +114,11 @@ class QueryEngineBase extends ProxyClass {
     );
   }
 
+  _getRawQueryContext() {
+    let rawQuery = this._getRawQuery();
+    return rawQuery[rawQuery.length - 1] || this.currentContext;
+  }
+
   _getRawQuery() {
     return this.currentContext.queryRoot;
   }
@@ -106,8 +127,12 @@ class QueryEngineBase extends ProxyClass {
     return this.currentContext.connection;
   }
 
-  getQueryEngineClass() {
+  getQueryEngineScope() {
     return this.currentContext.queryEngineScope;
+  }
+
+  getQueryEngineClass() {
+    return this.currentContext.queryEngineScope.constructor;
   }
 }
 

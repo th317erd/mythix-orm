@@ -10,11 +10,40 @@ class QueryEngine extends QueryEngineBase {
     return !!(value && value.isQueryContext);
   }
 
-  getModel() {
+  static isQuery(value) {
+    if (!value)
+      return false;
+
+    return (value instanceof QueryEngineBase);
+  }
+
+  static queryContextType(queryContext) {
+    let contextParams = {
+      hasCondition: false,
+      hasField:     false,
+      hasModel:     false,
+    };
+
+    if (!queryContext)
+      return contextParams;
+
+    if (queryContext.condition)
+      contextParams.hasCondition = true;
+
+    if (queryContext.fieldName)
+      contextParams.hasField = true;
+
+    if (queryContext.Model)
+      contextParams.hasModel = true;
+
+    return contextParams;
+  }
+
+  getModelScopeClass() {
     return ModelScope;
   }
 
-  getFieldClass() {
+  getFieldScopeClass() {
     return FieldScope;
   }
 
@@ -24,23 +53,21 @@ class QueryEngine extends QueryEngineBase {
 
     let queryRoot = [];
     let context = Object.assign(
-      {
-        queryRoot,
-        query: queryRoot,
-      },
-      _context,
+      Object.create(_context),
       {
         currentScopeName: 'queryEngine',
         isQueryContext:   true,
       },
     );
 
+    if (!context.queryRoot) {
+      context.queryRoot = queryRoot;
+      context.query = queryRoot;
+    }
+
     context.queryEngineContext = context;
 
     super(context);
-
-    if (!context.connection)
-      throw new TypeError('QueryEngine::constructor: "context.connection" is blank, but it must be specified.');
 
     if (!('and' in context))
       context.and = true;
@@ -71,12 +98,19 @@ class QueryEngine extends QueryEngineBase {
   }
 
   [ProxyClass.MISSING](target, prop) {
+    if (prop === 'debug') {
+      this.currentContext.rootContext.debug = true;
+      return this._fetchScope('model', 'queryEngine');
+    }
+
     let model = this.getConnection().getModel(prop);
     if (model) {
       return this._newModelScope(this.currentContext, model).__call(function(fieldName) {
         return this.Field(fieldName);
       });
     }
+
+    return this[prop];
   }
 }
 

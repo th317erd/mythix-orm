@@ -22,6 +22,9 @@ class ModelScope extends QueryEngineBase {
   }
 
   [ProxyClass.MISSING](target, prop) {
+    if (prop === 'where')
+      return this._fetchScope('model');
+
     let field = this._getField(prop);
     if (field)
       return this._newFieldScope(this.currentContext, field);

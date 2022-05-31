@@ -7,7 +7,7 @@
     "coverage": "clear ; node ./node_modules/.bin/nyc ./node_modules/.bin/jasmine",
     "test": "node ./node_modules/.bin/jasmine",
     "test-debug": "node --inspect-brk ./node_modules/.bin/jasmine",
-    "test-watch": "watch 'clear ; node ./node_modules/.bin/jasmine' . --wait=1 --interval=1"
+    "test-watch": "watch 'clear ; node ./node_modules/.bin/jasmine --seed=16447' . --wait=1 --interval=1"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
   "dependencies": {
     "inflection": "^1.13.2",
     "moment": "^2.29.3",
-    "nife": "^1.7.0",
+    "nife": "^1.8.0",
     "sqlstring": "^2.3.3",
     "uuid": "^8.3.2"
   },

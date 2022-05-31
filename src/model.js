@@ -7,6 +7,10 @@ const Inflection              = require('inflection');
 const { FLAG_ON_INITIALIZE }  = require('./helpers/default-helpers');
 
 class Model {
+  static isModelClass() {
+    return true;
+  }
+
   static cloneFields(mergeFields) {
     let isArray       = Array.isArray(this.getFields());
     let clonedFields  = (isArray) ? [] : {};
@@ -185,6 +189,9 @@ class Model {
         field.fieldName = fieldName;
       }
 
+      if (!field.columnName)
+        field.columnName = fieldName;
+
       if (!field.type)
         throw new Error(`${this.name}::iterateFields: "type" not found on "${this.name}.${fieldName}". "type" is required for all fields.`);
 
@@ -258,6 +265,12 @@ class Model {
 
   constructor(data) {
     Object.defineProperties(this, {
+      '_isModelInstance': {
+        writable:     false,
+        enumberable:  false,
+        configurable: false,
+        value:        true,
+      },
       '_fieldData': {
         writable:     true,
         enumberable:  false,
