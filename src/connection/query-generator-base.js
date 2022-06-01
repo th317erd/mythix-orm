@@ -3,7 +3,6 @@
 const Nife            = require('nife');
 const { FLAG_REMOTE } = require('../helpers/default-helpers');
 const QueryEngine     = require('../query-engine/query-engine');
-const Model           = require('../model');
 
 class QueryGeneratorBase {
   constructor(connection) {
@@ -29,7 +28,13 @@ class QueryGeneratorBase {
     return this.connection.prepareArrayValuesForSQL(...args);
   }
 
-  getEscapedModelFields(Model) {
+  getTableNameFromQueryPart(queryPart) {
+    let Model = queryPart.Model;
+    return Model.getTableName();
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  getEscapedModelFields(Model, options) {
     let fields            = {};
     let modelName         = Model.getModelName();
     let tableName         = Model.getTableName();
@@ -46,36 +51,68 @@ class QueryGeneratorBase {
     return fields;
   }
 
-  getProjectedFields(queryEngine) {
-    // TODO: Add projections
-    let modelNamesComputed  = {};
-    let fields              = {};
-    let query               = queryEngine._getRawQuery();
+  // eslint-disable-next-line no-unused-vars
+  getAllModelsUsedInQuery(queryEngine, options) {
+    let Models  = new Map();
+    let query   = queryEngine._getRawQuery();
 
     for (let i = 0, il = query.length; i < il; i++) {
       let queryPart = query[i];
-      let modelName = queryPart.modelName;
-      if (!modelName)
-        continue;
+
+      if (Object.prototype.hasOwnProperty.call(queryPart, 'operator') && queryPart.operator === 'MODEL') {
+        let Model = queryPart.Model;
+        Models.set(Model, Model);
+      } else if (Object.prototype.hasOwnProperty.call(queryPart, 'condition') && queryPart.condition === true) {
+        let operatorValue = queryPart.value;
+        if (!QueryEngine.isQuery(operatorValue))
+          continue;
+
+        let SubModels = this.getAllModelsUsedInQuery(operatorValue, options);
+        for (let j = 0, jl = SubModels.length; j < jl; j++) {
+          let Model = SubModels[j];
+          Models.set(Model, Model);
+        }
+      }
+    }
+
+    return Array.from(Models.values());
+  }
+
+  getProjectedFields(queryEngine, options) {
+    let Models              = this.getAllModelsUsedInQuery(queryEngine);
+    let modelNamesComputed  = {};
+    let fields              = new Map();
+
+    for (let i = 0, il = Models.length; i < il; i++) {
+      let Model     = Models[i];
+      let modelName = Model.getModelName();
 
       if (modelNamesComputed[modelName])
         continue;
 
       modelNamesComputed[modelName] = true;
-      let modelFields = this.getEscapedModelFields(queryPart.Model);
 
-      Object.assign(fields, modelFields);
+      let modelFields = this.getEscapedModelFields(Model, options);
+      if (!modelFields)
+        continue;
+
+      modelFields = Array.from(Object.values(modelFields));
+      for (let j = 0, jl = modelFields.length; j < jl; j++) {
+        let field = modelFields[j];
+        fields.set(field, field);
+      }
     }
 
-    return fields;
+    return Array.from(fields.values()).sort();
   }
 
-  generateSelectQueryFieldProjection(queryEngine) {
-    let projectedFields = this.getProjectedFields(queryEngine);
+  generateSelectQueryFieldProjection(queryEngine, options) {
+    let projectedFields = this.getProjectedFields(queryEngine, options);
     return Array.from(Object.values(projectedFields)).join(',');
   }
 
-  generateSelectQueryFromTable(modelName, joinType) {
+  // eslint-disable-next-line no-unused-vars
+  generateSelectQueryFromTable(modelName, joinType, options) {
     let Model = this.connection.getModel(modelName);
     if (!Model)
       throw new Error(`${this.constructor.name}::generateSelectQueryFromTable: Attempted to fetch model named "${modelName}" but no model found.`);
@@ -84,7 +121,8 @@ class QueryGeneratorBase {
     return (joinType) ? `${joinType} ${escapedTableName}` : `FROM ${escapedTableName}`;
   }
 
-  generateSelectQueryOperatorFromQueryEngineOperator(operator, value, valueIsReference) {
+  // eslint-disable-next-line no-unused-vars
+  generateSelectQueryOperatorFromQueryEngineOperator(operator, value, valueIsReference, options) {
     switch (operator) {
       case 'EQ':
         if (!valueIsReference) {
@@ -117,7 +155,27 @@ class QueryGeneratorBase {
     }
   }
 
-  generateSelectQueryCondition(field, operator, _value) {
+  queryHasConditions(query) {
+    for (let i = 0, il = query.length; i < il; i++) {
+      let queryPart = query[i];
+      if (!Object.prototype.hasOwnProperty.call(queryPart, 'condition'))
+        continue;
+
+      if (queryPart.condition === true)
+        return true;
+    }
+
+    return false;
+  }
+
+  getQuerySliceFromQueryPart(queryPart) {
+    let queryRoot = queryPart.queryRoot;
+    let index     = queryRoot.indexOf(queryPart);
+
+    return queryRoot.slice(index);
+  }
+
+  generateSelectQueryCondition(queryPart, field, operator, _value, options) {
     let value = _value;
 
     // If the value is an array, then handle the
@@ -141,11 +199,11 @@ class QueryGeneratorBase {
       // condition enclosed in parenthesis
       if (specialValues.length > 0) {
         let subParts = specialValues.map((specialValue) => {
-          return this.generateSelectQueryCondition(field, operator, specialValue);
+          return this.generateSelectQueryCondition(queryPart, field, operator, specialValue, options);
         });
 
         if (arrayValues.length > 0)
-          subParts.push(this.generateSelectQueryCondition(field, operator, arrayValues));
+          subParts.push(this.generateSelectQueryCondition(queryPart, field, operator, arrayValues, options));
 
         return `(${subParts.join(' OR ')})`;
       }
@@ -159,24 +217,31 @@ class QueryGeneratorBase {
       value = arrayValues;
     }
 
-    let escapedTableName  = this.escapeID(field.Model.getTableName());
+    let escapedTableName  = this.escapeID(this.getTableNameFromQueryPart(queryPart));
     let escapedColumnName = this.escapeID(field.columnName);
-    let sqlOperator       = this.generateSelectQueryOperatorFromQueryEngineOperator(operator, value, false);
+    let sqlOperator       = this.generateSelectQueryOperatorFromQueryEngineOperator(operator, value, false, options);
+
+    if (QueryEngine.isQuery(value)) {
+      if (!this.queryHasConditions(value._getRawQuery()))
+        return '';
+
+      return `${escapedTableName}.${escapedColumnName} ${sqlOperator} (${this.generateSelectQuery(value, options)})`;
+    }
 
     return `${escapedTableName}.${escapedColumnName} ${sqlOperator} ${this.escape(field, value)}`;
   }
 
-  generateSelectJoinOnTableQueryCondition(leftField, rightField, operator) {
-    let leftSideEscapedTableName    = this.escapeID(leftField.Model.getTableName());
+  generateSelectJoinOnTableQueryCondition(leftQueryPart, rightQueryPart, leftField, rightField, operator, options) {
+    let leftSideEscapedTableName    = this.escapeID(this.getTableNameFromQueryPart(leftQueryPart));
     let leftSideEscapedColumnName   = this.escapeID(leftField.columnName);
-    let rightSideEscapedTableName   = this.escapeID(rightField.Model.getTableName());
+    let rightSideEscapedTableName   = this.escapeID(this.getTableNameFromQueryPart(rightQueryPart));
     let rightSideEscapedColumnName  = this.escapeID(rightField.columnName);
-    let sqlOperator                 = this.generateSelectQueryOperatorFromQueryEngineOperator(operator, undefined, true);
+    let sqlOperator                 = this.generateSelectQueryOperatorFromQueryEngineOperator(operator, undefined, true, options);
 
     return `${leftSideEscapedTableName}.${leftSideEscapedColumnName} ${sqlOperator} ${rightSideEscapedTableName}.${rightSideEscapedColumnName}`;
   }
 
-  generateSelectJoinOnTableQueryConditions(leftQueryContext, queryEngine, joinType) {
+  generateSelectJoinOnTableQueryConditions(leftQueryContext, queryEngine, joinType, options) {
     const findFirstField = (query) => {
       for (let i = 0, il = query.length; i < il; i++) {
         let queryPart = query[i];
@@ -223,18 +288,19 @@ class QueryGeneratorBase {
       joinType,
       `${this.escapeID(rightSideModel.getTableName())}`,
       'ON',
-      this.generateSelectJoinOnTableQueryCondition(leftSideField, rightSideField, operator),
+      this.generateSelectJoinOnTableQueryCondition(leftQueryContext, rightFieldContext, leftSideField, rightSideField, operator, options),
     ];
 
     return sqlParts.join(' ');
   }
 
   // TODO: Needs to take a join type object
-  generateSQLJoinTypeFromQueryEngineJoinType(joinType) {
+  // eslint-disable-next-line no-unused-vars
+  generateSQLJoinTypeFromQueryEngineJoinType(joinType, options) {
     return joinType;
   }
 
-  generateSelectQueryJoinTables(queryEngine) {
+  generateSelectQueryJoinTables(queryEngine, options) {
     let sqlParts  = [];
     let query     = queryEngine._getRawQuery();
 
@@ -248,10 +314,54 @@ class QueryGeneratorBase {
         continue;
 
       // TODO: Need query engine to be able to specify join type
-      let joinType = this.generateSQLJoinTypeFromQueryEngineJoinType('LEFT INNER JOIN');
-      let joinOnCondition = this.generateSelectJoinOnTableQueryConditions(queryPart, operatorValue, joinType);
+      let joinType = this.generateSQLJoinTypeFromQueryEngineJoinType('LEFT INNER JOIN', options);
+      let joinOnCondition = this.generateSelectJoinOnTableQueryConditions(queryPart, operatorValue, joinType, options);
 
       sqlParts.push(joinOnCondition);
+    }
+
+    return sqlParts.join(' ');
+  }
+
+  generateSelectWhereConditions(queryEngine, options) {
+    let query     = queryEngine._getRawQuery();
+    let sqlParts  = [];
+
+    for (let i = 0, il = query.length; i < il; i++) {
+      let queryPart     = query[i];
+      let queryOperator = queryPart.operator;
+      let queryValue    = queryPart.value;
+      let result        = undefined;
+
+      if (Object.prototype.hasOwnProperty.call(queryPart, 'condition')) {
+        if (queryPart.condition !== true)
+          continue;
+
+        result = this.generateSelectQueryCondition(queryPart, queryPart.Field, queryOperator, queryValue, options);
+      } else if (Object.prototype.hasOwnProperty.call(queryPart, 'logical')) {
+        if (queryOperator === 'NOT')
+          continue;
+
+        // We shouldn't be adding any logical operator
+        // until we have a left-hand value
+        if (sqlParts.length > 0) {
+          if (queryOperator === 'OR')
+            sqlParts.push('OR');
+          else if (queryOperator === 'AND')
+            sqlParts.push('AND');
+        }
+
+        // If we have a value for the logical operator
+        // then that means we have a sub-grouping
+        if (Object.prototype.hasOwnProperty.call(queryPart, 'value') && QueryEngine.isQuery(queryValue)) {
+          result = this.generateSelectWhereConditions(queryValue, options);
+          if (result)
+            result = `(${result})`;
+        }
+      }
+
+      if (result)
+        sqlParts.push(result);
     }
 
     return sqlParts.join(' ');
@@ -261,8 +371,12 @@ class QueryGeneratorBase {
     let options   = _options || {};
     let sqlParts  = [ 'SELECT' ];
 
-    sqlParts.push(this.generateSelectQueryFieldProjection(queryEngine));
-    sqlParts.push(this.generateSelectQueryJoinTables(queryEngine));
+    sqlParts.push(this.generateSelectQueryFieldProjection(queryEngine, options));
+    sqlParts.push(this.generateSelectQueryJoinTables(queryEngine, options));
+
+    let where = this.generateSelectWhereConditions(queryEngine, options);
+    if (where)
+      sqlParts.push(`WHERE ${where}`);
 
     return sqlParts.filter(Boolean).join(' ');
   }

@@ -17,7 +17,7 @@ function addOperatorToQuery(name, inverseName, value) {
 
 class FieldScope extends QueryEngineBase {
   NOT = ProxyClass.autoCall(function() {
-    this._addToQuery({ operator: 'NOT', not: !this.currentContext.not });
+    this._addToQuery({ logical: true, operator: 'NOT', not: !this.currentContext.not });
     return this[ProxyClass.PROXY];
   });
 

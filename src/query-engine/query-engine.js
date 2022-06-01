@@ -6,39 +6,6 @@ const ModelScope      = require('./model-scope');
 const FieldScope      = require('./field-scope');
 
 class QueryEngine extends QueryEngineBase {
-  static isQueryContext(value) {
-    return !!(value && value.isQueryContext);
-  }
-
-  static isQuery(value) {
-    if (!value)
-      return false;
-
-    return (value instanceof QueryEngineBase);
-  }
-
-  static queryContextType(queryContext) {
-    let contextParams = {
-      hasCondition: false,
-      hasField:     false,
-      hasModel:     false,
-    };
-
-    if (!queryContext)
-      return contextParams;
-
-    if (queryContext.condition)
-      contextParams.hasCondition = true;
-
-    if (queryContext.fieldName)
-      contextParams.hasField = true;
-
-    if (queryContext.Model)
-      contextParams.hasModel = true;
-
-    return contextParams;
-  }
-
   getModelScopeClass() {
     return ModelScope;
   }
