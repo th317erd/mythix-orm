@@ -22,6 +22,33 @@ describe('SQLiteConnection', () => {
     });
   });
 
+  describe('getSQLLiteralClassByName', () => {
+    it('can return literal class', () => {
+      expect(SQLiteConnection.getSQLLiteralClassByName('distinct')).toBe(SQLiteConnection.Literals.DistinctSQLLiteral);
+      expect(SQLiteConnection.getSQLLiteralClassByName('DISTINCT')).toBe(SQLiteConnection.Literals.DistinctSQLLiteral);
+      expect(SQLiteConnection.getSQLLiteralClassByName('Distinct')).toBe(SQLiteConnection.Literals.DistinctSQLLiteral);
+      expect(SQLiteConnection.getSQLLiteralClassByName('literal')).toBe(SQLiteConnection.Literals.SQLLiteral);
+      expect(SQLiteConnection.getSQLLiteralClassByName('LITERAL')).toBe(SQLiteConnection.Literals.SQLLiteral);
+      expect(SQLiteConnection.getSQLLiteralClassByName('base')).toBe(SQLiteConnection.Literals.SQLLiteralBase);
+    });
+  });
+
+  describe('Literal', () => {
+    it('can instantiate a SQL literal', () => {
+      expect(SQLiteConnection.Literal('distinct', 'User:firstName')).toBeInstanceOf(SQLiteConnection.Literals.DistinctSQLLiteral);
+    });
+
+    it('can stringify a literal to SQL', () => {
+      let literal = SQLiteConnection.Literal('distinct', 'User:firstName');
+      expect(literal.toString(connection)).toEqual('DISTINCT("users"."firstName")');
+    });
+
+    it('will stringify to class name if no connection given', () => {
+      let literal = SQLiteConnection.Literal('distinct', 'User:firstName');
+      expect(literal.toString()).toEqual('DistinctSQLLiteral {}');
+    });
+  });
+
   describe('escape', () => {
     it('can escape a string value', () => {
       expect(connection.escape(User.fields.id, 'test "hello";')).toEqual('\'test \\"hello\\";\'');

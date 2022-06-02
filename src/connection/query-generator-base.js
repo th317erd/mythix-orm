@@ -3,6 +3,7 @@
 const Nife            = require('nife');
 const { FLAG_REMOTE } = require('../helpers/default-helpers');
 const QueryEngine     = require('../query-engine/query-engine');
+const ModelUtils      = require('../utils/model-utils');
 
 class QueryGeneratorBase {
   constructor(connection) {
@@ -52,7 +53,13 @@ class QueryGeneratorBase {
   }
 
   // eslint-disable-next-line no-unused-vars
-  getAllModelsUsedInQuery(queryEngine, options) {
+  getAllModelsUsedInQuery(queryEngine, _options) {
+    let queryEngineContextID  = queryEngine._getTopContextID();
+    let options               = _options || {};
+    let cache                 = options._cache;
+    if (cache && cache['getAllModelsUsedInQuery'] && cache['getAllModelsUsedInQuery'][queryEngineContextID])
+      return cache['getAllModelsUsedInQuery'][queryEngineContextID];
+
     let Models  = new Map();
     let query   = queryEngine._getRawQuery();
 
@@ -75,7 +82,19 @@ class QueryGeneratorBase {
       }
     }
 
-    return Array.from(Models.values());
+    let allModels = Array.from(Models.values());
+
+    if (_options) {
+      if (!_options._cache)
+        _options._cache = {};
+
+      if (!_options._cache['getAllModelsUsedInQuery'])
+        _options._cache['getAllModelsUsedInQuery'] = {};
+
+      _options._cache['getAllModelsUsedInQuery'][queryEngineContextID] = allModels;
+    }
+
+    return allModels;
   }
 
   getProjectedFields(queryEngine, options) {
@@ -367,8 +386,142 @@ class QueryGeneratorBase {
     return sqlParts.join(' ');
   }
 
+  getOrderDirection(order) {
+    if (!order)
+      return order;
+
+    let sign;
+
+    let fieldName = ('' + order).replace(/^[+-]+/, (m) => {
+      sign = m.charAt(0);
+      return '';
+    });
+
+    return {
+      direction: (sign === '-') ? 'DESC' : 'ASC',
+      fieldName,
+    };
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  getOrderLimitOffset(queryEngine, options) {
+    let query = queryEngine._getRawQuery();
+    let limit;
+    let offset;
+    let order;
+
+    for (let i = 0, il = query.length; i < il; i++) {
+      let queryPart = query[i];
+
+      if (!Object.prototype.hasOwnProperty.call(queryPart, 'control'))
+        continue;
+
+      if (queryPart.control !== true)
+        continue;
+
+      let queryOperator = queryPart.operator;
+
+      if (queryOperator === 'LIMIT')
+        limit = queryPart.value;
+      else if (queryOperator === 'OFFSET')
+        offset = queryPart.value;
+      else if (queryOperator === 'ORDER')
+        order = queryPart.value;
+    }
+
+    if (Nife.isNotEmpty(order)) {
+      let allModels = this.getAllModelsUsedInQuery(queryEngine, options);
+
+      order = order.map((_fieldName) => {
+        let { fieldName, direction } = this.getOrderDirection(_fieldName);
+        if (!fieldName)
+          return;
+
+        let def = ModelUtils.parseQualifiedName(fieldName);
+        if (!def.modelName) {
+          if (allModels.length > 1)
+            throw new Error(`QueryGeneratorBase::getOrderLimitOffset: "${fieldName}" ambiguous. You must use a fully qualified field name for an ORDER clause. Example: "+Model:id".`);
+
+          def.modelName = allModels[0].getModelName();
+        }
+
+        if (!def.fieldNames.length)
+          throw new Error(`QueryGeneratorBase::getOrderLimitOffset: No field names found for "${fieldName}".`);
+
+        let field = this.connection.getField(def.fieldNames[0], def.modelName);
+        if (!field)
+          throw new Error(`QueryGeneratorBase::getOrderLimitOffset: Unable to locate field "${def.modelName}"."${def.fieldNames[0]}".`);
+
+        return {
+          Model: field.Model,
+          Field: field,
+          direction,
+        };
+      });
+    }
+
+    return { limit, order, offset };
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  generateOrderClause(_orders, options) {
+    let orders = Nife.toArray(_orders).filter(Boolean);
+    if (Nife.isEmpty(orders))
+      return '';
+
+    let orderByParts = [];
+    for (let i = 0, il = orders.length; i < il; i++) {
+      let order = orders[i];
+      let escapedTableName  = this.escapeID(order.Model.getTableName());
+      let escapedColumnName = this.escapeID(order.Field.columnName);
+
+      orderByParts.push(`${escapedTableName}.${escapedColumnName} ${order.direction}`);
+    }
+
+    return `ORDER BY ${orderByParts.join(',')}`;
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  generateLimitClause(limit, options) {
+    return `LIMIT ${limit}`;
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  generateOffsetClause(limit, options) {
+    return `OFFSET ${limit}`;
+  }
+
+  generateSelectOrderLimitOffset(queryEngine, options) {
+    let {
+      order,
+      limit,
+      offset,
+    } = this.getOrderLimitOffset(queryEngine, options);
+    let sqlParts = [];
+
+    if (Nife.isNotEmpty(order)) {
+      let result = this.generateOrderClause(order, options);
+      if (result)
+        sqlParts.push(result);
+    }
+
+    if (!Object.is(limit, Infinity) && Nife.isNotEmpty(limit)) {
+      let result = this.generateLimitClause(limit, options);
+      if (result)
+        sqlParts.push(result);
+    }
+
+    if (Nife.isNotEmpty(offset)) {
+      let result = this.generateOffsetClause(offset, options);
+      if (result)
+        sqlParts.push(result);
+    }
+
+    return sqlParts.join(' ');
+  }
+
   generateSelectQuery(queryEngine, _options) {
-    let options   = _options || {};
+    let options   = Object.assign({}, _options || {});
     let sqlParts  = [ 'SELECT' ];
 
     sqlParts.push(this.generateSelectQueryFieldProjection(queryEngine, options));
@@ -377,6 +530,10 @@ class QueryGeneratorBase {
     let where = this.generateSelectWhereConditions(queryEngine, options);
     if (where)
       sqlParts.push(`WHERE ${where}`);
+
+    let orderLimitOffset = this.generateSelectOrderLimitOffset(queryEngine, options);
+    if (orderLimitOffset)
+      sqlParts.push(orderLimitOffset);
 
     return sqlParts.filter(Boolean).join(' ');
   }
@@ -406,7 +563,8 @@ class QueryGeneratorBase {
       return `${defaultValue}`;
   }
 
-  generatorCreateTableStatement(Model/*, options */) {
+  // eslint-disable-next-line no-unused-vars
+  generatorCreateTableStatement(Model, options) {
     let fieldParts = [];
 
     Model.iterateFields(({ field, fieldName }) => {

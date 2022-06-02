@@ -1,10 +1,36 @@
 'use strict';
 
 const Nife            = require('nife');
-const ConnectionBase  = require('./connection-base');
 const SqlString       = require('sqlstring');
+const ConnectionBase  = require('./connection-base');
+const SQLLiterals     = require('./sql-literals');
 
 class SQLConnectionBase extends ConnectionBase {
+  static Literals = SQLLiterals;
+
+  static getSQLLiteralClassByName(_name) {
+    if (!_name)
+      return;
+
+    let name = Nife.capitalize(_name.toLowerCase());
+
+    if (name === 'Literal')
+      return SQLLiterals.SQLLiteral;
+    else if (name === 'Base')
+      return SQLLiterals.SQLLiteralBase;
+
+    return SQLLiterals[`${name}SQLLiteral`];
+  }
+
+  static Literal(name, ...args) {
+    const LiteralClass = this.getSQLLiteralClassByName(name);
+    if (!LiteralClass)
+      throw new Error(`${this.constructor.name}::Literal: Unable to locate literal class for literal name "${name}".`);
+
+    let literal = new LiteralClass(...args);
+    return literal;
+  }
+
   constructor(_options) {
     super(_options);
 

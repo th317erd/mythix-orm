@@ -2,7 +2,17 @@
 
 const ProxyClass = require('../proxy-class');
 
+let uuid = 1;
+
+function generateID() {
+  return uuid++;
+}
+
 class QueryEngineBase extends ProxyClass {
+  static generateID() {
+    return uuid++;
+  }
+
   static isQueryContext(value) {
     return !!(value && value.isQueryContext);
   }
@@ -45,7 +55,14 @@ class QueryEngineBase extends ProxyClass {
   }
 
   _inheritContext(context, name, ...args) {
-    let newContext = Object.assign(Object.create(context), ...args, { level: (context.level || 0) + 1 });
+    let newContext = Object.assign(
+      Object.create(context),
+      ...args,
+      {
+        level:      (context.level || 0) + 1,
+        contextID:  generateID(),
+      },
+    );
 
     if (name) {
       newContext[`${name}Context`] = newContext;
@@ -145,6 +162,11 @@ class QueryEngineBase extends ProxyClass {
         },
       ),
     );
+  }
+
+  _getTopContextID() {
+    let context = this._getRawQueryContext();
+    return context.contextID;
   }
 
   _getRawQueryContext() {

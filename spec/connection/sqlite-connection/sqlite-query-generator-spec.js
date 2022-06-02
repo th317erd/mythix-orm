@@ -28,6 +28,264 @@ describe('SQLiteQueryGenerator', () => {
     ExtendedUser = models.ExtendedUser;
   });
 
+  describe('generateOrderClause', () => {
+    it('can generate proper order clause', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateOrderClause([
+        {
+          Model:      User,
+          Field:      User.fields.id,
+          direction: 'DESC',
+        },
+      ])).toEqual('ORDER BY "users"."id" DESC');
+    });
+
+    it('can generate proper order clause with multiple orders', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateOrderClause([
+        {
+          Model:      User,
+          Field:      User.fields.id,
+          direction: 'DESC',
+        },
+        {
+          Model:      User,
+          Field:      User.fields.firstName,
+          direction: 'ASC',
+        },
+      ])).toEqual('ORDER BY "users"."id" DESC,"users"."firstName" ASC');
+    });
+
+    it('should return an empty string if nothing was provided', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateOrderClause()).toEqual('');
+      expect(queryGenerator.generateOrderClause([])).toEqual('');
+      expect(queryGenerator.generateOrderClause([ null, false, '' ])).toEqual('');
+    });
+  });
+
+  describe('getOrderLimitOffset', () => {
+    it('can get order, limit, and offset from query', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getOrderLimitOffset(User.where.primaryRoleID.EQ(1).LIMIT(100).OFFSET(5).ORDER('+id'))).toEqual({
+        limit:  100,
+        offset: 5,
+        order:  [
+          {
+            Model:      User,
+            Field:      User.fields.id,
+            direction:  'ASC',
+          },
+        ],
+      });
+    });
+
+    it('will allow limit to be infinity', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getOrderLimitOffset(User.where.primaryRoleID.EQ(1).LIMIT(Infinity).OFFSET(5).ORDER('+id'))).toEqual({
+        limit:  Infinity,
+        offset: 5,
+        order:  [
+          {
+            Model:      User,
+            Field:      User.fields.id,
+            direction:  'ASC',
+          },
+        ],
+      });
+    });
+
+    it('can order should be able to take mixed args', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getOrderLimitOffset(User.where.primaryRoleID.EQ(1).ORDER('+id', [ 'firstName', '-lastName' ], 'primaryRoleID'))).toEqual({
+        limit:  undefined,
+        offset: undefined,
+        order:  [
+          {
+            Model:      User,
+            Field:      User.fields.id,
+            direction:  'ASC',
+          },
+          {
+            Model:      User,
+            Field:      User.fields.firstName,
+            direction:  'ASC',
+          },
+          {
+            Model:      User,
+            Field:      User.fields.lastName,
+            direction:  'DESC',
+          },
+          {
+            Model:      User,
+            Field:      User.fields.primaryRoleID,
+            direction:  'ASC',
+          },
+        ],
+      });
+    });
+
+    it('can overwrite order, limit, and offset from query', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getOrderLimitOffset(User.where.primaryRoleID.EQ(1).LIMIT(100).OFFSET(5).ORDER('+id').LIMIT(200).OFFSET(50).ORDER([ '+id', '--firstName' ]))).toEqual({
+        limit:  200,
+        offset: 50,
+        order:  [
+          {
+            Model:      User,
+            Field:      User.fields.id,
+            direction:  'ASC',
+          },
+          {
+            Model:      User,
+            Field:      User.fields.firstName,
+            direction:  'DESC',
+          },
+        ],
+      });
+    });
+
+    it('will throw an ambiguous error', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(() => queryGenerator.getOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(Role.where.id)
+          .LIMIT(100)
+          .OFFSET(5)
+          .ORDER([ '+id', '-firstName' ]),
+      )).toThrow(new Error('QueryGeneratorBase::getOrderLimitOffset: "id" ambiguous. You must use a fully qualified field name for an ORDER clause. Example: "+Model:id".'));
+    });
+
+    it('will throw a no fields found error', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(() => queryGenerator.getOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(Role.where.id)
+          .LIMIT(100)
+          .OFFSET(5)
+          .ORDER([ 'User:' ]),
+      )).toThrow(new Error('QueryGeneratorBase::getOrderLimitOffset: No field names found for "User:".'));
+    });
+
+    it('will throw error if it can not find the field', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(() => queryGenerator.getOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(Role.where.id)
+          .LIMIT(100)
+          .OFFSET(5)
+          .ORDER([ 'User:derp' ]),
+      )).toThrow(new Error('QueryGeneratorBase::getOrderLimitOffset: Unable to locate field "User"."derp".'));
+    });
+  });
+
+  describe('generateLimitClause', () => {
+    it('can generate proper limit clause', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateLimitClause(50)).toEqual('LIMIT 50');
+    });
+  });
+
+  describe('generateOffsetClause', () => {
+    it('can generate proper offset clause', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateOffsetClause(50)).toEqual('OFFSET 50');
+    });
+  });
+
+  describe('generateSelectOrderLimitOffset', () => {
+    it('can generate proper order clause', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .LIMIT(100)
+          .OFFSET(5)
+          .ORDER([ '-id' ]),
+      )).toEqual('ORDER BY "users"."id" DESC LIMIT 100 OFFSET 5');
+    });
+
+    it('can generate nothing', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1),
+      )).toEqual('');
+    });
+
+    it('can generate proper order clause with multiple orders', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .LIMIT(100)
+          .OFFSET(5)
+          .ORDER([ '+id', '-firstName' ]),
+      )).toEqual('ORDER BY "users"."id" ASC,"users"."firstName" DESC LIMIT 100 OFFSET 5');
+    });
+
+    it('will ignore the limit clause when limit is Infinity', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .LIMIT(Infinity)
+          .OFFSET(5)
+          .ORDER([ '+id', '-firstName' ]),
+      )).toEqual('ORDER BY "users"."id" ASC,"users"."firstName" DESC OFFSET 5');
+    });
+
+    it('will ignore the limit clause when limit is nothing', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .OFFSET(5)
+          .ORDER([ '+id', '-firstName' ]),
+      )).toEqual('ORDER BY "users"."id" ASC,"users"."firstName" DESC OFFSET 5');
+    });
+
+    it('will ignore the offset clause when offset is nothing', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .LIMIT(10)
+          .ORDER([ '+id', '-firstName' ]),
+      )).toEqual('ORDER BY "users"."id" ASC,"users"."firstName" DESC LIMIT 10');
+    });
+
+    it('will ignore the limit and offset clause when they are nothing', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .ORDER([ '+id', '-firstName' ]),
+      )).toEqual('ORDER BY "users"."id" ASC,"users"."firstName" DESC');
+    });
+
+    it('will ignore the order clause when order is nothing', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectOrderLimitOffset(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .LIMIT(100)
+          .OFFSET(10),
+      )).toEqual('LIMIT 100 OFFSET 10');
+    });
+  });
+
   describe('generatorCreateTableStatement', () => {
     it('can generate a create table statement #1', () => {
       let queryGenerator = connection.getQueryGenerator();
@@ -293,12 +551,26 @@ describe('SQLiteQueryGenerator', () => {
   describe('generateSelectQueryJoinTables', () => {
     it('can generate table join statements from query', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryJoinTables(User.where.primaryRoleID.EQ(Role.where.id))).toEqual('LEFT INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id"');
+      expect(queryGenerator.generateSelectQueryJoinTables(
+        User.where.primaryRoleID.EQ(Role.where.id),
+      )).toEqual('LEFT INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id"');
     });
 
     it('can generate table join statements from query between multiple tables', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryJoinTables(User.where.debug.id.EQ(UserThing.where.userID).AND.UserThing.where.roleThingID.EQ(RoleThing.where.id).AND.RoleThing.where.roleID.EQ(Role.where.id))).toEqual('LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id"');
+      expect(queryGenerator.generateSelectQueryJoinTables(
+        User.where
+          .id
+            .EQ(UserThing.where.userID)
+        .AND
+        .UserThing
+          .roleThingID
+            .EQ(RoleThing.where.id)
+        .AND
+        .RoleThing
+          .roleID
+            .EQ(Role.where.id),
+      )).toEqual('LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id"');
     });
 
     it('should assume PK if a model is provided', () => {
@@ -350,7 +622,7 @@ describe('SQLiteQueryGenerator', () => {
   });
 
   describe('generateSelectQuery', () => {
-    it('can generate a select statement #1', () => {
+    it('can generate a select statement with a table join', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let queryString     = queryGenerator.generateSelectQuery(
         User.where
@@ -374,6 +646,72 @@ describe('SQLiteQueryGenerator', () => {
           ),
       );
       expect(queryString).toEqual('SELECT "roles"."id" AS "Role"."id","roles"."name" AS "Role"."name","users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" LEFT INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id" WHERE ("users"."firstName" = \'Joe\' OR "users"."firstName" = \'Mary\') AND ("users"."lastName" = \'Derp\' OR "users"."lastName" = \'Burp\')');
+    });
+
+    it('can generate a select statement with an order, limit, and offset', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let queryString     = queryGenerator.generateSelectQuery(
+        User.where
+          .primaryRoleID
+            .EQ(1)
+          .ORDER('+id')
+          .LIMIT(100)
+          .OFFSET(500),
+      );
+      expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" WHERE "users"."primaryRoleID" = 1 ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
+    });
+
+    it('can generate a select statement with a complex join statement', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let queryString     = queryGenerator.generateSelectQuery(
+        User.where
+          .id
+            .EQ(UserThing.where.userID)
+        .AND
+        .UserThing
+          .roleThingID
+            .EQ(RoleThing.where.id)
+        .AND
+        .RoleThing
+          .roleID
+            .EQ(Role.where.id)
+        .AND
+        .User
+        .firstName
+          .EQ('Jonny')
+        .AND
+        .lastName
+          .EQ('Bob'),
+      );
+      expect(queryString).toEqual('SELECT "role_things"."id" AS "RoleThing"."id","role_things"."roleID" AS "RoleThing"."roleID","roles"."id" AS "Role"."id","roles"."name" AS "Role"."name","user_things"."id" AS "UserThing"."id","user_things"."roleThingID" AS "UserThing"."roleThingID","user_things"."userID" AS "UserThing"."userID","users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\'');
+    });
+
+    it('can generate a select statement with a complex join statement and an order, limit, and offset', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let queryString     = queryGenerator.generateSelectQuery(
+        User.where
+          .id
+            .EQ(UserThing.where.userID)
+        .AND
+        .UserThing
+          .roleThingID
+            .EQ(RoleThing.where.id)
+        .AND
+        .RoleThing
+          .roleID
+            .EQ(Role.where.id)
+        .AND
+        .User
+        .firstName
+          .EQ('Jonny')
+        .AND
+        .lastName
+          .EQ('Bob')
+        .ORDER('User:firstName')
+        .LIMIT(100)
+        .OFFSET(500),
+      );
+      expect(queryString).toEqual('SELECT "role_things"."id" AS "RoleThing"."id","role_things"."roleID" AS "RoleThing"."roleID","roles"."id" AS "Role"."id","roles"."name" AS "Role"."name","user_things"."id" AS "UserThing"."id","user_things"."roleThingID" AS "UserThing"."roleThingID","user_things"."userID" AS "UserThing"."userID","users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 500');
     });
   });
 });

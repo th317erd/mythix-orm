@@ -18,16 +18,18 @@ class QueryEngine extends QueryEngineBase {
     if (!_context)
       throw new TypeError('QueryEngine::constructor: "context" required.');
 
-    let queryRoot = [];
     let context = Object.assign(
       Object.create(_context),
       {
         currentScopeName: 'queryEngine',
         isQueryContext:   true,
+        contextID:        QueryEngineBase.generateID(),
       },
     );
 
     if (!context.queryRoot) {
+      let queryRoot = [];
+
       context.queryRoot = queryRoot;
       context.query = queryRoot;
     }
