@@ -226,6 +226,17 @@ describe('Model', () => {
       });
     });
 
+    instanceAndStaticTests(User, (target, type) => {
+      it(`should be able to get the models fields by name (${type})`, () => {
+        let fields = target.getFields([ 'id', 'firstName' ]);
+        expect(fields).toBeInstanceOf(Array);
+        expect(fields.map((field) => field.fieldName).sort()).toEqual([
+          'firstName',
+          'id',
+        ]);
+      });
+    });
+
     instanceAndStaticTests(ArrayFieldsModel, (target, type) => {
       it(`should be able to get the models fields as an array (${type})`, () => {
         let fields = target.getFields();

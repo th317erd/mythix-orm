@@ -739,12 +739,9 @@ class QueryGeneratorBase {
     return sqlParts.join(' ');
   }
 
-  generateSelectQuery(queryEngine, _options) {
-    let options   = Object.assign({}, _options || {});
-    let sqlParts  = [ 'SELECT' ];
-
-    sqlParts.push(this.generateSelectQueryFieldProjection(queryEngine, options));
-    sqlParts.push(this.generateSelectQueryJoinTables(queryEngine, options));
+  generateWhereAndOrderLimitOffset(queryEngine, _options) {
+    let options   = _options || {};
+    let sqlParts  = [];
 
     let where = this.generateSelectWhereConditions(queryEngine, options);
     if (where)
@@ -753,6 +750,17 @@ class QueryGeneratorBase {
     let orderLimitOffset = this.generateSelectOrderLimitOffset(queryEngine, options);
     if (orderLimitOffset)
       sqlParts.push(orderLimitOffset);
+
+    return sqlParts.join(' ');
+  }
+
+  generateSelectQuery(queryEngine, _options) {
+    let options   = _options || {};
+    let sqlParts  = [ 'SELECT' ];
+
+    sqlParts.push(this.generateSelectQueryFieldProjection(queryEngine, options));
+    sqlParts.push(this.generateSelectQueryJoinTables(queryEngine, options));
+    sqlParts.push(this.generateWhereAndOrderLimitOffset(queryEngine, options));
 
     return sqlParts.filter(Boolean).join(' ');
   }
@@ -972,6 +980,90 @@ class QueryGeneratorBase {
     let escapedFieldNames = Array.from(Object.values(this.getEscapedModelFields(Model, subOptions)));
 
     return `INSERT INTO ${escapedTableName} (${escapedFieldNames}) VALUES ${values}`;
+  }
+
+  generateUpdateStatement(Model, _model, _options, _queryEngine) {
+    if (!_model)
+      return '';
+
+    let queryEngine = _queryEngine;
+    let options     = _options;
+
+    if (QueryEngine.isQuery(options)) {
+      queryEngine = options;
+      options = {};
+    } else if (!options) {
+      options = {};
+    }
+
+    let model = _model;
+    if (!(model instanceof ModelBase))
+      model = new Model(model);
+
+    let modelChanges    = model.changes;
+    let dirtyFieldNames = Object.keys(modelChanges);
+    let dirtyFields     = model.getFields(dirtyFieldNames);
+    if (Nife.isEmpty(dirtyFields))
+      return '';
+
+    let escapedTableName  = this.escapeID(Model.getTableName());
+    let sqlParts          = [ 'UPDATE ', escapedTableName, ' SET ' ];
+    let setParts          = [];
+    let tabs              = '';
+
+    if (options.newlines !== false) {
+      sqlParts.push('\n');
+      tabs = '  ';
+    }
+
+    for (let i = 0, il = dirtyFields.length; i < il; i++) {
+      let dirtyField        = dirtyFields[i];
+      let fieldValue        = modelChanges[dirtyField.fieldName].current;
+      let escapedColumnName = this.escapeID(dirtyField.columnName);
+      let escapedValue      = this.escape(dirtyField, fieldValue);
+      if (!escapedValue)
+        continue;
+
+      setParts.push(`${tabs}${escapedColumnName} = ${escapedValue}`);
+    }
+
+    if (setParts.length === 0)
+      return '';
+
+    sqlParts.push((options.newlines === false) ? setParts.join(',') : setParts.join(',\n'));
+
+    if (queryEngine) {
+      let where = this.generateWhereAndOrderLimitOffset(queryEngine, options);
+      if (where) {
+        if (options.newlines !== false)
+          sqlParts.push('\n');
+        else
+          sqlParts.push(' ');
+
+        sqlParts.push(where);
+      }
+    }
+
+    return sqlParts.join('');
+  }
+
+  generateDeleteStatement(Model, _options, _queryEngine) {
+    let queryEngine = _queryEngine;
+    let options     = _options;
+    let where;
+
+    if (QueryEngine.isQuery(options)) {
+      queryEngine = options;
+      options = {};
+    } else if (!options) {
+      options = {};
+    }
+
+    if (queryEngine)
+      where = this.generateWhereAndOrderLimitOffset(queryEngine, options);
+
+    let escapedTableName = this.escapeID(Model.getTableName());
+    return `DELETE FROM ${escapedTableName}${(where) ? ` ${where}` : ''}`;
   }
 }
 

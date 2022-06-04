@@ -154,8 +154,21 @@ class Model {
     return Inflection.pluralize(this.getSingularName());
   }
 
-  static getFields() {
-    return this.fields;
+  static getFields(fieldNames) {
+    if (fieldNames) {
+      let filteredFields = [];
+
+      this.iterateFields(({ field, fieldName }) => {
+        if (fieldNames.indexOf(fieldName) < 0)
+          return;
+
+        filteredFields.push(field);
+      }, this.fields);
+
+      return filteredFields;
+    } else {
+      return this.fields;
+    }
   }
 
   static iterateFields(callback, _fields) {
