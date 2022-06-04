@@ -308,7 +308,7 @@ describe('QueryEngine', () => {
       expect(getContext(context[6], [ 'partIndex' ])).toEqual({
         rootModelName:  'User',
         modelName:      'User',
-        fieldName:      undefined,
+        fieldName:      'firstName',
         operator:       'AND',
         value:          undefined,
         and:            true,

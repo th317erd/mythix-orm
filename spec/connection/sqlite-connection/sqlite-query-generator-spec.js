@@ -427,7 +427,6 @@ describe('SQLiteQueryGenerator', () => {
       let fieldList       = queryGenerator.getProjectedFields(User.where.PROJECT('-User:id'));
       expect(fieldList).toEqual([
         '"users"."firstName" AS "User"."firstName"',
-        '"users"."id" AS "User"."id"',
         '"users"."lastName" AS "User"."lastName"',
         '"users"."primaryRoleID" AS "User"."primaryRoleID"',
       ]);
@@ -435,7 +434,6 @@ describe('SQLiteQueryGenerator', () => {
       fieldList = queryGenerator.getProjectedFields(User.where.PROJECT('*', '-User:id'));
       expect(fieldList).toEqual([
         '"users"."firstName" AS "User"."firstName"',
-        '"users"."id" AS "User"."id"',
         '"users"."lastName" AS "User"."lastName"',
         '"users"."primaryRoleID" AS "User"."primaryRoleID"',
       ]);
@@ -787,6 +785,19 @@ describe('SQLiteQueryGenerator', () => {
           .OFFSET(500),
       );
       expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" WHERE "users"."primaryRoleID" = 1 ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
+    });
+
+    it('can generate a select statement with a DISTINCT clause', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let queryString     = queryGenerator.generateSelectQuery(
+        User.where
+          .DISTINCT
+          .primaryRoleID
+            .EQ(1)
+          .LIMIT(100)
+          .OFFSET(500),
+      );
+      expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID",DISTINCT "users"."id" AS "User"."id" WHERE "users"."primaryRoleID" = 1 LIMIT 100 OFFSET 500');
     });
 
     it('can generate a select statement using literals', () => {

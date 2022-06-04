@@ -98,8 +98,10 @@ class QueryEngineBase extends ProxyClass {
     let extra           = {};
     let modelName       = Model.getModelName();
 
-    if (!context.rootModelName)
+    if (!context.rootModelName) {
       extra.rootModelName = modelName;
+      extra.rootModel = Model;
+    }
 
     let newContext  = this._inheritContext(context, 'model', { Model, modelName }, props || {}, extra);
     let newScope    = new ModelScopeClass(newContext);
@@ -149,11 +151,12 @@ class QueryEngineBase extends ProxyClass {
   }
 
   _addToQuery(queryPart, _context) {
-    let currentQuery = (_context || this.currentContext).query;
+    let context       = _context || this._getRawQueryContext();
+    let currentQuery  = context.query;
 
     currentQuery.push(
       this._inheritContext(
-        _context || this.currentContext,
+        context,
         null,
         queryPart,
         {

@@ -43,6 +43,7 @@ class QueryGeneratorBase {
     return Model.getTableName();
   }
 
+  // eslint-disable-next-line no-unused-vars
   getEscapedProjectionName(field, options) {
     let modelName         = field.Model.getModelName();
     let tableName         = field.Model.getTableName();
@@ -154,9 +155,12 @@ class QueryGeneratorBase {
       let allModels = this.getAllModelsUsedInQuery(queryEngine, options);
 
       projections = projections.map((_fieldName) => {
-        if (_fieldName instanceof SQLLiteralBase) {
-          areAllSubtractions = false;
+        if (_fieldName instanceof SQLLiteralBase)
           return _fieldName;
+
+        if (_fieldName === '-*') {
+          areAllSubtractions = false;
+          return;
         }
 
         if (_fieldName === '*') {
@@ -204,7 +208,7 @@ class QueryGeneratorBase {
     }
 
     if (areAllSubtractions)
-      projections = [ '*' ];
+      projections.push('*');
 
     if (options)
       this.setOptionsCache(options, `getProjectionFromQueryEngine.${queryEngineContextID}`, projections);
@@ -251,12 +255,13 @@ class QueryGeneratorBase {
         if (!modelFields)
           continue;
 
-        modelFields = Array.from(Object.values(modelFields));
-        for (let j = 0, jl = modelFields.length; j < jl; j++) {
-          let fullFieldName = modelFields[j];
+        let modelFieldKeys = Object.keys(modelFields);
+        for (let j = 0, jl = modelFieldKeys.length; j < jl; j++) {
+          let modelFieldKey = modelFieldKeys[j];
+          let fullFieldName = modelFields[modelFieldKey];
 
-          if (removeFieldsFromProjection && removeFieldsFromProjection.indexOf(fullFieldName) >= 0) {
-            if (requiredProjectionFields && requiredProjectionFields.indexOf(fullFieldName) < 0)
+          if (removeFieldsFromProjection && removeFieldsFromProjection.indexOf(modelFieldKey) >= 0) {
+            if (requiredProjectionFields && requiredProjectionFields[fullFieldName])
               continue;
             else
               continue;

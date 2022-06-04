@@ -3,7 +3,10 @@
 const Nife            = require('nife');
 const ProxyClass      = require('../proxy-class');
 const QueryEngineBase = require('./query-engine-base');
-const SQLLiteralBase  = require('../connection/sql-literals/sql-literal-base');
+const {
+  SQLLiteralBase,
+  DistinctSQLLiteral,
+} = require('../connection/sql-literals');
 
 class ModelScope extends QueryEngineBase {
   _getField(fieldName) {
@@ -106,6 +109,23 @@ class ModelScope extends QueryEngineBase {
     this._addToQuery({ control: true, operator: 'PROJECT', value: values });
     return this._fetchScope('model');
   }
+
+  DISTINCT = ProxyClass.autoCall(function(fullyQualifiedName) {
+    if (arguments.length === 0) {
+      let context = this._getRawQueryContext();
+      let rootModel = context.rootModel;
+      if (!rootModel)
+        throw new Error(`${this.constructor.name}::DISTINCT: Attempted to apply DISTINCT to the root model of the query, but no root model was found.`);
+
+      let pkFieldName = rootModel.getPrimaryKeyFieldName();
+      if (!pkFieldName)
+        throw new Error(`${this.constructor.name}::DISTINCT: Attempted to apply DISTINCT to the root model of the query, but the root model has no primary key. Try directly specifying the DISTINCT field instead.`);
+
+      this.PROJECT(`-${rootModel.getModelName()}:${pkFieldName}`, new DistinctSQLLiteral(`${rootModel.getModelName()}:${pkFieldName}`));
+    } else {
+      return this.PROJECT(`-${fullyQualifiedName}`, new DistinctSQLLiteral(fullyQualifiedName));
+    }
+  });
 }
 
 module.exports = ModelScope;
