@@ -3,6 +3,7 @@
 const Database              = require('better-sqlite3');
 const SQLConnectionBase     = require('../sql-connection-base');
 const SQLiteQueryGenerator  = require('./sqlite-query-generator');
+const { SQLLiteral }        = require('../sql-literals');
 
 class SQLiteConnection extends SQLConnectionBase {
   static dialect = 'sqlite';
@@ -41,7 +42,7 @@ class SQLiteConnection extends SQLConnectionBase {
   getDefaultFieldValue(type) {
     switch (type) {
       case 'AUTO_INCREMENT':
-        return '!AUTOINCREMENT';
+        return new SQLLiteral('AUTOINCREMENT');
       case 'DATETIME_NOW':
         return '(datetime(\'now\'))';
       case 'DATE_NOW':

@@ -3,6 +3,7 @@
 const Nife            = require('nife');
 const { FLAG_REMOTE } = require('../helpers/default-helpers');
 const QueryEngine     = require('../query-engine/query-engine');
+const SQLLiteralBase  = require('./sql-literals/sql-literal-base.js');
 const ModelUtils      = require('../utils/model-utils');
 
 class QueryGeneratorBase {
@@ -15,6 +16,14 @@ class QueryGeneratorBase {
         value:        connection,
       },
     });
+  }
+
+  getOptionsCache(options, keyPath, defaultValue) {
+    return Nife.get(options, `_cache.${keyPath}`, (typeof defaultValue === 'function') ? defaultValue() : defaultValue);
+  }
+
+  setOptionsCache(options, keyPath, value) {
+    Nife.set(options, `_cache.${keyPath}`, value);
   }
 
   escape(...args) {
@@ -34,19 +43,25 @@ class QueryGeneratorBase {
     return Model.getTableName();
   }
 
-  // eslint-disable-next-line no-unused-vars
-  getEscapedModelFields(Model, options) {
-    let fields            = {};
-    let modelName         = Model.getModelName();
-    let tableName         = Model.getTableName();
+  getEscapedProjectionName(field, options) {
+    let modelName         = field.Model.getModelName();
+    let tableName         = field.Model.getTableName();
     let escapedTableName  = this.escapeID(tableName);
     let escapedModelName  = this.escapeID(modelName);
+
+    return `${escapedTableName}.${this.escapeID(field.columnName)} AS ${escapedModelName}.${this.escapeID(field.fieldName)}`;
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  getEscapedModelFields(Model, options) {
+    let fields    = {};
+    let modelName = Model.getModelName();
 
     Model.iterateFields(({ field, fieldName }) => {
       if (field.type.isVirtual())
         return;
 
-      fields[`${modelName}:${fieldName}`] = `${escapedTableName}.${this.escapeID(field.columnName)} AS ${escapedModelName}.${this.escapeID(field.fieldName)}`;
+      fields[`${modelName}:${fieldName}`] = this.getEscapedProjectionName(field, options);
     });
 
     return fields;
@@ -54,11 +69,11 @@ class QueryGeneratorBase {
 
   // eslint-disable-next-line no-unused-vars
   getAllModelsUsedInQuery(queryEngine, _options) {
-    let queryEngineContextID  = queryEngine._getTopContextID();
     let options               = _options || {};
-    let cache                 = options._cache;
-    if (cache && cache['getAllModelsUsedInQuery'] && cache['getAllModelsUsedInQuery'][queryEngineContextID])
-      return cache['getAllModelsUsedInQuery'][queryEngineContextID];
+    let queryEngineContextID  = queryEngine._getTopContextID();
+    let cache                 = this.getOptionsCache(_options, `getAllModelsUsedInQuery.${queryEngineContextID}`);
+    if (cache)
+      return cache;
 
     let Models  = new Map();
     let query   = queryEngine._getRawQuery();
@@ -84,45 +99,190 @@ class QueryGeneratorBase {
 
     let allModels = Array.from(Models.values());
 
-    if (_options) {
-      if (!_options._cache)
-        _options._cache = {};
-
-      if (!_options._cache['getAllModelsUsedInQuery'])
-        _options._cache['getAllModelsUsedInQuery'] = {};
-
-      _options._cache['getAllModelsUsedInQuery'][queryEngineContextID] = allModels;
-    }
+    if (_options)
+      this.setOptionsCache(_options, `getAllModelsUsedInQuery.${queryEngineContextID}`, allModels);
 
     return allModels;
   }
 
+  getProjectionRequiredFields(queryEngine, options) {
+    let { order } = this.getOrderLimitOffset(queryEngine, options);
+
+    if (!order)
+      return {};
+
+    return order.reduce((obj, order) => {
+      if (!order)
+        return obj;
+
+      if (order instanceof SQLLiteralBase)
+        return obj;
+
+      obj[`${order.Model.getModelName()}:${order.Field.fieldName}`] = this.getEscapedProjectionName(order.Field, options);
+
+      return obj;
+    }, {});
+  }
+
+  getProjectionFromQueryEngine(queryEngine, options) {
+    let queryEngineContextID  = queryEngine._getTopContextID();
+    let cache                 = this.getOptionsCache(options, `getProjectionFromQueryEngine.${queryEngineContextID}`);
+    if (cache)
+      return cache;
+
+    let query       = queryEngine._getRawQuery();
+    let projections = [];
+
+    for (let i = 0, il = query.length; i < il; i++) {
+      let queryPart = query[i];
+
+      if (!Object.prototype.hasOwnProperty.call(queryPart, 'control'))
+        continue;
+
+      if (queryPart.control !== true)
+        continue;
+
+      if (queryPart.operator === 'PROJECT')
+        projections = projections.concat(queryPart.value);
+    }
+
+    projections = Nife.uniq(Nife.arrayFlatten(projections));
+
+    let areAllSubtractions = true;
+
+    if (Nife.isNotEmpty(projections)) {
+      let allModels = this.getAllModelsUsedInQuery(queryEngine, options);
+
+      projections = projections.map((_fieldName) => {
+        if (_fieldName instanceof SQLLiteralBase) {
+          areAllSubtractions = false;
+          return _fieldName;
+        }
+
+        if (_fieldName === '*') {
+          areAllSubtractions = false;
+          return _fieldName;
+        }
+
+        let { fieldName, direction } = this.getFieldDirectionSpecifier(_fieldName);
+        if (!fieldName)
+          return;
+
+        if (direction !== '-')
+          areAllSubtractions = false;
+
+        let def = ModelUtils.parseQualifiedName(fieldName);
+        if (!def.modelName) {
+          if (allModels.length > 1)
+            throw new Error(`QueryGeneratorBase::getProjectionFromQueryEngine: "${fieldName}" ambiguous. You must use a fully qualified field name for a PROJECT clause. Example: "-Model:id".`);
+
+          def.modelName = allModels[0].getModelName();
+        }
+
+        if (!def.fieldNames.length)
+          throw new Error(`QueryGeneratorBase::getProjectionFromQueryEngine: No field names found for "${fieldName}".`);
+
+        let field = this.connection.getField(def.fieldNames[0], def.modelName);
+        if (!field)
+          throw new Error(`QueryGeneratorBase::getProjectionFromQueryEngine: Unable to locate field "${def.modelName}"."${def.fieldNames[0]}".`);
+
+        if (allModels.indexOf(field.Model) < 0)
+          return;
+
+        let modelName = field.Model.getModelName();
+
+        return {
+          fullFieldName:  `${modelName}:${field.fieldName}`,
+          projectedName:  this.getEscapedProjectionName(field, options),
+          Model:          field.Model,
+          Field:          field,
+          fieldName:      field.fieldName,
+          modelName,
+          direction,
+        };
+      }).filter(Boolean);
+    }
+
+    if (areAllSubtractions)
+      projections = [ '*' ];
+
+    if (options)
+      this.setOptionsCache(options, `getProjectionFromQueryEngine.${queryEngineContextID}`, projections);
+
+    return projections;
+  }
+
   getProjectedFields(queryEngine, options) {
-    let Models              = this.getAllModelsUsedInQuery(queryEngine);
-    let modelNamesComputed  = {};
-    let fields              = new Map();
+    let Models                    = this.getAllModelsUsedInQuery(queryEngine, options);
+    let queryProjection           = this.getProjectionFromQueryEngine(queryEngine, options);
+    let requiredProjectionFields  = this.getProjectionRequiredFields(queryEngine, options);
+    let modelNamesComputed        = {};
+    let allProjectionFields       = new Map();
 
-    for (let i = 0, il = Models.length; i < il; i++) {
-      let Model     = Models[i];
-      let modelName = Model.getModelName();
+    if (queryProjection.indexOf('*') >= 0) {
+      let removeFieldsFromProjection = queryProjection.map((projectionField) => {
+        if (projectionField === '*')
+          return;
 
-      if (modelNamesComputed[modelName])
-        continue;
+        if (projectionField instanceof SQLLiteralBase) {
+          let result = projectionField.toString(this.connection);
+          allProjectionFields.set(result, result);
+        }
 
-      modelNamesComputed[modelName] = true;
+        if (projectionField.direction !== '-')
+          return;
 
-      let modelFields = this.getEscapedModelFields(Model, options);
-      if (!modelFields)
-        continue;
+        return projectionField.fullFieldName;
+      }).filter(Boolean);
 
-      modelFields = Array.from(Object.values(modelFields));
-      for (let j = 0, jl = modelFields.length; j < jl; j++) {
-        let field = modelFields[j];
-        fields.set(field, field);
+      if (Nife.isEmpty(removeFieldsFromProjection))
+        removeFieldsFromProjection = null;
+
+      for (let i = 0, il = Models.length; i < il; i++) {
+        let Model     = Models[i];
+        let modelName = Model.getModelName();
+
+        if (modelNamesComputed[modelName])
+          continue;
+
+        modelNamesComputed[modelName] = true;
+
+        let modelFields = this.getEscapedModelFields(Model, options);
+        if (!modelFields)
+          continue;
+
+        modelFields = Array.from(Object.values(modelFields));
+        for (let j = 0, jl = modelFields.length; j < jl; j++) {
+          let fullFieldName = modelFields[j];
+
+          if (removeFieldsFromProjection && removeFieldsFromProjection.indexOf(fullFieldName) >= 0) {
+            if (requiredProjectionFields && requiredProjectionFields.indexOf(fullFieldName) < 0)
+              continue;
+            else
+              continue;
+          }
+
+          allProjectionFields.set(fullFieldName, fullFieldName);
+        }
+      }
+    } else {
+      for (let i = 0, il = queryProjection.length; i < il; i++) {
+        let projectionField = queryProjection[i];
+        if (projectionField.direction === '-')
+          continue;
+
+        if (projectionField instanceof SQLLiteralBase) {
+          let result = projectionField.toString(this.connection);
+          allProjectionFields.set(result, result);
+          continue;
+        }
+
+        let projectedName = projectionField.projectedName;
+        allProjectionFields.set(projectedName, projectedName);
       }
     }
 
-    return Array.from(fields.values()).sort();
+    return Array.from(allProjectionFields.values()).sort();
   }
 
   generateSelectQueryFieldProjection(queryEngine, options) {
@@ -142,6 +302,9 @@ class QueryGeneratorBase {
 
   // eslint-disable-next-line no-unused-vars
   generateSelectQueryOperatorFromQueryEngineOperator(operator, value, valueIsReference, options) {
+    if (operator instanceof SQLLiteralBase)
+      return operator.toString(this.connection);
+
     switch (operator) {
       case 'EQ':
         if (!valueIsReference) {
@@ -386,8 +549,11 @@ class QueryGeneratorBase {
     return sqlParts.join(' ');
   }
 
-  getOrderDirection(order) {
+  getFieldDirectionSpecifier(order) {
     if (!order)
+      return order;
+
+    if (order instanceof SQLLiteralBase)
       return order;
 
     let sign;
@@ -398,13 +564,18 @@ class QueryGeneratorBase {
     });
 
     return {
-      direction: (sign === '-') ? 'DESC' : 'ASC',
+      direction: (sign === '-') ? '-' : '+',
       fieldName,
     };
   }
 
   // eslint-disable-next-line no-unused-vars
   getOrderLimitOffset(queryEngine, options) {
+    let queryEngineContextID  = queryEngine._getTopContextID();
+    let cache                 = this.getOptionsCache(options, `getOrderLimitOffset.${queryEngineContextID}`);
+    if (cache)
+      return cache;
+
     let query = queryEngine._getRawQuery();
     let limit;
     let offset;
@@ -429,11 +600,14 @@ class QueryGeneratorBase {
         order = queryPart.value;
     }
 
-    if (Nife.isNotEmpty(order)) {
+    if (Nife.isNotEmpty(order) && !(order instanceof SQLLiteralBase)) {
       let allModels = this.getAllModelsUsedInQuery(queryEngine, options);
 
       order = order.map((_fieldName) => {
-        let { fieldName, direction } = this.getOrderDirection(_fieldName);
+        if (_fieldName instanceof SQLLiteralBase)
+          return _fieldName;
+
+        let { fieldName, direction } = this.getFieldDirectionSpecifier(_fieldName);
         if (!fieldName)
           return;
 
@@ -460,11 +634,19 @@ class QueryGeneratorBase {
       });
     }
 
-    return { limit, order, offset };
+    let orderLimitOffset = { limit, order, offset };
+
+    if (options)
+      this.setOptionsCache(options, `getOrderLimitOffset.${queryEngineContextID}`, orderLimitOffset);
+
+    return orderLimitOffset;
   }
 
   // eslint-disable-next-line no-unused-vars
   generateOrderClause(_orders, options) {
+    if (_orders instanceof SQLLiteralBase)
+      return _orders.toString(this.connection);
+
     let orders = Nife.toArray(_orders).filter(Boolean);
     if (Nife.isEmpty(orders))
       return '';
@@ -472,10 +654,16 @@ class QueryGeneratorBase {
     let orderByParts = [];
     for (let i = 0, il = orders.length; i < il; i++) {
       let order = orders[i];
+
+      if (order instanceof SQLLiteralBase) {
+        orderByParts.push(order.toString(this.connection));
+        continue;
+      }
+
       let escapedTableName  = this.escapeID(order.Model.getTableName());
       let escapedColumnName = this.escapeID(order.Field.columnName);
 
-      orderByParts.push(`${escapedTableName}.${escapedColumnName} ${order.direction}`);
+      orderByParts.push(`${escapedTableName}.${escapedColumnName} ${(order.direction === '-') ? 'DESC' : 'ASC'}`);
     }
 
     return `ORDER BY ${orderByParts.join(',')}`;
@@ -483,12 +671,18 @@ class QueryGeneratorBase {
 
   // eslint-disable-next-line no-unused-vars
   generateLimitClause(limit, options) {
+    if (limit instanceof SQLLiteralBase)
+      return limit.toString(this.connection);
+
     return `LIMIT ${limit}`;
   }
 
   // eslint-disable-next-line no-unused-vars
-  generateOffsetClause(limit, options) {
-    return `OFFSET ${limit}`;
+  generateOffsetClause(offset, options) {
+    if (offset instanceof SQLLiteralBase)
+      return offset.toString(this.connection);
+
+    return `OFFSET ${offset}`;
   }
 
   generateSelectOrderLimitOffset(queryEngine, options) {
@@ -547,14 +741,16 @@ class QueryGeneratorBase {
 
     if (typeof defaultValue === 'function') {
       defaultValue = defaultValue({ field, fieldName, connection: this.connection });
-      if (!((field.defaultValue.mythixFlags || 0) & FLAG_REMOTE)) {
+
+      if (!((field.defaultValue.mythixFlags || 0) & FLAG_REMOTE))
         defaultValue = this.escape(field, defaultValue);
-      } else if (typeof defaultValue === 'string' && defaultValue.charAt(0) === '!') {
-        useDefaultKeyword = false;
-        defaultValue = defaultValue.substring(1);
-      }
     } else {
       defaultValue = this.escape(field, defaultValue);
+    }
+
+    if (defaultValue instanceof SQLLiteralBase) {
+      useDefaultKeyword = false;
+      defaultValue = defaultValue.toString(this.connection);
     }
 
     if (useDefaultKeyword)
@@ -564,7 +760,7 @@ class QueryGeneratorBase {
   }
 
   // eslint-disable-next-line no-unused-vars
-  generatorCreateTableStatement(Model, options) {
+  generateCreateTableStatement(Model, options) {
     let fieldParts = [];
 
     Model.iterateFields(({ field, fieldName }) => {
@@ -575,10 +771,17 @@ class QueryGeneratorBase {
       let constraintParts = [];
 
       if (field.primaryKey) {
-        constraintParts.push('PRIMARY KEY');
+        if (field.primaryKey instanceof SQLLiteralBase)
+          constraintParts.push(field.primaryKey.toString(this.connection));
+        else
+          constraintParts.push('PRIMARY KEY');
       } else {
-        if (field.unique === true)
-          constraintParts.push('UNIQUE');
+        if (field.unique) {
+          if (field.unique instanceof SQLLiteralBase)
+            constraintParts.push(field.unique.toString(this.connection));
+          else
+            constraintParts.push('UNIQUE');
+        }
 
         if (field.allowNull === false)
           constraintParts.push('NOT NULL');

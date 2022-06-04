@@ -6,6 +6,7 @@
 /* global describe, it, expect, beforeEach */
 
 const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
+const { SQLLiteral } = require('../../../src/connection/sql-literals');
 
 describe('SQLiteQueryGenerator', () => {
   let connection;
@@ -28,6 +29,85 @@ describe('SQLiteQueryGenerator', () => {
     ExtendedUser = models.ExtendedUser;
   });
 
+  describe('getProjectionRequiredFields', () => {
+    it('can get required projection fields #1', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id'))).toEqual({
+        'User:id': '"users"."id" AS "User"."id"',
+      });
+    });
+
+    it('can get required projection fields #2', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id', 'primaryRoleID', '-firstName'))).toEqual({
+        'User:id':            '"users"."id" AS "User"."id"',
+        'User:primaryRoleID': '"users"."primaryRoleID" AS "User"."primaryRoleID"',
+        'User:firstName':     '"users"."firstName" AS "User"."firstName"',
+      });
+    });
+  });
+
+  describe('getProjectionFromQueryEngine', () => {
+    it('can get projected fields', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id'))).toEqual([
+        {
+          fullFieldName:  'User:id',
+          projectedName:  '"users"."id" AS "User"."id"',
+          Model:          User,
+          Field:          User.fields.id,
+          fieldName:      'id',
+          modelName:      'User',
+          direction:      '+',
+        },
+      ]);
+    });
+
+    it('should not include fields from a model not in use in the query', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id', 'Role:id'))).toEqual([
+        {
+          fullFieldName:  'User:id',
+          projectedName:  '"users"."id" AS "User"."id"',
+          Model:          User,
+          Field:          User.fields.id,
+          fieldName:      'id',
+          modelName:      'User',
+          direction:      '+',
+        },
+      ]);
+    });
+
+    it('will return "*" if no projection present', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1))).toEqual([ '*' ]);
+    });
+
+    it('can get projected fields (multiple fields)', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id').PROJECT('-firstName'))).toEqual([
+        {
+          fullFieldName:  'User:id',
+          projectedName:  '"users"."id" AS "User"."id"',
+          Model:          User,
+          Field:          User.fields.id,
+          fieldName:      'id',
+          modelName:      'User',
+          direction:      '+',
+        },
+        {
+          fullFieldName:  'User:firstName',
+          projectedName:  '"users"."firstName" AS "User"."firstName"',
+          Model:          User,
+          Field:          User.fields.firstName,
+          fieldName:      'firstName',
+          modelName:      'User',
+          direction:      '-',
+        },
+      ]);
+    });
+  });
+
   describe('generateOrderClause', () => {
     it('can generate proper order clause', () => {
       let queryGenerator = connection.getQueryGenerator();
@@ -35,7 +115,7 @@ describe('SQLiteQueryGenerator', () => {
         {
           Model:      User,
           Field:      User.fields.id,
-          direction: 'DESC',
+          direction: '-',
         },
       ])).toEqual('ORDER BY "users"."id" DESC');
     });
@@ -46,12 +126,12 @@ describe('SQLiteQueryGenerator', () => {
         {
           Model:      User,
           Field:      User.fields.id,
-          direction: 'DESC',
+          direction: '-',
         },
         {
           Model:      User,
           Field:      User.fields.firstName,
-          direction: 'ASC',
+          direction: '+',
         },
       ])).toEqual('ORDER BY "users"."id" DESC,"users"."firstName" ASC');
     });
@@ -74,7 +154,7 @@ describe('SQLiteQueryGenerator', () => {
           {
             Model:      User,
             Field:      User.fields.id,
-            direction:  'ASC',
+            direction:  '+',
           },
         ],
       });
@@ -89,7 +169,7 @@ describe('SQLiteQueryGenerator', () => {
           {
             Model:      User,
             Field:      User.fields.id,
-            direction:  'ASC',
+            direction:  '+',
           },
         ],
       });
@@ -104,22 +184,22 @@ describe('SQLiteQueryGenerator', () => {
           {
             Model:      User,
             Field:      User.fields.id,
-            direction:  'ASC',
+            direction:  '+',
           },
           {
             Model:      User,
             Field:      User.fields.firstName,
-            direction:  'ASC',
+            direction:  '+',
           },
           {
             Model:      User,
             Field:      User.fields.lastName,
-            direction:  'DESC',
+            direction:  '-',
           },
           {
             Model:      User,
             Field:      User.fields.primaryRoleID,
-            direction:  'ASC',
+            direction:  '+',
           },
         ],
       });
@@ -134,12 +214,12 @@ describe('SQLiteQueryGenerator', () => {
           {
             Model:      User,
             Field:      User.fields.id,
-            direction:  'ASC',
+            direction:  '+',
           },
           {
             Model:      User,
             Field:      User.fields.firstName,
-            direction:  'DESC',
+            direction:  '-',
           },
         ],
       });
@@ -286,15 +366,15 @@ describe('SQLiteQueryGenerator', () => {
     });
   });
 
-  describe('generatorCreateTableStatement', () => {
+  describe('generateCreateTableStatement', () => {
     it('can generate a create table statement #1', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generatorCreateTableStatement(User)).toEqual('CREATE TABLE IF NOT EXISTS "users" (  "id" VARCHAR(36) PRIMARY KEY,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
+      expect(queryGenerator.generateCreateTableStatement(User)).toEqual('CREATE TABLE IF NOT EXISTS "users" (  "id" VARCHAR(36) PRIMARY KEY,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
     });
 
     it('can generate a create table statement #2', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generatorCreateTableStatement(ExtendedUser)).toEqual('CREATE TABLE IF NOT EXISTS "extended_users" (  "id" INTEGER PRIMARY KEY AUTOINCREMENT,\n  "createdAt" DATETIME NOT NULL DEFAULT (datetime(\'now\')),\n  "email" VARCHAR(256) UNIQUE NOT NULL,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "playerType" VARCHAR(256) NOT NULL DEFAULT \'wizard\',\n  "primaryRole" VARCHAR(256) NOT NULL DEFAULT \'user\',\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
+      expect(queryGenerator.generateCreateTableStatement(ExtendedUser)).toEqual('CREATE TABLE IF NOT EXISTS "extended_users" (  "id" INTEGER PRIMARY KEY AUTOINCREMENT,\n  "createdAt" DATETIME NOT NULL DEFAULT (datetime(\'now\')),\n  "email" VARCHAR(256) UNIQUE NOT NULL,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "playerType" VARCHAR(256) NOT NULL DEFAULT \'wizard\',\n  "primaryRole" VARCHAR(256) NOT NULL DEFAULT \'user\',\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
     });
   });
 
@@ -318,6 +398,42 @@ describe('SQLiteQueryGenerator', () => {
       expect(fieldList).toEqual([
         '"roles"."id" AS "Role"."id"',
         '"roles"."name" AS "Role"."name"',
+        '"users"."firstName" AS "User"."firstName"',
+        '"users"."id" AS "User"."id"',
+        '"users"."lastName" AS "User"."lastName"',
+        '"users"."primaryRoleID" AS "User"."primaryRoleID"',
+      ]);
+    });
+
+    it('can set projected fields', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let fieldList       = queryGenerator.getProjectedFields(User.where.PROJECT('User:id'));
+      expect(fieldList).toEqual([
+        '"users"."id" AS "User"."id"',
+      ]);
+    });
+
+    it('can set projected fields with literals', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let fieldList       = queryGenerator.getProjectedFields(User.where.PROJECT('User:id', new SQLLiteral('DISTINCT("User"."id")')));
+      expect(fieldList).toEqual([
+        '"users"."id" AS "User"."id"',
+        'DISTINCT("User"."id")',
+      ]);
+    });
+
+    it('can subtract from projected fields', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let fieldList       = queryGenerator.getProjectedFields(User.where.PROJECT('-User:id'));
+      expect(fieldList).toEqual([
+        '"users"."firstName" AS "User"."firstName"',
+        '"users"."id" AS "User"."id"',
+        '"users"."lastName" AS "User"."lastName"',
+        '"users"."primaryRoleID" AS "User"."primaryRoleID"',
+      ]);
+
+      fieldList = queryGenerator.getProjectedFields(User.where.PROJECT('*', '-User:id'));
+      expect(fieldList).toEqual([
         '"users"."firstName" AS "User"."firstName"',
         '"users"."id" AS "User"."id"',
         '"users"."lastName" AS "User"."lastName"',
@@ -421,6 +537,11 @@ describe('SQLiteQueryGenerator', () => {
       expect(queryGenerator.generateSelectQueryOperatorFromQueryEngineOperator('LTE', 1)).toEqual('<=');
       expect(queryGenerator.generateSelectQueryOperatorFromQueryEngineOperator('LTE', BigInt(1))).toEqual('<=');
       expect(queryGenerator.generateSelectQueryOperatorFromQueryEngineOperator('LTE', [])).toEqual('<=');
+    });
+
+    it('can generate condition operators with a literal', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectQueryOperatorFromQueryEngineOperator(new SQLLiteral('EXISTS'), null)).toEqual('EXISTS');
     });
 
     it('should throw an error on unknown operator', () => {
@@ -530,6 +651,13 @@ describe('SQLiteQueryGenerator', () => {
       expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', 'derp')).toEqual('"users"."id" <= \'derp\'');
       expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', 1)).toEqual('"users"."id" <= 1');
       expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', BigInt(1))).toEqual('"users"."id" <= 1');
+    });
+
+    it('can generate a query condition (using literals)', () => {
+      const queryPart = { Model: User };
+
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, new SQLLiteral('EXISTS IN'), new SQLLiteral('(1,2,3,4)'))).toEqual('"users"."id" EXISTS IN (1,2,3,4)');
     });
   });
 
@@ -659,6 +787,19 @@ describe('SQLiteQueryGenerator', () => {
           .OFFSET(500),
       );
       expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" WHERE "users"."primaryRoleID" = 1 ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
+    });
+
+    it('can generate a select statement using literals', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let queryString     = queryGenerator.generateSelectQuery(
+        User.where
+          .primaryRoleID
+            .EQ(new SQLLiteral('NOW'))
+          .ORDER('+id')
+          .LIMIT(100)
+          .OFFSET(500),
+      );
+      expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" WHERE "users"."primaryRoleID" = NOW ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
     });
 
     it('can generate a select statement with a complex join statement', () => {

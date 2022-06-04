@@ -59,6 +59,9 @@ class SQLConnectionBase extends ConnectionBase {
       if (item === null)
         return true;
 
+      if (item instanceof SQLLiterals.SQLLiteralBase)
+        return true;
+
       if (!Nife.instanceOf(item, 'string', 'number', 'bigint', 'boolean'))
         return false;
 
@@ -68,7 +71,10 @@ class SQLConnectionBase extends ConnectionBase {
     return Nife.uniq(array);
   }
 
-  escape(field, value) {
+  escapeSpecialValue(field, value) {
+    if (value instanceof SQLLiterals.SQLLiteralBase)
+      return value.toString(this);
+
     if (value === true) {
       return 'TRUE';
     } else if (value === false) {
@@ -82,11 +88,20 @@ class SQLConnectionBase extends ConnectionBase {
 
       return `(${arrayValue.map((item) => this.escape(field, item)).join(',')})`;
     }
+  }
+
+  escape(field, value) {
+    let result = this.escapeSpecialValue(field, value);
+    if (result !== undefined)
+      return result;
 
     return SqlString.escape(value);
   }
 
   escapeID(value) {
+    if (value instanceof SQLLiterals.SQLLiteralBase)
+      return value.toString(this.connection);
+
     return SqlString.escapeId(value).replace(/`/g, '"');
   }
 }

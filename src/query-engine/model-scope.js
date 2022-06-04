@@ -3,6 +3,7 @@
 const Nife            = require('nife');
 const ProxyClass      = require('../proxy-class');
 const QueryEngineBase = require('./query-engine-base');
+const SQLLiteralBase  = require('../connection/sql-literals/sql-literal-base');
 
 class ModelScope extends QueryEngineBase {
   _getField(fieldName) {
@@ -83,6 +84,26 @@ class ModelScope extends QueryEngineBase {
     });
 
     this._addToQuery({ control: true, operator: 'ORDER', value: values });
+    return this._fetchScope('model');
+  }
+
+  PROJECT(...args) {
+    let values = Nife.arrayFlatten(args);
+
+    values = Nife.toArray(values).filter((value) => {
+      if (value == null)
+        return false;
+
+      if (value instanceof SQLLiteralBase)
+        return true;
+
+      if (!Nife.instanceOf(value, 'string'))
+        throw new Error('QueryEngine::ModelScope::PROJECT: Invalid value provided. All values provided must be strings.');
+
+      return true;
+    });
+
+    this._addToQuery({ control: true, operator: 'PROJECT', value: values });
     return this._fetchScope('model');
   }
 }

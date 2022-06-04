@@ -5,6 +5,7 @@
 /* global describe, it, expect, beforeEach */
 
 const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
+const { SQLLiteral } = require('../../../src/connection/sql-literals');
 const {
   Role,
   User,
@@ -68,11 +69,19 @@ describe('SQLiteConnection', () => {
       expect(connection.escape(User.fields.id, true)).toEqual('TRUE');
       expect(connection.escape(User.fields.id, false)).toEqual('FALSE');
     });
+
+    it('should not escape a literal value', () => {
+      expect(connection.escape(User.fields.id, new SQLLiteral('!$#%'))).toEqual('!$#%');
+    });
   });
 
   describe('escapeID', () => {
     it('can escape a string value', () => {
       expect(connection.escapeID('test.derp')).toEqual('"test"."derp"');
+    });
+
+    it('should not escape a literal value', () => {
+      expect(connection.escapeID(new SQLLiteral('!$#%'))).toEqual('!$#%');
     });
   });
 
