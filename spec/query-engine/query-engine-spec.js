@@ -425,13 +425,4 @@ describe('QueryEngine', () => {
     //   });
     // });
   });
-
-  // TODO: AND and OR need to have callbacks for grouping
-  // TODO: Need to implement join
-  // TODO: Need to implement project
-  // TODO: Need to implement limit
-  // TODO: Need to implement offset
-  // TODO: Need to implement order
-  // TODO: Need to implement include (load sub-models)
-  // TODO: Need to implement all operators
 });

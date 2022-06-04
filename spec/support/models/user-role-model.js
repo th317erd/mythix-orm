@@ -5,9 +5,10 @@ const { Model, Types } = require('../../../src');
 class UserRole extends Model {
   static fields = {
     'id': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
-      primaryKey: true,
+      type:         Types.UUIDV4,
+      defaultValue: Types.UUIDV4.Default.UUIDV4,
+      allowNull:    false,
+      primaryKey:   true,
     },
     'roleID': {
       type:       Types.UUIDV4,

@@ -10,7 +10,7 @@ const {
   FLAG_ON_CREATE,
   FLAG_ON_UPDATE,
   FLAG_ON_STORE,
-  FLAG_REMOTE,
+  FLAG_LITERAL,
   defaultValueFlags,
   AUTO_INCREMENT,
   DATETIME_NOW,
@@ -39,8 +39,8 @@ describe('DefaultHelpers', () => {
   });
 
   it('can set remote flag on a default method', () => {
-    let func = defaultValueFlags(function() {}, { remote: true });
-    expect(func.mythixFlags).toEqual(FLAG_REMOTE);
+    let func = defaultValueFlags(function() {}, { literal: true });
+    expect(func.mythixFlags).toEqual(FLAG_LITERAL);
   });
 
   it('can remove initialize flag on a default method', () => {
@@ -50,7 +50,7 @@ describe('DefaultHelpers', () => {
 
   describe('AUTO_INCREMENT', () => {
     it('should have the correct flags set', () => {
-      expect(AUTO_INCREMENT.mythixFlags).toEqual(FLAG_REMOTE);
+      expect(AUTO_INCREMENT.mythixFlags).toEqual(FLAG_LITERAL);
     });
 
     it('should call connection to get value', () => {
@@ -69,7 +69,7 @@ describe('DefaultHelpers', () => {
 
   describe('DATETIME_NOW', () => {
     it('should have the correct flags set', () => {
-      expect(DATETIME_NOW.mythixFlags).toEqual(FLAG_REMOTE);
+      expect(DATETIME_NOW.mythixFlags).toEqual(FLAG_LITERAL);
     });
 
     it('should call connection to get value', () => {
@@ -88,7 +88,7 @@ describe('DefaultHelpers', () => {
 
   describe('DATE_NOW', () => {
     it('should have the correct flags set', () => {
-      expect(DATE_NOW.mythixFlags).toEqual(FLAG_REMOTE);
+      expect(DATE_NOW.mythixFlags).toEqual(FLAG_LITERAL);
     });
 
     it('should call connection to get value', () => {

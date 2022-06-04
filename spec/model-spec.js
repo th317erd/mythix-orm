@@ -435,6 +435,12 @@ describe('Model', () => {
     });
   });
 
+  describe('getConcreteFieldCount', () => {
+    it('should fetch concrete field count', () => {
+      expect(User.getConcreteFieldCount()).toEqual(4);
+    });
+  });
+
   describe('_castFieldValue', () => {
     it('should be able cast a value', () => {
       let user = new User();
@@ -457,6 +463,8 @@ describe('Model', () => {
 
     it('should be able get a dirty value', () => {
       let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      user.clearDirty();
+
       expect(user.getDataValue('lastName')).toEqual('Pickle');
       expect(user._fieldData.lastName).toEqual('Pickle');
       expect(user._dirtyFieldData.lastName).toBe(undefined);
@@ -476,6 +484,8 @@ describe('Model', () => {
   describe('setDataValue', () => {
     it('should be able set a value', () => {
       let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+
+      user.clearDirty();
       expect(user.firstName).toEqual('Bob');
 
       user.setDataValue('firstName', 'Booger');
@@ -492,6 +502,7 @@ describe('Model', () => {
 
     it('should clear dirty state if field is set back to original value', () => {
       let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      user.clearDirty();
 
       user.firstName = 'Booger';
 
@@ -561,18 +572,23 @@ describe('Model', () => {
       expect(user.lastName).toEqual('User');
       expect(user.isOver21).toEqual(true);
 
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'id')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'firstName')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'lastName')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'isOver21')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'id')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'firstName')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'lastName')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'isOver21')).toEqual(true);
 
-      expect(user._fieldData.id).toEqual(BigInt(1234));
-      expect(user._fieldData.firstName).toEqual('Test');
-      expect(user._fieldData.lastName).toEqual('User');
-      expect(user._fieldData.isOver21).toEqual(true);
+      expect(user._dirtyFieldData.id).toEqual(BigInt(1234));
+      expect(user._dirtyFieldData.firstName).toEqual('Test');
+      expect(user._dirtyFieldData.lastName).toEqual('User');
+      expect(user._dirtyFieldData.isOver21).toEqual(true);
 
-      expect(user.isDirty()).toEqual(false);
-      expect(user.changes).toEqual({});
+      expect(user.isDirty()).toEqual(true);
+      expect(user.changes).toEqual({
+        id:         { previous: undefined, current: BigInt(1234) },
+        firstName:  { previous: undefined, current: 'Test' },
+        isOver21:   { previous: undefined, current: true },
+        lastName:   { previous: undefined, current: 'User' },
+      });
     });
 
     it('can cast field values from constructor', () => {
@@ -588,18 +604,23 @@ describe('Model', () => {
       expect(user.lastName).toEqual('User');
       expect(user.isOver21).toEqual(true);
 
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'id')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'firstName')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'lastName')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'isOver21')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'id')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'firstName')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'lastName')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'isOver21')).toEqual(true);
 
-      expect(user._fieldData.id).toEqual(BigInt(1234));
-      expect(user._fieldData.firstName).toEqual('Test');
-      expect(user._fieldData.lastName).toEqual('User');
-      expect(user._fieldData.isOver21).toEqual(true);
+      expect(user._dirtyFieldData.id).toEqual(BigInt(1234));
+      expect(user._dirtyFieldData.firstName).toEqual('Test');
+      expect(user._dirtyFieldData.lastName).toEqual('User');
+      expect(user._dirtyFieldData.isOver21).toEqual(true);
 
-      expect(user.isDirty()).toEqual(false);
-      expect(user.changes).toEqual({});
+      expect(user.isDirty()).toEqual(true);
+      expect(user.changes).toEqual({
+        id:         { previous: undefined, current: BigInt(1234) },
+        firstName:  { previous: undefined, current: 'Test' },
+        isOver21:   { previous: undefined, current: true },
+        lastName:   { previous: undefined, current: 'User' },
+      });
     });
 
     it('field values from a constructor that are methods should be called automatically', () => {
@@ -615,18 +636,23 @@ describe('Model', () => {
       expect(user.lastName).toEqual('User');
       expect(user.isOver21).toEqual(true);
 
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'id')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'firstName')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'lastName')).toEqual(true);
-      expect(Object.prototype.hasOwnProperty.call(user._fieldData, 'isOver21')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'id')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'firstName')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'lastName')).toEqual(true);
+      expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'isOver21')).toEqual(true);
 
-      expect(user._fieldData.id).toEqual(BigInt(1234));
-      expect(user._fieldData.firstName).toEqual('Test');
-      expect(user._fieldData.lastName).toEqual('User');
-      expect(user._fieldData.isOver21).toEqual(true);
+      expect(user._dirtyFieldData.id).toEqual(BigInt(1234));
+      expect(user._dirtyFieldData.firstName).toEqual('Test');
+      expect(user._dirtyFieldData.lastName).toEqual('User');
+      expect(user._dirtyFieldData.isOver21).toEqual(true);
 
-      expect(user.isDirty()).toEqual(false);
-      expect(user.changes).toEqual({});
+      expect(user.isDirty()).toEqual(true);
+      expect(user.changes).toEqual({
+        id:         { previous: undefined, current: BigInt(1234) },
+        firstName:  { previous: undefined, current: 'Test' },
+        isOver21:   { previous: undefined, current: true },
+        lastName:   { previous: undefined, current: 'User' },
+      });
     });
 
     it('can have default values for fields', () => {

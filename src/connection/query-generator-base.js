@@ -1,10 +1,11 @@
 'use strict';
 
 const Nife            = require('nife');
-const { FLAG_REMOTE } = require('../helpers/default-helpers');
+const { FLAG_LITERAL } = require('../helpers/default-helpers');
 const QueryEngine     = require('../query-engine/query-engine');
 const SQLLiteralBase  = require('./sql-literals/sql-literal-base.js');
 const ModelUtils      = require('../utils/model-utils');
+const ModelBase       = require('../model');
 
 class QueryGeneratorBase {
   constructor(connection) {
@@ -43,14 +44,23 @@ class QueryGeneratorBase {
     return Model.getTableName();
   }
 
+  getEscapedFieldName(field, options) {
+    if (options && options.fieldNameOnly === true)
+      return this.escapeID(field.fieldName);
+    else
+      return `${this.escapeID(field.Model.getModelName())}.${this.escapeID(field.fieldName)}`;
+  }
+
+  getEscapedColumnName(field, options) {
+    if (options && options.columnNameOnly === true)
+      return this.escapeID(field.columnName);
+    else
+      return `${this.escapeID(field.Model.getTableName())}.${this.escapeID(field.columnName)}`;
+  }
+
   // eslint-disable-next-line no-unused-vars
   getEscapedProjectionName(field, options) {
-    let modelName         = field.Model.getModelName();
-    let tableName         = field.Model.getTableName();
-    let escapedTableName  = this.escapeID(tableName);
-    let escapedModelName  = this.escapeID(modelName);
-
-    return `${escapedTableName}.${this.escapeID(field.columnName)} AS ${escapedModelName}.${this.escapeID(field.fieldName)}`;
+    return `${this.getEscapedColumnName(field, options)} AS ${this.getEscapedFieldName(field, options)}`;
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -62,8 +72,17 @@ class QueryGeneratorBase {
       if (field.type.isVirtual())
         return;
 
-      fields[`${modelName}:${fieldName}`] = this.getEscapedProjectionName(field, options);
-    });
+      let result;
+
+      if (options && options.asProjection)
+        result = this.getEscapedProjectionName(field, options);
+      else if (options && options.asColumn)
+        result = this.getEscapedColumnName(field, options);
+      else
+        result = this.getEscapedFieldName(field, options);
+
+      fields[`${modelName}:${fieldName}`] = result;
+    }, (options && options.fields));
 
     return fields;
   }
@@ -216,12 +235,13 @@ class QueryGeneratorBase {
     return projections;
   }
 
-  getProjectedFields(queryEngine, options) {
-    let Models                    = this.getAllModelsUsedInQuery(queryEngine, options);
-    let queryProjection           = this.getProjectionFromQueryEngine(queryEngine, options);
-    let requiredProjectionFields  = this.getProjectionRequiredFields(queryEngine, options);
+  getProjectedFields(queryEngine, _options) {
+    let Models                    = this.getAllModelsUsedInQuery(queryEngine, _options);
+    let queryProjection           = this.getProjectionFromQueryEngine(queryEngine, _options);
+    let requiredProjectionFields  = this.getProjectionRequiredFields(queryEngine, _options);
     let modelNamesComputed        = {};
     let allProjectionFields       = new Map();
+    let options                   = Object.assign({}, _options || {}, { asProjection: true });
 
     if (queryProjection.indexOf('*') >= 0) {
       let removeFieldsFromProjection = queryProjection.map((projectionField) => {
@@ -737,25 +757,33 @@ class QueryGeneratorBase {
     return sqlParts.filter(Boolean).join(' ');
   }
 
-  getFieldDefaultValue(field, fieldName) {
+  getFieldDefaultValue(field, fieldName, _options) {
     if (field.defaultValue === undefined)
       return;
 
+    let options           = _options || {};
     let defaultValue      = field.defaultValue;
-    let useDefaultKeyword = true;
+    let useDefaultKeyword = (Object.prototype.hasOwnProperty.call(options, 'useDefaultKeyword')) ? options.useDefaultKeyword : true;
+    let escapeValue       = (Object.prototype.hasOwnProperty.call(options, 'escape')) ? options.escape : true;
 
     if (typeof defaultValue === 'function') {
-      defaultValue = defaultValue({ field, fieldName, connection: this.connection });
-
-      if (!((field.defaultValue.mythixFlags || 0) & FLAG_REMOTE))
-        defaultValue = this.escape(field, defaultValue);
+      if (options.remoteOnly !== true) {
+        defaultValue = defaultValue({ field, fieldName, connection: this.connection });
+        defaultValue = (escapeValue) ? this.escape(field, defaultValue) : defaultValue;
+      } else if ((field.defaultValue.mythixFlags || 0) & FLAG_LITERAL) {
+        defaultValue = defaultValue({ field, fieldName, connection: this.connection });
+      } else {
+        return;
+      }
     } else {
-      defaultValue = this.escape(field, defaultValue);
+      defaultValue = (escapeValue) ? this.escape(field, defaultValue) : defaultValue;
     }
 
     if (defaultValue instanceof SQLLiteralBase) {
       useDefaultKeyword = false;
-      defaultValue = defaultValue.toString(this.connection);
+
+      if (escapeValue)
+        defaultValue = defaultValue.toString(this.connection);
     }
 
     if (useDefaultKeyword)
@@ -765,7 +793,8 @@ class QueryGeneratorBase {
   }
 
   // eslint-disable-next-line no-unused-vars
-  generateCreateTableStatement(Model, options) {
+  generateCreateTableStatement(Model, _options) {
+    let options = _options || {};
     let fieldParts = [];
 
     Model.iterateFields(({ field, fieldName }) => {
@@ -792,7 +821,7 @@ class QueryGeneratorBase {
           constraintParts.push('NOT NULL');
       }
 
-      let defaultValue = this.getFieldDefaultValue(field, fieldName);
+      let defaultValue = this.getFieldDefaultValue(field, fieldName, { remoteOnly: true });
       if (defaultValue !== undefined)
         constraintParts.push(defaultValue);
 
@@ -803,7 +832,146 @@ class QueryGeneratorBase {
       fieldParts.push(`  ${this.escapeID(columnName)} ${field.type.toString(this)}${constraintParts}`);
     });
 
-    return `CREATE TABLE IF NOT EXISTS ${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
+    let ifNotExists = 'IF NOT EXISTS ';
+    if (options.ifNotExists === false)
+      ifNotExists = '';
+
+    return `CREATE TABLE ${ifNotExists}${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
+  }
+
+  prepareAllModelsForOperation(Model, models, _options) {
+    let options           = _options || {};
+    let finalizedModels   = [];
+    let dirtyFieldNames   = {};
+    let dirtyFields       = [];
+    let hasAllFieldNames  = false;
+    let totalFieldCount   = Model.getConcreteFieldCount();
+    let startIndex        = options.startIndex || 0;
+    let endIndex          = models.length;
+
+    if (options.endIndex)
+      endIndex = Math.min(options.endIndex, endIndex);
+    else if (options.batchSize)
+      endIndex = Math.min(startIndex + options.batchSize, endIndex);
+
+    // Make sure all data is models,
+    // and find all the dirty fields
+    for (let i = startIndex; i < endIndex; i++) {
+      let model = models[i];
+      if (!(model instanceof ModelBase))
+        model = new Model(model);
+
+      if (!hasAllFieldNames) {
+        Object.assign(dirtyFieldNames, model.changes);
+
+        if (Object.keys(dirtyFieldNames).length >= totalFieldCount)
+          hasAllFieldNames = true;
+      }
+
+      finalizedModels.push(model);
+    }
+
+    let fieldNames = Object.keys(dirtyFieldNames);
+    for (let i = 0, il = fieldNames.length; i < il; i++) {
+      let fieldName = fieldNames[i];
+      let field     = Model.getField(fieldName);
+      if (!field)
+        continue;
+
+      dirtyFields.push(field);
+    }
+
+    return { models: finalizedModels, dirtyFields };
+  }
+
+  generateInsertFieldValuesFromModel(model, _options) {
+    if (!model)
+      return '';
+
+    let options   = _options || {};
+    let sqlParts  = [];
+    let hasParts  = false;
+
+    model.iterateFields(({ field, fieldName }) => {
+      let fieldValue = model[fieldName];
+      if (fieldValue == null)
+        fieldValue = this.getFieldDefaultValue(field, fieldName, { useDefaultKeyword: false, escape: false });
+
+      if (fieldValue instanceof SQLLiteralBase)
+        fieldValue = fieldValue.toString(this.connection);
+
+      if (fieldValue === undefined) {
+        sqlParts.push('');
+        return;
+      }
+
+      hasParts = true;
+      sqlParts.push(this.escape(field, fieldValue));
+    }, options.dirtyFields);
+
+    if (!hasParts)
+      return '';
+    else
+      return sqlParts.join(',');
+  }
+
+  generateInsertValuesFromModels(Model, _models, _options) {
+    if (!_models || _models.length === 0)
+      return '';
+
+    let options     = _options || {};
+    let models      = options.preparedModels;
+    let dirtyFields = options.fields;
+
+    if (!models || !dirtyFields) {
+      let preparedResult = this.prepareAllModelsForOperation(Model, _models, options);
+      models = preparedResult.models;
+      dirtyFields = preparedResult.dirtyFields;
+    }
+
+    if (!models)
+      return '';
+
+    let sqlParts    = [];
+    let subOptions  = Object.assign(Object.create(options), { dirtyFields });
+
+    for (let i = 0, il = models.length; i < il; i++) {
+      let model = models[i];
+      if (!(model instanceof ModelBase))
+        model = new Model(model);
+
+      let rowValues = this.generateInsertFieldValuesFromModel(model, subOptions);
+      sqlParts.push(`(${rowValues})`);
+    }
+
+    return (options.newlines === false) ? sqlParts.join(',') : sqlParts.join(',\n');
+  }
+
+  generateInsertStatement(Model, _models, _options) {
+    if (!_models || _models.length === 0)
+      return '';
+
+    let options                 = _options || {};
+    let { models, dirtyFields } = this.prepareAllModelsForOperation(Model, _models, options);
+    if (!models)
+      return '';
+
+    let subOptions  = Object.assign(Object.create(options), {
+      asColumn:       true,
+      columnNameOnly: true,
+      fields:         dirtyFields,
+      preparedModels: models,
+      dirtyFields,
+    });
+
+    let values = this.generateInsertValuesFromModels(Model, _models, subOptions);
+    if (!values)
+      return '';
+
+    let escapedTableName  = this.escapeID(Model.getTableName());
+    let escapedFieldNames = Array.from(Object.values(this.getEscapedModelFields(Model, subOptions)));
+
+    return `INSERT INTO ${escapedTableName} (${escapedFieldNames}) VALUES ${values}`;
   }
 }
 

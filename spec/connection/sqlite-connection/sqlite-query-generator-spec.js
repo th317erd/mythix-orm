@@ -374,14 +374,14 @@ describe('SQLiteQueryGenerator', () => {
 
     it('can generate a create table statement #2', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateCreateTableStatement(ExtendedUser)).toEqual('CREATE TABLE IF NOT EXISTS "extended_users" (  "id" INTEGER PRIMARY KEY AUTOINCREMENT,\n  "createdAt" DATETIME NOT NULL DEFAULT (datetime(\'now\')),\n  "email" VARCHAR(256) UNIQUE NOT NULL,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "playerType" VARCHAR(256) NOT NULL DEFAULT \'wizard\',\n  "primaryRole" VARCHAR(256) NOT NULL DEFAULT \'user\',\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
+      expect(queryGenerator.generateCreateTableStatement(ExtendedUser)).toEqual('CREATE TABLE IF NOT EXISTS "extended_users" (  "id" INTEGER PRIMARY KEY AUTOINCREMENT,\n  "createdAt" DATETIME NOT NULL DEFAULT (datetime(\'now\')),\n  "email" VARCHAR(256) UNIQUE NOT NULL,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "playerType" VARCHAR(256) NOT NULL DEFAULT \'wizard\',\n  "primaryRole" VARCHAR(256) NOT NULL,\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
     });
   });
 
   describe('getEscapedModelFields', () => {
     it('can generate escaped field list from model', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let fieldList       = queryGenerator.getEscapedModelFields(User);
+      let fieldList       = queryGenerator.getEscapedModelFields(User, { asProjection: true });
       expect(fieldList).toEqual({
         'User:id':             '"users"."id" AS "User"."id"',
         'User:firstName':      '"users"."firstName" AS "User"."firstName"',
@@ -864,6 +864,217 @@ describe('SQLiteQueryGenerator', () => {
         .OFFSET(500),
       );
       expect(queryString).toEqual('SELECT "role_things"."id" AS "RoleThing"."id","role_things"."roleID" AS "RoleThing"."roleID","roles"."id" AS "Role"."id","roles"."name" AS "Role"."name","user_things"."id" AS "UserThing"."id","user_things"."roleThingID" AS "UserThing"."roleThingID","user_things"."userID" AS "UserThing"."userID","users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 500');
+    });
+  });
+
+  describe('generateInsertFieldValuesFromModel', () => {
+    it('should generate all values for all fields', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertFieldValuesFromModel(new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }));
+
+      expect(result).toEqual('\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\',,,,,');
+    });
+
+    it('should generate all values for dirty fields', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertFieldValuesFromModel(
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+        { dirtyFields: [ User.fields.id, User.fields.firstName, User.fields.lastName ] },
+      );
+
+      expect(result).toEqual('\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\'');
+    });
+  });
+
+  describe('generateInsertValuesFromModels', () => {
+    it('should generate all values for all fields', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertValuesFromModels(User, [
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ]);
+
+      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should generate all values for multiple models', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertValuesFromModels(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ]);
+
+      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),\n(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should skip newlines when requested to do so', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertValuesFromModels(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ], { newlines: false });
+
+      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should work with a startIndex and endIndex', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertValuesFromModels(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ], { newlines: false, startIndex: 0, endIndex: 1 });
+
+      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\')');
+
+      result = queryGenerator.generateInsertValuesFromModels(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ], { newlines: false, startIndex: 1, endIndex: 2 });
+
+      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should work with a startIndex and batchSize', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertValuesFromModels(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ], { newlines: false, startIndex: 0, batchSize: 1 });
+
+      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\')');
+
+      result = queryGenerator.generateInsertValuesFromModels(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ], { newlines: false, startIndex: 1, batchSize: 1 });
+
+      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+  });
+
+  describe('generateInsertStatement', () => {
+    it('should generate an insert statement', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertStatement(User, [
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ]);
+
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should generate an insert statement for multiple models', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertStatement(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ]);
+
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),\n(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should skip newlines', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertStatement(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ], { newlines: false });
+
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should skip newlines', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertStatement(User, [
+        { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
+        new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
+      ], { newlines: false });
+
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+    });
+
+    it('should generate nothing if no models provided', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.generateInsertStatement(User, [], { newlines: false });
+
+      expect(result).toEqual('');
+
+      result = queryGenerator.generateInsertStatement(User, undefined, { newlines: false });
+      expect(result).toEqual('');
+    });
+
+    it('should generate nothing if models provided are not dirty', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let user            = new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' });
+
+      user.clearDirty();
+
+      let result = queryGenerator.generateInsertStatement(User, [], { newlines: false });
+      expect(result).toEqual('');
+    });
+  });
+
+  describe('getEscapedFieldName', () => {
+    it('should generate escaped column name', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getEscapedFieldName(User.fields.firstName)).toEqual('"User"."firstName"');
+    });
+
+    it('should bypass table name when requested to do so', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getEscapedFieldName(User.fields.firstName, { fieldNameOnly: true })).toEqual('"firstName"');
+    });
+  });
+
+  describe('getEscapedColumnName', () => {
+    it('should generate escaped column name', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getEscapedColumnName(User.fields.firstName)).toEqual('"users"."firstName"');
+    });
+
+    it('should bypass table name when requested to do so', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.getEscapedColumnName(User.fields.firstName, { columnNameOnly: true })).toEqual('"firstName"');
+    });
+  });
+
+  describe('prepareAllModelsForOperation', () => {
+    it('should convert everything to a model', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.prepareAllModelsForOperation(User, [
+        { firstName: 'Test', lastName: 'User' },
+        new User({ lastName: 'Brain' }),
+      ]);
+
+      expect(result.models[0]).toBeInstanceOf(User);
+      expect(result.models[1]).toBeInstanceOf(User);
+      expect(result.dirtyFields).toBeInstanceOf(Array);
+      expect(result.dirtyFields.length).toEqual(3);
+    });
+
+    it('should get dirty fields for models', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let models          = [
+        new User(),
+        new User(),
+      ];
+
+      Object.assign(models[0], { firstName: 'Test' });
+      Object.assign(models[1], { lastName: 'User' });
+
+      let result = queryGenerator.prepareAllModelsForOperation(User, models);
+
+      expect(result.models[0]).toBeInstanceOf(User);
+      expect(result.models[1]).toBeInstanceOf(User);
+      expect(result.dirtyFields).toBeInstanceOf(Array);
+      expect(result.dirtyFields.length).toEqual(2);
+
+      let dirtyFields = result.dirtyFields.sort((a, b) => {
+        if (a.fieldName === b.fieldName)
+          return 0;
+
+        return (a.fieldName < b.fieldName) ? -1 : 1;
+      });
+
+      expect(dirtyFields.map((field) => field.fieldName)).toEqual([ 'firstName', 'lastName' ]);
     });
   });
 });

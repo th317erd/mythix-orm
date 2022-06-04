@@ -279,6 +279,19 @@ class Model {
     return primaryKeyField.fieldName;
   }
 
+  static getConcreteFieldCount() {
+    let count = 0;
+
+    this.iterateFields(({ field }) => {
+      if (field.type.isVirtual())
+        return;
+
+      count++;
+    });
+
+    return count;
+  }
+
   constructor(data) {
     Object.defineProperties(this, {
       '_isModelInstance': {
@@ -342,13 +355,16 @@ class Model {
   }
 
   _initializeModelData(data) {
-    let fieldData = this._fieldData;
+    let dirtyFieldData = this._dirtyFieldData;
 
     // First initialize field values from data
     if (data) {
       this.iterateFields(({ fieldName }) => {
         let fieldValue  = (data) ? data[fieldName] : undefined;
-        fieldData[fieldName] = fieldValue;
+        if (fieldValue == null)
+          return;
+
+        dirtyFieldData[fieldName] = fieldValue;
       });
     }
 
@@ -368,8 +384,9 @@ class Model {
   }
 
   _initializeFieldData(fieldName, field, fieldValue, data) {
-    let fieldData     = this._fieldData;
-    let defaultValue  = fieldValue;
+    let dirtyFieldData  = this._dirtyFieldData;
+    let fieldData       = this._fieldData;
+    let defaultValue    = fieldValue;
 
     // If the attribute given by "data" is a function
     // then we always want to call it
@@ -400,7 +417,10 @@ class Model {
         defaultValue = undefined;
     }
 
-    fieldData[fieldName] = this._castFieldValue(field, defaultValue);
+    if (defaultValue == null || !data)
+      fieldData[fieldName] = (defaultValue != null) ? this._castFieldValue(field, defaultValue) : defaultValue;
+    else
+      dirtyFieldData[fieldName] = this._castFieldValue(field, defaultValue);
   }
 
   _getDirtyFields() {
@@ -435,8 +455,21 @@ class Model {
     this.setDataValue(fieldName, value);
   }
 
-  isDirty() {
-    return (Object.keys(this._dirtyFieldData).length > 0);
+  isDirty(fieldName) {
+    if (!fieldName)
+      return (Object.keys(this._dirtyFieldData).length > 0);
+    else
+      return Object.prototype.hasOwnProperty.call(this._dirtyFieldData, fieldName);
+  }
+
+  clearDirty(fieldName) {
+    if (fieldName && Object.prototype.hasOwnProperty.call(this._dirtyFieldData, fieldName)) {
+      this._fieldData[fieldName] = this._dirtyFieldData[fieldName];
+      delete this._dirtyFieldData[fieldName];
+    } else {
+      Object.assign(this._fieldData, this._dirtyFieldData);
+      this._dirtyFieldData = {};
+    }
   }
 
   getDataValue(fieldName) {
