@@ -5,6 +5,7 @@ const SqlString       = require('sqlstring');
 const UUID            = require('uuid');
 const ConnectionBase  = require('./connection-base');
 const SQLLiterals     = require('./sql-literals');
+const ModelUtils      = require('../utils/model-utils');
 
 const SAVE_POINT_NAME_CHARS = [ 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P' ];
 
@@ -118,6 +119,67 @@ class SQLConnectionBase extends ConnectionBase {
 
     return `SP${id}`;
   }
+
+  findAllFieldsFromFieldProjectionMap(projectionFieldMap) {
+    let fullFieldNames = (Array.isArray(projectionFieldMap)) ? projectionFieldMap : Array.from(projectionFieldMap.keys());
+
+    return fullFieldNames.map((fullFieldName) => {
+      let def = ModelUtils.parseQualifiedName(fullFieldName);
+      if (!def.modelName || def.fieldNames.length === 0)
+        return fullFieldName;
+
+      let field = this.getField(def.fieldNames[0], def.modelName);
+      if (!field)
+        return fullFieldName;
+
+      return field;
+    }).filter(Boolean);
+  }
+
+  buildModelDataMapFromSelectResults(result) {
+    if (!result)
+      return {};
+
+    let rows = result.rows;
+    if (Nife.isEmpty(rows))
+      return {};
+
+    let fields    = this.findAllFieldsFromFieldProjectionMap(result.columns);
+    let modelData = {};
+
+    for (let i = 0, il = rows.length; i < il; i++) {
+      let row   = rows[i];
+      let data  = {};
+
+      for (let j = 0, jl = fields.length; j < jl; j++) {
+        let field       = fields[j];
+        let Model       = field.Model;
+        let modelName   = Model.getModelName();
+        let dataContext = data[modelName];
+        let remoteValue = row[j];
+
+        if (!dataContext)
+          dataContext = data[modelName] = {};
+
+        dataContext[field.fieldName] = remoteValue;
+      }
+
+      let modelNames = Object.keys(data);
+      for (let i = 0, il = modelNames.length; i < il; i++) {
+        let modelName = modelNames[i];
+        let models    = modelData[modelName];
+        let model     = data[modelName];
+
+        if (!models)
+          models = modelData[modelName] = [];
+
+        models.push(model);
+      }
+    }
+
+    return modelData;
+  }
+
 }
 
 module.exports = SQLConnectionBase;

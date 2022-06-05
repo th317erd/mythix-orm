@@ -5,7 +5,6 @@ const Database              = require('better-sqlite3');
 const SQLConnectionBase     = require('../sql-connection-base');
 const SQLiteQueryGenerator  = require('./sqlite-query-generator');
 const { SQLLiteral }        = require('../sql-literals');
-const Types                 = require('../../types');
 
 class SQLiteConnection extends SQLConnectionBase {
   static dialect = 'sqlite';
@@ -80,7 +79,16 @@ class SQLiteConnection extends SQLConnectionBase {
       if (methodName === 'all')
         statement.raw(true);
 
-      return await statement[methodName](...parameters);
+      let result = await statement[methodName](...parameters);
+
+      if (options.formatResponse === true) {
+        if ((/^INSERT\b/i).test(sql))
+          result = this.formatInsertResponse(sql, result);
+        else if ((/^SELECT\b/).test(sql))
+          result = this.formatSelectResponse(sql, result);
+      }
+
+      return result;
     } catch (error) {
       if (options.logger) {
         options.logger.error(error);
@@ -126,7 +134,7 @@ class SQLiteConnection extends SQLConnectionBase {
     }
   }
 
-  formatInsertResponse(insertResponse) {
+  formatInsertResponse(sqlStatement, insertResponse) {
     if (!insertResponse)
       return insertResponse;
 
@@ -138,6 +146,17 @@ class SQLiteConnection extends SQLConnectionBase {
       ids.push(i + 1);
 
     return ids;
+  }
+
+  formatSelectResponse(sqlStatement, result) {
+    let queryGenerator      = this.getQueryGenerator();
+    let projectionFieldMap  = queryGenerator.parseFieldProjectionToFieldMap(sqlStatement);
+    let columns             = Array.from(projectionFieldMap.keys());
+
+    return {
+      rows: result,
+      columns,
+    };
   }
 }
 

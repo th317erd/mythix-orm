@@ -58,6 +58,21 @@ class ConnectionBase {
     }
   }
 
+  findModelField(finder) {
+    let modelMap    = this.getModels();
+    let modelNames  = Object.keys(modelMap);
+    let results     = [];
+
+    for (let i = 0, il = modelNames.length; i < il; i++) {
+      let modelName = modelNames[i];
+      let Model     = modelMap[modelName];
+
+      results = results.concat(Model.iterateFields(finder));
+    }
+
+    return results;
+  }
+
   getOptions() {
     return this._options;
   }

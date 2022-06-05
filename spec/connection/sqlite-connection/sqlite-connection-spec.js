@@ -12,6 +12,7 @@ describe('SQLiteConnection', () => {
   describe('connection management', () => {
     let connection;
     let User;
+    let Role;
 
     beforeEach(async () => {
       connection = new SQLiteConnection({
@@ -21,6 +22,7 @@ describe('SQLiteConnection', () => {
       let models = connection.getModels();
 
       User = models.User;
+      Role = models.Role;
     });
 
     describe('getSQLLiteralClassByName', () => {
@@ -41,7 +43,7 @@ describe('SQLiteConnection', () => {
 
       it('can stringify a literal to SQL', () => {
         let literal = SQLiteConnection.Literal('distinct', 'User:firstName');
-        expect(literal.toString(connection)).toEqual('DISTINCT "users"."firstName" AS "User.firstName"');
+        expect(literal.toString(connection)).toEqual('DISTINCT "users"."firstName" AS "User:firstName"');
       });
 
       it('will stringify to class name if no connection given', () => {
@@ -116,11 +118,86 @@ describe('SQLiteConnection', () => {
         expect(connection.generateSavePointName()).toMatch(/SP[A-P]{32}/);
       });
     });
+
+    describe('parseFieldProjection', () => {
+      it('can parse a field projection and turn it into a field definition', async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        expect(queryGenerator.parseFieldProjection('"users"."id" AS "User:id"')).toEqual('User:id');
+        expect(queryGenerator.parseFieldProjection('"users"."firstName" AS "User:firstName"')).toEqual('User:firstName');
+      });
+
+      it('can parse a field projection when it is a literal', async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        expect(queryGenerator.parseFieldProjection('DISTINCT "users"."id" AS "User:id"')).toEqual('User:id');
+      });
+
+      it('can parse a field projection when it is a non-standard format', async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        expect(queryGenerator.parseFieldProjection('COUNT("users"."id") AS "User:id"')).toEqual('User:id');
+        expect(queryGenerator.parseFieldProjection('COUNT("users"."id")')).toEqual('User:id');
+      });
+    });
+
+    describe('projectionToFieldMap', () => {
+      it('can parse projection and turn it into a field map', async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
+
+        let result = queryGenerator.parseFieldProjectionToFieldMap(sqlStatement);
+        expect(Array.from(result.keys())).toEqual([
+          'User:firstName',
+          'User:id',
+          'User:lastName',
+          'User:primaryRoleID',
+        ]);
+
+        expect(Array.from(result.values())).toEqual([
+          '"users"."firstName" AS "User:firstName"',
+          '"users"."id" AS "User:id"',
+          '"users"."lastName" AS "User:lastName"',
+          '"users"."primaryRoleID" AS "User:primaryRoleID"',
+        ]);
+      });
+    });
+
+    describe('findAllFieldsFromFieldProjectionMap', () => {
+      it('will return all fields from projection map', async () => {
+        let queryGenerator      = connection.getQueryGenerator();
+        let sqlStatement        = queryGenerator.generateSelectStatement(User.where.id.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName'));
+        let projectionFieldMap  = queryGenerator.parseFieldProjectionToFieldMap(sqlStatement);
+
+        expect(connection.findAllFieldsFromFieldProjectionMap(projectionFieldMap)).toEqual([
+          Role.fields.id,
+          Role.fields.name,
+          User.fields.firstName,
+          User.fields.id,
+          User.fields.lastName,
+          User.fields.primaryRoleID,
+        ]);
+      });
+
+      it('will return the raw projection field as a string if field can not be found', async () => {
+        let queryGenerator      = connection.getQueryGenerator();
+        let sqlStatement        = queryGenerator.generateSelectStatement(User.where.id.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName').PROJECT('*', new SQLLiteral('COUNT(*)')));
+        let projectionFieldMap  = queryGenerator.parseFieldProjectionToFieldMap(sqlStatement);
+
+        expect(connection.findAllFieldsFromFieldProjectionMap(projectionFieldMap)).toEqual([
+          'COUNT(*)',
+          Role.fields.id,
+          Role.fields.name,
+          User.fields.firstName,
+          User.fields.id,
+          User.fields.lastName,
+          User.fields.primaryRoleID,
+        ]);
+      });
+    });
   });
 
   describe('database operations', () => {
     let connection;
     let User;
+    let Role;
 
     const createTable = async (connection, Model) => {
       let queryGenerator  = connection.getQueryGenerator();
@@ -137,15 +214,18 @@ describe('SQLiteConnection', () => {
       let models = connection.getModels();
 
       User = models.User;
+      Role = models.Role;
 
       await connection.start();
 
       await createTable(connection, User);
+      await createTable(connection, Role);
     });
 
     beforeEach(async () => {
       // Truncate
       await connection.query('DELETE FROM "users"');
+      await connection.query('DELETE FROM "roles"');
     });
 
     describe('insert', () => {
@@ -159,7 +239,7 @@ describe('SQLiteConnection', () => {
         );
         let result          = await connection.query(sqlStr);
         expect(result).toEqual({ changes: 1, lastInsertRowid: 1 });
-        expect(connection.formatInsertResponse(result)).toEqual([ 1 ]);
+        expect(connection.formatInsertResponse(sqlStr, result)).toEqual([ 1 ]);
       });
 
       it('should be able to insert multiple models', async () => {
@@ -171,9 +251,24 @@ describe('SQLiteConnection', () => {
             new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
           ],
         );
-        let result          = await connection.query(sqlStr);
+
+        let result = await connection.query(sqlStr);
         expect(result).toEqual({ changes: 2, lastInsertRowid: 2 });
-        expect(connection.formatInsertResponse(result)).toEqual([ 1, 2 ]);
+        expect(connection.formatInsertResponse(sqlStr, result)).toEqual([ 1, 2 ]);
+      });
+
+      it('should be able to request that response be formatted', async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateInsertStatement(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          ],
+        );
+
+        let result = await connection.query(sqlStr, { formatResponse: true });
+        expect(result).toEqual([ 1, 2 ]);
       });
     });
 
@@ -183,9 +278,9 @@ describe('SQLiteConnection', () => {
         let sqlStr          = queryGenerator.generateInsertStatement(
           User,
           [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'First', lastName: null, primaryRoleID: UUID.v4() }),
+            new User({ id: '4430db4c-8967-41d9-807c-40811fcee60a', firstName: 'Test', lastName: 'User', primaryRoleID: 'edf06e37-fdd3-4e96-b1fc-dcaff256d24a' }),
+            new User({ id: '33144fb7-cffe-454e-8d45-9c585bc89fc6', firstName: 'Mary', lastName: 'Anne', primaryRoleID: '81fe6880-af54-489d-a9dc-facfa98059ab' }),
+            new User({ id: 'c69da6dc-189b-43e9-9b98-c9e0ba1d85eb', firstName: 'First', lastName: null, primaryRoleID: 'f1635dbe-1f74-4000-b6af-e9dd92b0025d' }),
           ],
         );
 
@@ -213,8 +308,104 @@ describe('SQLiteConnection', () => {
         expect(result[1][1]).toMatch(/[a-f0-9-]{36}/);
         expect(result[1][2]).toEqual('Anne');
         expect(result[1][3]).toMatch(/[a-f0-9-]{36}/);
+      });
 
-        // .toEqual([ [ 'Mary', '75ef5ca2-8013-43f7-9ff5-7c8f99e49025', 'Anne', '748e13c2-f87d-481a-9fcb-9aa131ae485e' ] ]);
+      it('should map selected rows to model map', async () => {
+        await insertSomeRows();
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
+        let result          = connection.formatSelectResponse(sqlStatement, await connection.query(sqlStatement));
+
+        expect(result.columns).toEqual([
+          'User:firstName',
+          'User:id',
+          'User:lastName',
+          'User:primaryRoleID',
+        ]);
+
+        expect(result.rows).toBeInstanceOf(Array);
+        expect(result.rows.length).toEqual(2);
+      });
+
+      it('should be able to request that response be formatted', async () => {
+        await insertSomeRows();
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
+        let result          = await connection.query(sqlStatement, { formatResponse: true });
+
+        expect(result.columns).toEqual([
+          'User:firstName',
+          'User:id',
+          'User:lastName',
+          'User:primaryRoleID',
+        ]);
+
+        expect(result.rows).toBeInstanceOf(Array);
+        expect(result.rows.length).toEqual(2);
+      });
+
+      it('should be able to generate a model data map from query result', async () => {
+        await insertSomeRows();
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName'));
+        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+
+        expect(connection.buildModelDataMapFromSelectResults(result)).toEqual({
+          User: [
+            {
+              id:             'c69da6dc-189b-43e9-9b98-c9e0ba1d85eb',
+              firstName:      'First',
+              lastName:       null,
+              primaryRoleID:  'f1635dbe-1f74-4000-b6af-e9dd92b0025d',
+            },
+            {
+              id:             '33144fb7-cffe-454e-8d45-9c585bc89fc6',
+              firstName:      'Mary',
+              lastName:       'Anne',
+              primaryRoleID:  '81fe6880-af54-489d-a9dc-facfa98059ab',
+            },
+          ],
+        });
+
+        expect(result.rows).toBeInstanceOf(Array);
+        expect(result.rows.length).toEqual(2);
+      });
+
+      it('should be able to generate a model data map from query result with a table join', async () => {
+        await insertSomeRows();
+
+        let queryGenerator  = connection.getQueryGenerator();
+
+        await connection.query(queryGenerator.generateInsertStatement(Role, new Role({
+          id:   '81fe6880-af54-489d-a9dc-facfa98059ab',
+          name: 'derp',
+        })));
+
+        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName'));
+        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+
+        expect(connection.buildModelDataMapFromSelectResults(result)).toEqual({
+          User: [
+            {
+              id:             '33144fb7-cffe-454e-8d45-9c585bc89fc6',
+              firstName:      'Mary',
+              lastName:       'Anne',
+              primaryRoleID:  '81fe6880-af54-489d-a9dc-facfa98059ab',
+            },
+          ],
+          Role: [
+            {
+              id:   '81fe6880-af54-489d-a9dc-facfa98059ab',
+              name: 'derp',
+            },
+          ],
+        });
+
+        expect(result.rows).toBeInstanceOf(Array);
+        expect(result.rows.length).toEqual(1);
       });
     });
 
