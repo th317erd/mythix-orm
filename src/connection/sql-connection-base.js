@@ -2,8 +2,11 @@
 
 const Nife            = require('nife');
 const SqlString       = require('sqlstring');
+const UUID            = require('uuid');
 const ConnectionBase  = require('./connection-base');
 const SQLLiterals     = require('./sql-literals');
+
+const SAVE_POINT_NAME_CHARS = [ 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P' ];
 
 class SQLConnectionBase extends ConnectionBase {
   static Literals = SQLLiterals;
@@ -103,6 +106,17 @@ class SQLConnectionBase extends ConnectionBase {
       return value.toString(this.connection);
 
     return SqlString.escapeId(value).replace(/`/g, '"');
+  }
+
+  generateSavePointName() {
+    let id = UUID.v4();
+
+    id = id.toUpperCase().replace(/\d/g, (m) => {
+      let index = parseInt(m, 10);
+      return SAVE_POINT_NAME_CHARS[index];
+    }).replace(/-/g, '');
+
+    return `SP${id}`;
   }
 }
 

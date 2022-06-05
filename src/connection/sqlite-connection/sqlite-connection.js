@@ -1,5 +1,6 @@
 'use strict';
 
+const Nife                  = require('nife');
 const Database              = require('better-sqlite3');
 const SQLConnectionBase     = require('../sql-connection-base');
 const SQLiteQueryGenerator  = require('./sqlite-query-generator');
@@ -24,11 +25,16 @@ class SQLiteConnection extends SQLConnectionBase {
   }
 
   async start() {
+    let options = this.getOptions();
+
     let opts = Object.assign({
       filename: ':memory:',
     }, this.getOptions());
 
-    this.db = new Database(opts.filename, opts);
+    let db = this.db = new Database(opts.filename, opts);
+
+    if (options.foreignConstraints !== false)
+      await db.pragma('foreign_keys = ON');
   }
 
   async stop() {
@@ -49,6 +55,63 @@ class SQLiteConnection extends SQLConnectionBase {
         return '(date(\'now\'))';
       default:
         return type;
+    }
+  }
+
+  async exec(sql) {
+    if (!sql)
+      return;
+
+    return await this.db.exec(sql);
+  }
+
+  async query(sql, _options) {
+    if (!sql)
+      return;
+
+    let options = _options || {};
+    let statement   = this.db.prepare(sql);
+    let methodName  = ((/\s*SELECT\s+/i).test(sql)) ? 'all' : 'run';
+    let parameters  = (Nife.isNotEmpty(options.parameters)) ? [].concat(parameters) : [];
+
+    if (methodName === 'all')
+      statement.raw(true);
+
+    return await statement[methodName](...parameters);
+  }
+
+  async transaction(callback, _options) {
+    let options       = _options || {};
+    let inheritedThis = Object.create(this);
+    let savePointName;
+
+    if (inheritedThis.inTransaction !== true) {
+      inheritedThis.inTransaction = true;
+      await this.query(`BEGIN${(options.mode) ? ` ${options.mode}` : ''}`);
+    } else {
+      savePointName = this.generateSavePointName();
+      inheritedThis.savePointName = savePointName;
+      inheritedThis.isSavePoint = true;
+
+      await this.query(`SAVEPOINT ${savePointName}`);
+    }
+
+    try {
+      let result = await callback.call(inheritedThis, inheritedThis);
+
+      if (savePointName)
+        await this.query(`RELEASE SAVEPOINT ${savePointName}`);
+      else
+        await this.query('COMMIT');
+
+      return result;
+    } catch (error) {
+      if (savePointName)
+        await this.query(`ROLLBACK TO SAVEPOINT ${savePointName}`);
+      else if (inheritedThis.inTransaction)
+        await this.query('ROLLBACK');
+
+      throw error;
     }
   }
 }
