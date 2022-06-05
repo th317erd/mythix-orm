@@ -4,24 +4,23 @@
 
 /* global describe, it, expect, beforeEach, beforeAll, spyOn, fail */
 
+const UUID = require('uuid');
 const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
 const { SQLLiteral } = require('../../../src/connection/sql-literals');
-const {
-  Role,
-  User,
-} = require('../../support/models');
 
 describe('SQLiteConnection', () => {
   describe('connection management', () => {
     let connection;
+    let User;
 
     beforeEach(async () => {
       connection = new SQLiteConnection({
-        models: [
-          User,
-          Role,
-        ],
+        models: require('../../support/models'),
       });
+
+      let models = connection.getModels();
+
+      User = models.User;
     });
 
     describe('getSQLLiteralClassByName', () => {
@@ -42,7 +41,7 @@ describe('SQLiteConnection', () => {
 
       it('can stringify a literal to SQL', () => {
         let literal = SQLiteConnection.Literal('distinct', 'User:firstName');
-        expect(literal.toString(connection)).toEqual('DISTINCT "users"."firstName" AS "User"."firstName"');
+        expect(literal.toString(connection)).toEqual('DISTINCT "users"."firstName" AS "User.firstName"');
       });
 
       it('will stringify to class name if no connection given', () => {
@@ -121,16 +120,102 @@ describe('SQLiteConnection', () => {
 
   describe('database operations', () => {
     let connection;
+    let User;
+
+    const createTable = async (connection, Model) => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let sqlStr          = queryGenerator.generateCreateTableStatement(Model);
+
+      return await connection.query(sqlStr);
+    };
 
     beforeAll(async () => {
       connection = new SQLiteConnection({
-        models: [
-          User,
-          Role,
-        ],
+        models: require('../../support/models'),
       });
 
+      let models = connection.getModels();
+
+      User = models.User;
+
       await connection.start();
+
+      await createTable(connection, User);
+    });
+
+    beforeEach(async () => {
+      // Truncate
+      await connection.query('DELETE FROM "users"');
+    });
+
+    describe('insert', () => {
+      it('should be able to insert a model', async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateInsertStatement(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          ],
+        );
+        let result          = await connection.query(sqlStr);
+        expect(result).toEqual({ changes: 1, lastInsertRowid: 1 });
+        expect(connection.formatInsertResponse(result)).toEqual([ 1 ]);
+      });
+
+      it('should be able to insert multiple models', async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateInsertStatement(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          ],
+        );
+        let result          = await connection.query(sqlStr);
+        expect(result).toEqual({ changes: 2, lastInsertRowid: 2 });
+        expect(connection.formatInsertResponse(result)).toEqual([ 1, 2 ]);
+      });
+    });
+
+    describe('select', () => {
+      const insertSomeRows = async () => {
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateInsertStatement(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            new User({ firstName: 'First', lastName: null, primaryRoleID: UUID.v4() }),
+          ],
+        );
+
+        return await connection.query(sqlStr);
+      };
+
+      it('should be able to select rows', async () => {
+        await insertSomeRows();
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
+        let result          = await connection.query(sqlStatement);
+
+        expect(result).toBeInstanceOf(Array);
+        expect(result.length).toEqual(2);
+        expect(result[0]).toBeInstanceOf(Array);
+        expect(result[0].length).toEqual(4);
+        expect(result[1]).toBeInstanceOf(Array);
+        expect(result[1].length).toEqual(4);
+        expect(result[0][0]).toEqual('First');
+        expect(result[0][1]).toMatch(/[a-f0-9-]{36}/);
+        expect(result[0][2]).toBe(null);
+        expect(result[0][3]).toMatch(/[a-f0-9-]{36}/);
+        expect(result[1][0]).toEqual('Mary');
+        expect(result[1][1]).toMatch(/[a-f0-9-]{36}/);
+        expect(result[1][2]).toEqual('Anne');
+        expect(result[1][3]).toMatch(/[a-f0-9-]{36}/);
+
+        // .toEqual([ [ 'Mary', '75ef5ca2-8013-43f7-9ff5-7c8f99e49025', 'Anne', '748e13c2-f87d-481a-9fcb-9aa131ae485e' ] ]);
+      });
     });
 
     describe('exec', () => {

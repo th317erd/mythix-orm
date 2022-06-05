@@ -48,7 +48,7 @@ class QueryGeneratorBase {
     if (options && options.fieldNameOnly === true)
       return this.escapeID(field.fieldName);
     else
-      return `${this.escapeID(field.Model.getModelName())}.${this.escapeID(field.fieldName)}`;
+      return `"${field.Model.getModelName()}.${field.fieldName}"`;
   }
 
   getEscapedColumnName(field, options) {
@@ -316,16 +316,6 @@ class QueryGeneratorBase {
   }
 
   // eslint-disable-next-line no-unused-vars
-  generateSelectQueryFromTable(modelName, joinType, options) {
-    let Model = this.connection.getModel(modelName);
-    if (!Model)
-      throw new Error(`${this.constructor.name}::generateSelectQueryFromTable: Attempted to fetch model named "${modelName}" but no model found.`);
-
-    let escapedTableName = this.escapeID(Model.getTableName());
-    return (joinType) ? `${joinType} ${escapedTableName}` : `FROM ${escapedTableName}`;
-  }
-
-  // eslint-disable-next-line no-unused-vars
   generateSelectQueryOperatorFromQueryEngineOperator(operator, value, valueIsReference, options) {
     if (operator instanceof SQLLiteralBase)
       return operator.toString(this.connection);
@@ -432,7 +422,7 @@ class QueryGeneratorBase {
       if (!this.queryHasConditions(value._getRawQuery()))
         return '';
 
-      return `${escapedTableName}.${escapedColumnName} ${sqlOperator} (${this.generateSelectQuery(value, options)})`;
+      return `${escapedTableName}.${escapedColumnName} ${sqlOperator} (${this.generateSelectStatement(value, options)})`;
     }
 
     return `${escapedTableName}.${escapedColumnName} ${sqlOperator} ${this.escape(field, value)}`;
@@ -446,6 +436,15 @@ class QueryGeneratorBase {
     let sqlOperator                 = this.generateSelectQueryOperatorFromQueryEngineOperator(operator, undefined, true, options);
 
     return `${leftSideEscapedTableName}.${leftSideEscapedColumnName} ${sqlOperator} ${rightSideEscapedTableName}.${rightSideEscapedColumnName}`;
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  generateSelectQueryFromTable(Model, joinType, options) {
+    if (!Model)
+      throw new Error(`${this.constructor.name}::generateSelectQueryFromTable: Attempted to fetch model named "${modelName}" but no model found.`);
+
+    let escapedTableName = this.escapeID(Model.getTableName());
+    return (joinType) ? `${joinType} ${escapedTableName}` : `FROM ${escapedTableName}`;
   }
 
   generateSelectJoinOnTableQueryConditions(leftQueryContext, queryEngine, joinType, options) {
@@ -492,8 +491,7 @@ class QueryGeneratorBase {
       throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No right-side field found to match on for table join statement.`);
 
     let sqlParts = [
-      joinType,
-      `${this.escapeID(rightSideModel.getTableName())}`,
+      this.generateSelectQueryFromTable(rightSideModel, joinType, options),
       'ON',
       this.generateSelectJoinOnTableQueryCondition(leftQueryContext, rightFieldContext, leftSideField, rightSideField, operator, options),
     ];
@@ -754,11 +752,16 @@ class QueryGeneratorBase {
     return sqlParts.join(' ');
   }
 
-  generateSelectQuery(queryEngine, _options) {
+  generateSelectStatement(queryEngine, _options) {
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    if (!rootModel)
+      throw new Error(`${this.constructor.name}::generateSelectQueryJoinTables: No root model found.`);
+
     let options   = _options || {};
     let sqlParts  = [ 'SELECT' ];
 
     sqlParts.push(this.generateSelectQueryFieldProjection(queryEngine, options));
+    sqlParts.push(this.generateSelectQueryFromTable(rootModel, undefined, options));
     sqlParts.push(this.generateSelectQueryJoinTables(queryEngine, options));
     sqlParts.push(this.generateWhereAndOrderLimitOffset(queryEngine, options));
 
@@ -847,7 +850,7 @@ class QueryGeneratorBase {
     return `CREATE TABLE ${ifNotExists}${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
   }
 
-  prepareAllModelsForOperation(Model, models, _options) {
+  prepareAllModelsForOperation(Model, _models, _options) {
     let options           = _options || {};
     let finalizedModels   = [];
     let dirtyFieldNames   = {};
@@ -855,6 +858,7 @@ class QueryGeneratorBase {
     let hasAllFieldNames  = false;
     let totalFieldCount   = Model.getConcreteFieldCount();
     let startIndex        = options.startIndex || 0;
+    let models            = Nife.toArray(_models);
     let endIndex          = models.length;
 
     if (options.endIndex)
@@ -902,7 +906,7 @@ class QueryGeneratorBase {
 
     model.iterateFields(({ field, fieldName }) => {
       let fieldValue = model[fieldName];
-      if (fieldValue == null)
+      if (fieldValue === undefined)
         fieldValue = this.getFieldDefaultValue(field, fieldName, { useDefaultKeyword: false, escape: false });
 
       if (fieldValue instanceof SQLLiteralBase)

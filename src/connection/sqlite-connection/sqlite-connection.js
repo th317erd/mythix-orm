@@ -5,6 +5,7 @@ const Database              = require('better-sqlite3');
 const SQLConnectionBase     = require('../sql-connection-base');
 const SQLiteQueryGenerator  = require('./sqlite-query-generator');
 const { SQLLiteral }        = require('../sql-literals');
+const Types                 = require('../../types');
 
 class SQLiteConnection extends SQLConnectionBase {
   static dialect = 'sqlite';
@@ -70,14 +71,24 @@ class SQLiteConnection extends SQLConnectionBase {
       return;
 
     let options = _options || {};
-    let statement   = this.db.prepare(sql);
-    let methodName  = ((/\s*SELECT\s+/i).test(sql)) ? 'all' : 'run';
-    let parameters  = (Nife.isNotEmpty(options.parameters)) ? [].concat(parameters) : [];
 
-    if (methodName === 'all')
-      statement.raw(true);
+    try {
+      let statement   = this.db.prepare(sql);
+      let methodName  = ((/\s*SELECT\s+/i).test(sql)) ? 'all' : 'run';
+      let parameters  = (Nife.isNotEmpty(options.parameters)) ? [].concat(parameters) : [];
 
-    return await statement[methodName](...parameters);
+      if (methodName === 'all')
+        statement.raw(true);
+
+      return await statement[methodName](...parameters);
+    } catch (error) {
+      if (options.logger) {
+        options.logger.error(error);
+        options.logger.error('QUERY: ', sql);
+      }
+
+      throw error;
+    }
   }
 
   async transaction(callback, _options) {
@@ -113,6 +124,20 @@ class SQLiteConnection extends SQLConnectionBase {
 
       throw error;
     }
+  }
+
+  formatInsertResponse(insertResponse) {
+    if (!insertResponse)
+      return insertResponse;
+
+    if (insertResponse.changes === 0)
+      return [];
+
+    let ids = [];
+    for (let i = (insertResponse.lastInsertRowid - insertResponse.changes), il = insertResponse.lastInsertRowid; i < il; i++)
+      ids.push(i + 1);
+
+    return ids;
   }
 }
 

@@ -30,14 +30,11 @@ class DistinctSQLLiteral extends SQLLiteralBase {
     if (!field)
       throw new Error(`DistinctSQLLiteral::toString: Unable to locate field "${definition.modelName}"."${definition.fieldNames[0]}".`);
 
-    let escapedModelName  = connection.escapeID(field.Model.getModelName());
-    let escapedFieldName  = connection.escapeID(field.fieldName);
-    let escapedTableName  = connection.escapeID(field.Model.getTableName());
-    let escapedColumnName = connection.escapeID(field.columnName);
+    let queryGenerator = connection.getQueryGenerator();
 
     switch (connection.dialect) {
       default:
-        return `DISTINCT ${escapedTableName}.${escapedColumnName} AS ${escapedModelName}.${escapedFieldName}`;
+        return `DISTINCT ${queryGenerator.getEscapedProjectionName(field)}`;
     }
   }
 }

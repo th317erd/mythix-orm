@@ -33,16 +33,16 @@ describe('SQLiteQueryGenerator', () => {
     it('can get required projection fields #1', () => {
       let queryGenerator = connection.getQueryGenerator();
       expect(queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id'))).toEqual({
-        'User:id': '"users"."id" AS "User"."id"',
+        'User:id': '"users"."id" AS "User.id"',
       });
     });
 
     it('can get required projection fields #2', () => {
       let queryGenerator = connection.getQueryGenerator();
       expect(queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id', 'primaryRoleID', '-firstName'))).toEqual({
-        'User:id':            '"users"."id" AS "User"."id"',
-        'User:primaryRoleID': '"users"."primaryRoleID" AS "User"."primaryRoleID"',
-        'User:firstName':     '"users"."firstName" AS "User"."firstName"',
+        'User:id':            '"users"."id" AS "User.id"',
+        'User:primaryRoleID': '"users"."primaryRoleID" AS "User.primaryRoleID"',
+        'User:firstName':     '"users"."firstName" AS "User.firstName"',
       });
     });
   });
@@ -53,7 +53,7 @@ describe('SQLiteQueryGenerator', () => {
       expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id'))).toEqual([
         {
           fullFieldName:  'User:id',
-          projectedName:  '"users"."id" AS "User"."id"',
+          projectedName:  '"users"."id" AS "User.id"',
           Model:          User,
           Field:          User.fields.id,
           fieldName:      'id',
@@ -68,7 +68,7 @@ describe('SQLiteQueryGenerator', () => {
       expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id', 'Role:id'))).toEqual([
         {
           fullFieldName:  'User:id',
-          projectedName:  '"users"."id" AS "User"."id"',
+          projectedName:  '"users"."id" AS "User.id"',
           Model:          User,
           Field:          User.fields.id,
           fieldName:      'id',
@@ -88,7 +88,7 @@ describe('SQLiteQueryGenerator', () => {
       expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id').PROJECT('-firstName'))).toEqual([
         {
           fullFieldName:  'User:id',
-          projectedName:  '"users"."id" AS "User"."id"',
+          projectedName:  '"users"."id" AS "User.id"',
           Model:          User,
           Field:          User.fields.id,
           fieldName:      'id',
@@ -97,7 +97,7 @@ describe('SQLiteQueryGenerator', () => {
         },
         {
           fullFieldName:  'User:firstName',
-          projectedName:  '"users"."firstName" AS "User"."firstName"',
+          projectedName:  '"users"."firstName" AS "User.firstName"',
           Model:          User,
           Field:          User.fields.firstName,
           fieldName:      'firstName',
@@ -383,10 +383,10 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let fieldList       = queryGenerator.getEscapedModelFields(User, { asProjection: true });
       expect(fieldList).toEqual({
-        'User:id':             '"users"."id" AS "User"."id"',
-        'User:firstName':      '"users"."firstName" AS "User"."firstName"',
-        'User:lastName':       '"users"."lastName" AS "User"."lastName"',
-        'User:primaryRoleID':  '"users"."primaryRoleID" AS "User"."primaryRoleID"',
+        'User:id':             '"users"."id" AS "User.id"',
+        'User:firstName':      '"users"."firstName" AS "User.firstName"',
+        'User:lastName':       '"users"."lastName" AS "User.lastName"',
+        'User:primaryRoleID':  '"users"."primaryRoleID" AS "User.primaryRoleID"',
       });
     });
   });
@@ -396,12 +396,12 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let fieldList       = queryGenerator.getProjectedFields(User.where.AND.Role);
       expect(fieldList).toEqual([
-        '"roles"."id" AS "Role"."id"',
-        '"roles"."name" AS "Role"."name"',
-        '"users"."firstName" AS "User"."firstName"',
-        '"users"."id" AS "User"."id"',
-        '"users"."lastName" AS "User"."lastName"',
-        '"users"."primaryRoleID" AS "User"."primaryRoleID"',
+        '"roles"."id" AS "Role.id"',
+        '"roles"."name" AS "Role.name"',
+        '"users"."firstName" AS "User.firstName"',
+        '"users"."id" AS "User.id"',
+        '"users"."lastName" AS "User.lastName"',
+        '"users"."primaryRoleID" AS "User.primaryRoleID"',
       ]);
     });
 
@@ -409,7 +409,7 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let fieldList       = queryGenerator.getProjectedFields(User.where.PROJECT('User:id'));
       expect(fieldList).toEqual([
-        '"users"."id" AS "User"."id"',
+        '"users"."id" AS "User.id"',
       ]);
     });
 
@@ -417,7 +417,7 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let fieldList       = queryGenerator.getProjectedFields(User.where.PROJECT('User:id', new SQLLiteral('DISTINCT("User"."id")')));
       expect(fieldList).toEqual([
-        '"users"."id" AS "User"."id"',
+        '"users"."id" AS "User.id"',
         'DISTINCT("User"."id")',
       ]);
     });
@@ -426,16 +426,16 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let fieldList       = queryGenerator.getProjectedFields(User.where.PROJECT('-User:id'));
       expect(fieldList).toEqual([
-        '"users"."firstName" AS "User"."firstName"',
-        '"users"."lastName" AS "User"."lastName"',
-        '"users"."primaryRoleID" AS "User"."primaryRoleID"',
+        '"users"."firstName" AS "User.firstName"',
+        '"users"."lastName" AS "User.lastName"',
+        '"users"."primaryRoleID" AS "User.primaryRoleID"',
       ]);
 
       fieldList = queryGenerator.getProjectedFields(User.where.PROJECT('*', '-User:id'));
       expect(fieldList).toEqual([
-        '"users"."firstName" AS "User"."firstName"',
-        '"users"."lastName" AS "User"."lastName"',
-        '"users"."primaryRoleID" AS "User"."primaryRoleID"',
+        '"users"."firstName" AS "User.firstName"',
+        '"users"."lastName" AS "User.lastName"',
+        '"users"."primaryRoleID" AS "User.primaryRoleID"',
       ]);
     });
   });
@@ -443,8 +443,8 @@ describe('SQLiteQueryGenerator', () => {
   describe('generateSelectQueryFromTable', () => {
     it('can generate FROM and JOIN statements', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryFromTable('User')).toEqual('FROM "users"');
-      expect(queryGenerator.generateSelectQueryFromTable('User', 'LEFT JOIN')).toEqual('LEFT JOIN "users"');
+      expect(queryGenerator.generateSelectQueryFromTable(User)).toEqual('FROM "users"');
+      expect(queryGenerator.generateSelectQueryFromTable(User, 'LEFT JOIN')).toEqual('LEFT JOIN "users"');
     });
   });
 
@@ -747,10 +747,10 @@ describe('SQLiteQueryGenerator', () => {
     });
   });
 
-  describe('generateSelectQuery', () => {
+  describe('generateSelectStatement', () => {
     it('can generate a select statement with a table join', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let queryString     = queryGenerator.generateSelectQuery(
+      let queryString     = queryGenerator.generateSelectStatement(
         User.where
           .primaryRoleID
             .EQ(Role.where.id)
@@ -771,12 +771,12 @@ describe('SQLiteQueryGenerator', () => {
                 .EQ('Burp'),
           ),
       );
-      expect(queryString).toEqual('SELECT "roles"."id" AS "Role"."id","roles"."name" AS "Role"."name","users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" LEFT INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id" WHERE ("users"."firstName" = \'Joe\' OR "users"."firstName" = \'Mary\') AND ("users"."lastName" = \'Derp\' OR "users"."lastName" = \'Burp\')');
+      expect(queryString).toEqual('SELECT "roles"."id" AS "Role.id","roles"."name" AS "Role.name","users"."firstName" AS "User.firstName","users"."id" AS "User.id","users"."lastName" AS "User.lastName","users"."primaryRoleID" AS "User.primaryRoleID" FROM "users" LEFT INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id" WHERE ("users"."firstName" = \'Joe\' OR "users"."firstName" = \'Mary\') AND ("users"."lastName" = \'Derp\' OR "users"."lastName" = \'Burp\')');
     });
 
     it('can generate a select statement with an order, limit, and offset', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let queryString     = queryGenerator.generateSelectQuery(
+      let queryString     = queryGenerator.generateSelectStatement(
         User.where
           .primaryRoleID
             .EQ(1)
@@ -784,12 +784,12 @@ describe('SQLiteQueryGenerator', () => {
           .LIMIT(100)
           .OFFSET(500),
       );
-      expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" WHERE "users"."primaryRoleID" = 1 ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
+      expect(queryString).toEqual('SELECT "users"."firstName" AS "User.firstName","users"."id" AS "User.id","users"."lastName" AS "User.lastName","users"."primaryRoleID" AS "User.primaryRoleID" FROM "users" WHERE "users"."primaryRoleID" = 1 ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
     });
 
     it('can generate a select statement with a DISTINCT clause', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let queryString     = queryGenerator.generateSelectQuery(
+      let queryString     = queryGenerator.generateSelectStatement(
         User.where
           .DISTINCT
           .primaryRoleID
@@ -797,12 +797,12 @@ describe('SQLiteQueryGenerator', () => {
           .LIMIT(100)
           .OFFSET(500),
       );
-      expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID",DISTINCT "users"."id" AS "User"."id" WHERE "users"."primaryRoleID" = 1 LIMIT 100 OFFSET 500');
+      expect(queryString).toEqual('SELECT "users"."firstName" AS "User.firstName","users"."lastName" AS "User.lastName","users"."primaryRoleID" AS "User.primaryRoleID",DISTINCT "users"."id" AS "User.id" FROM "users" WHERE "users"."primaryRoleID" = 1 LIMIT 100 OFFSET 500');
     });
 
     it('can generate a select statement using literals', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let queryString     = queryGenerator.generateSelectQuery(
+      let queryString     = queryGenerator.generateSelectStatement(
         User.where
           .primaryRoleID
             .EQ(new SQLLiteral('NOW'))
@@ -810,12 +810,12 @@ describe('SQLiteQueryGenerator', () => {
           .LIMIT(100)
           .OFFSET(500),
       );
-      expect(queryString).toEqual('SELECT "users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" WHERE "users"."primaryRoleID" = NOW ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
+      expect(queryString).toEqual('SELECT "users"."firstName" AS "User.firstName","users"."id" AS "User.id","users"."lastName" AS "User.lastName","users"."primaryRoleID" AS "User.primaryRoleID" FROM "users" WHERE "users"."primaryRoleID" = NOW ORDER BY "users"."id" ASC LIMIT 100 OFFSET 500');
     });
 
     it('can generate a select statement with a complex join statement', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let queryString     = queryGenerator.generateSelectQuery(
+      let queryString     = queryGenerator.generateSelectStatement(
         User.where
           .id
             .EQ(UserThing.where.userID)
@@ -835,12 +835,12 @@ describe('SQLiteQueryGenerator', () => {
         .lastName
           .EQ('Bob'),
       );
-      expect(queryString).toEqual('SELECT "role_things"."id" AS "RoleThing"."id","role_things"."roleID" AS "RoleThing"."roleID","roles"."id" AS "Role"."id","roles"."name" AS "Role"."name","user_things"."id" AS "UserThing"."id","user_things"."roleThingID" AS "UserThing"."roleThingID","user_things"."userID" AS "UserThing"."userID","users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\'');
+      expect(queryString).toEqual('SELECT "role_things"."id" AS "RoleThing.id","role_things"."roleID" AS "RoleThing.roleID","roles"."id" AS "Role.id","roles"."name" AS "Role.name","user_things"."id" AS "UserThing.id","user_things"."roleThingID" AS "UserThing.roleThingID","user_things"."userID" AS "UserThing.userID","users"."firstName" AS "User.firstName","users"."id" AS "User.id","users"."lastName" AS "User.lastName","users"."primaryRoleID" AS "User.primaryRoleID" FROM "users" LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\'');
     });
 
     it('can generate a select statement with a complex join statement and an order, limit, and offset', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let queryString     = queryGenerator.generateSelectQuery(
+      let queryString     = queryGenerator.generateSelectStatement(
         User.where
           .id
             .EQ(UserThing.where.userID)
@@ -863,7 +863,7 @@ describe('SQLiteQueryGenerator', () => {
         .LIMIT(100)
         .OFFSET(500),
       );
-      expect(queryString).toEqual('SELECT "role_things"."id" AS "RoleThing"."id","role_things"."roleID" AS "RoleThing"."roleID","roles"."id" AS "Role"."id","roles"."name" AS "Role"."name","user_things"."id" AS "UserThing"."id","user_things"."roleThingID" AS "UserThing"."roleThingID","user_things"."userID" AS "UserThing"."userID","users"."firstName" AS "User"."firstName","users"."id" AS "User"."id","users"."lastName" AS "User"."lastName","users"."primaryRoleID" AS "User"."primaryRoleID" LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 500');
+      expect(queryString).toEqual('SELECT "role_things"."id" AS "RoleThing.id","role_things"."roleID" AS "RoleThing.roleID","roles"."id" AS "Role.id","roles"."name" AS "Role.name","user_things"."id" AS "UserThing.id","user_things"."roleThingID" AS "UserThing.roleThingID","user_things"."userID" AS "UserThing.userID","users"."firstName" AS "User.firstName","users"."id" AS "User.id","users"."lastName" AS "User.lastName","users"."primaryRoleID" AS "User.primaryRoleID" FROM "users" LEFT INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" LEFT INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" LEFT INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 500');
     });
   });
 
@@ -1114,7 +1114,7 @@ describe('SQLiteQueryGenerator', () => {
   describe('getEscapedFieldName', () => {
     it('should generate escaped column name', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getEscapedFieldName(User.fields.firstName)).toEqual('"User"."firstName"');
+      expect(queryGenerator.getEscapedFieldName(User.fields.firstName)).toEqual('"User.firstName"');
     });
 
     it('should bypass table name when requested to do so', () => {

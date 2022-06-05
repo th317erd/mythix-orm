@@ -374,7 +374,7 @@ class Model {
     if (data) {
       this.iterateFields(({ fieldName }) => {
         let fieldValue  = (data) ? data[fieldName] : undefined;
-        if (fieldValue == null)
+        if (fieldValue === undefined)
           return;
 
         dirtyFieldData[fieldName] = fieldValue;
@@ -430,7 +430,7 @@ class Model {
         defaultValue = undefined;
     }
 
-    if (defaultValue == null || !data)
+    if (defaultValue === undefined || !data)
       fieldData[fieldName] = (defaultValue != null) ? this._castFieldValue(field, defaultValue) : defaultValue;
     else
       dirtyFieldData[fieldName] = this._castFieldValue(field, defaultValue);
