@@ -333,6 +333,13 @@ class Model {
         },
         set:          () => {},
       },
+      // loaded relations
+      '_': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        {},
+      },
     });
 
     this._constructor(data);

@@ -174,7 +174,13 @@ class QueryGeneratorBase {
       let allModels = this.getAllModelsUsedInQuery(queryEngine, options);
 
       projections = projections.map((_fieldName) => {
+        if (!_fieldName)
+          return;
+
         if (_fieldName instanceof SQLLiteralBase)
+          return _fieldName;
+
+        if (_fieldName.prototype instanceof ModelBase)
           return _fieldName;
 
         if (_fieldName === '-*') {
@@ -324,6 +330,9 @@ class QueryGeneratorBase {
 
     if (queryProjection.indexOf('*') >= 0) {
       let removeFieldsFromProjection = queryProjection.map((projectionField) => {
+        if (!projectionField)
+          return;
+
         if (projectionField === '*')
           return;
 
@@ -334,6 +343,9 @@ class QueryGeneratorBase {
 
           return;
         }
+
+        if (projectionField.prototype instanceof ModelBase)
+          return;
 
         if (projectionField.direction !== '-')
           return;
@@ -375,7 +387,7 @@ class QueryGeneratorBase {
     } else {
       for (let i = 0, il = queryProjection.length; i < il; i++) {
         let projectionField = queryProjection[i];
-        if (projectionField.direction === '-')
+        if (!projectionField)
           continue;
 
         if (projectionField instanceof SQLLiteralBase) {
@@ -388,6 +400,12 @@ class QueryGeneratorBase {
 
           continue;
         }
+
+        if (projectionField.prototype instanceof ModelBase)
+          continue;
+
+        if (projectionField.direction === '-')
+          continue;
 
         let projectedName = projectionField.projectedName;
         allProjectionFields.set(projectionField.fullFieldName, projectedName);

@@ -6,6 +6,7 @@ const UUID            = require('uuid');
 const ConnectionBase  = require('./connection-base');
 const SQLLiterals     = require('./sql-literals');
 const ModelUtils      = require('../utils/model-utils');
+const ModelBase       = require('../model');
 
 const SAVE_POINT_NAME_CHARS = [ 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P' ];
 
@@ -201,6 +202,27 @@ class SQLConnectionBase extends ConnectionBase {
 
       return model;
     });
+
+    let queryGenerator    = this.getQueryGenerator();
+    let projection        = queryGenerator.getProjectionFromQueryEngine(queryEngine);
+    let projectionModels  = projection.filter((item) => (item.prototype instanceof ModelBase));
+
+    if (Nife.isNotEmpty(projectionModels)) {
+      for (let i = 0, il = projectionModels.length; i < il; i++) {
+        let Model           = projectionModels[i];
+        let modelName       = Model.getModelName();
+        let modelData       = modelDataMap[modelName];
+
+        if (Nife.isEmpty(modelData))
+          continue;
+
+        let pluralModelName = Model.getPluralName();
+        let relationName    = Nife.uncapitalize(pluralModelName);
+
+        // TODO: Figure out how to stich models together
+        // Maybe a simple memory DB over a QueryEngine?
+      }
+    }
 
     return rootModels;
   }

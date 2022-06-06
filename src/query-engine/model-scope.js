@@ -3,6 +3,7 @@
 const Nife            = require('nife');
 const ProxyClass      = require('../proxy-class');
 const QueryEngineBase = require('./query-engine-base');
+const ModelBase       = require('../model');
 const {
   SQLLiteralBase,
   DistinctSQLLiteral,
@@ -98,6 +99,9 @@ class ModelScope extends QueryEngineBase {
         return false;
 
       if (value instanceof SQLLiteralBase)
+        return true;
+
+      if (value.prototype instanceof ModelBase)
         return true;
 
       if (!Nife.instanceOf(value, 'string'))

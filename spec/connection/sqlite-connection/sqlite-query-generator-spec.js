@@ -7,6 +7,7 @@
 
 const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
 const { SQLLiteral } = require('../../../src/connection/sql-literals');
+const ModelBase = require('../../../src/model');
 
 describe('SQLiteQueryGenerator', () => {
   let connection;
@@ -60,6 +61,17 @@ describe('SQLiteQueryGenerator', () => {
           modelName:      'User',
           direction:      '+',
         },
+      ]);
+    });
+
+    it('can get projected models', () => {
+      let queryGenerator    = connection.getQueryGenerator();
+      let projection        = queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id', User, Role));
+      let projectionModels  = projection.filter((item) => (item.prototype instanceof ModelBase));
+
+      expect(projectionModels).toEqual([
+        User,
+        Role,
       ]);
     });
 
