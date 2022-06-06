@@ -518,6 +518,23 @@ class Model {
 
     dirtyFieldData[fieldName] = newValue;
   }
+
+  toJSON() {
+    let result = {};
+
+    this.iterateFields(({ field, fieldName }) => {
+      if (field.type.isVirtual())
+        return;
+
+      let fieldValue = this[fieldName];
+      if (fieldValue === undefined)
+        return;
+
+      result[fieldName] = fieldValue;
+    });
+
+    return result;
+  }
 }
 
 const staticMethodToSkip = [

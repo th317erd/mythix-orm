@@ -180,6 +180,30 @@ class SQLConnectionBase extends ConnectionBase {
     return modelData;
   }
 
+  buildModelsFromModelDataMap(queryEngine, modelDataMap) {
+    if (Nife.isEmpty(modelDataMap))
+      return [];
+
+    let queryContext  = queryEngine._getRawQueryContext();
+    let rootModelName = queryContext.rootModelName;
+    let RootModel     = queryContext.rootModel;
+    if (!rootModelName || !RootModel)
+      throw new Error(`${this.constructor.name}::buildModelsFromModelDataMap: Root model not found.`);
+
+    let rootModelData = modelDataMap[rootModelName];
+    if (Nife.isEmpty(rootModelData))
+      return [];
+
+    let rootModels = rootModelData.map((data) => {
+      let model = new RootModel(data);
+
+      model.clearDirty();
+
+      return model;
+    });
+
+    return rootModels;
+  }
 }
 
 module.exports = SQLConnectionBase;

@@ -228,7 +228,7 @@ describe('SQLiteConnection', () => {
       await connection.query('DELETE FROM "roles"');
     });
 
-    describe('insert', () => {
+    describe('insert query', () => {
       it('should be able to insert a model', async () => {
         let queryGenerator  = connection.getQueryGenerator();
         let sqlStr          = queryGenerator.generateInsertStatement(
@@ -272,7 +272,7 @@ describe('SQLiteConnection', () => {
       });
     });
 
-    describe('select', () => {
+    describe('select query', () => {
       const insertSomeRows = async () => {
         let queryGenerator  = connection.getQueryGenerator();
         let sqlStr          = queryGenerator.generateInsertStatement(
@@ -406,6 +406,33 @@ describe('SQLiteConnection', () => {
 
         expect(result.rows).toBeInstanceOf(Array);
         expect(result.rows.length).toEqual(1);
+      });
+
+      it('should be able to generate models from model map data', async () => {
+        await insertSomeRows();
+
+        let queryGenerator  = connection.getQueryGenerator();
+
+        await connection.query(queryGenerator.generateInsertStatement(Role, new Role({
+          id:   '81fe6880-af54-489d-a9dc-facfa98059ab',
+          name: 'derp',
+        })));
+
+        let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
+        let sqlStatement    = queryGenerator.generateSelectStatement(query);
+        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let modelDataMap    = connection.buildModelDataMapFromSelectResults(result);
+        let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
+
+        expect(users).toBeInstanceOf(Array);
+        expect(users.length).toEqual(1);
+        expect(users[0]).toBeInstanceOf(User);
+        expect(users[0].toJSON()).toEqual({
+          id:             '33144fb7-cffe-454e-8d45-9c585bc89fc6',
+          firstName:      'Mary',
+          lastName:       'Anne',
+          primaryRoleID:  '81fe6880-af54-489d-a9dc-facfa98059ab',
+        });
       });
     });
 
