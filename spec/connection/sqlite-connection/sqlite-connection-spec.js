@@ -349,11 +349,12 @@ describe('SQLiteConnection', () => {
       it('should be able to generate a model data map from query result', async () => {
         await insertSomeRows();
 
+        let query           = User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
         let queryGenerator  = connection.getQueryGenerator();
-        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName'));
+        let sqlStatement    = queryGenerator.generateSelectStatement(query);
         let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
 
-        expect(connection.buildModelDataMapFromSelectResults(result)).toEqual({
+        expect(connection.buildModelDataMapFromSelectResults(query, result)).toEqual({
           User: [
             {
               id:             'c69da6dc-189b-43e9-9b98-c9e0ba1d85eb',
@@ -384,10 +385,11 @@ describe('SQLiteConnection', () => {
           name: 'derp',
         })));
 
-        let sqlStatement    = queryGenerator.generateSelectStatement(User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName'));
+        let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
+        let sqlStatement    = queryGenerator.generateSelectStatement(query);
         let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
 
-        expect(connection.buildModelDataMapFromSelectResults(result)).toEqual({
+        expect(connection.buildModelDataMapFromSelectResults(query, result)).toEqual({
           User: [
             {
               id:             '33144fb7-cffe-454e-8d45-9c585bc89fc6',
@@ -418,20 +420,51 @@ describe('SQLiteConnection', () => {
           name: 'derp',
         })));
 
+        await connection.query(queryGenerator.generateInsertStatement(Role, new Role({
+          id:   'f1635dbe-1f74-4000-b6af-e9dd92b0025d',
+          name: 'derp2',
+        })));
+
         let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
         let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
-        let modelDataMap    = connection.buildModelDataMapFromSelectResults(result);
+        let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
         let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 
         expect(users).toBeInstanceOf(Array);
-        expect(users.length).toEqual(1);
+        expect(users.length).toEqual(2);
         expect(users[0]).toBeInstanceOf(User);
+        expect(users[1]).toBeInstanceOf(User);
+
         expect(users[0].toJSON()).toEqual({
+          id:             'c69da6dc-189b-43e9-9b98-c9e0ba1d85eb',
+          firstName:      'First',
+          lastName:       null,
+          primaryRoleID:  'f1635dbe-1f74-4000-b6af-e9dd92b0025d',
+        });
+
+        expect(users[1].toJSON()).toEqual({
           id:             '33144fb7-cffe-454e-8d45-9c585bc89fc6',
           firstName:      'Mary',
           lastName:       'Anne',
           primaryRoleID:  '81fe6880-af54-489d-a9dc-facfa98059ab',
+        });
+
+        expect(Object.keys(users[0]._).sort()).toEqual([ 'roles' ]);
+        expect(Object.keys(users[1]._).sort()).toEqual([ 'roles' ]);
+        expect(users[0]._.roles).toBeInstanceOf(Array);
+        expect(users[1]._.roles).toBeInstanceOf(Array);
+        expect(users[0]._.roles.length).toEqual(1);
+        expect(users[1]._.roles.length).toEqual(1);
+
+        expect(users[0]._.roles[0].toJSON()).toEqual({
+          id:   'f1635dbe-1f74-4000-b6af-e9dd92b0025d',
+          name: 'derp2',
+        });
+
+        expect(users[1]._.roles[0].toJSON()).toEqual({
+          id:   '81fe6880-af54-489d-a9dc-facfa98059ab',
+          name: 'derp',
         });
       });
     });

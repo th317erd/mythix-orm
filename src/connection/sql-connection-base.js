@@ -137,7 +137,7 @@ class SQLConnectionBase extends ConnectionBase {
     }).filter(Boolean);
   }
 
-  buildModelDataMapFromSelectResults(result) {
+  buildModelDataMapFromSelectResults(queryEngine, result) {
     if (!result)
       return {};
 
@@ -145,17 +145,41 @@ class SQLConnectionBase extends ConnectionBase {
     if (Nife.isEmpty(rows))
       return {};
 
-    let fields    = this.findAllFieldsFromFieldProjectionMap(result.columns);
-    let modelData = {};
+    let context         = queryEngine._getRawQueryContext();
+    let fields          = this.findAllFieldsFromFieldProjectionMap(result.columns);
+    let rootModelName   = context.rootModelName;
+    let modelData       = {};
+    let alreadyVisited  = {};
+
+    let fieldInfo = fields.map((field) => {
+      let Model       = field.Model;
+      let modelName   = Model.getModelName();
+      let pkFieldName = Model.getPrimaryKeyFieldName();
+
+      return {
+        pkFieldName,
+        field,
+        Model,
+        modelName,
+      };
+    });
+
+    let modelInfo = fieldInfo.reduce((obj, info) => {
+      obj[info.modelName] = info;
+      return obj;
+    }, {});
 
     for (let i = 0, il = rows.length; i < il; i++) {
       let row   = rows[i];
       let data  = {};
 
-      for (let j = 0, jl = fields.length; j < jl; j++) {
-        let field       = fields[j];
-        let Model       = field.Model;
-        let modelName   = Model.getModelName();
+      // Collect row
+      for (let j = 0, jl = fieldInfo.length; j < jl; j++) {
+        let {
+          field,
+          modelName,
+        } = fieldInfo[j];
+
         let dataContext = data[modelName];
         let remoteValue = row[j];
 
@@ -165,16 +189,74 @@ class SQLConnectionBase extends ConnectionBase {
         dataContext[field.fieldName] = remoteValue;
       }
 
-      let modelNames = Object.keys(data);
+      // Remap row
+      let modelNames = Object.keys(data).sort((a, b) => {
+        if (a === rootModelName)
+          return -1;
+
+        if (b === rootModelName)
+          return 1;
+
+        if (a === b)
+          return 0;
+
+        return (a < b) ? -1 : 1;
+      });
+
+      let rootModelData;
       for (let i = 0, il = modelNames.length; i < il; i++) {
-        let modelName = modelNames[i];
-        let models    = modelData[modelName];
-        let model     = data[modelName];
+        let modelName     = modelNames[i];
+        let info          = modelInfo[modelName];
+        let models        = modelData[modelName];
+        let model         = data[modelName];
+        let pkFieldName   = info.pkFieldName;
+        let index;
 
         if (!models)
           models = modelData[modelName] = [];
 
-        models.push(model);
+        // TODO: Use model projection to build relationships
+        // This should work if it just happens at the projection
+        // level, as that is what will project the fields, and
+        // collect the models for these operations.
+
+        if (pkFieldName) {
+          let id = model[pkFieldName];
+
+          if (id != null) {
+            let idKey = `${modelName}:${pkFieldName}:${id}`;
+
+            if (alreadyVisited[idKey] != null) {
+              index = alreadyVisited[idKey];
+            } else {
+              index = alreadyVisited[idKey] = models.length;
+              models.push(model);
+            }
+          }
+        } else {
+          models.push(model);
+          continue;
+        }
+
+        if (i === 0) {
+          rootModelData = model;
+        } else {
+          if (!rootModelData._) {
+            Object.defineProperties(rootModelData, {
+              '_': {
+                writable:     true,
+                enumberable:  false,
+                configurable: true,
+                value:        {},
+              },
+            });
+          }
+
+          if (!rootModelData._[modelName])
+            rootModelData._[modelName] = [];
+
+          rootModelData._[modelName].push(index);
+        }
       }
     }
 
@@ -198,31 +280,33 @@ class SQLConnectionBase extends ConnectionBase {
     let rootModels = rootModelData.map((data) => {
       let model = new RootModel(data);
 
+      if (model._) {
+        let relationships = data._;
+        let modelNames    = Object.keys(relationships);
+
+        for (let i = 0, il = modelNames.length; i < il; i++) {
+          let modelName           = modelNames[i];
+          let Model               = this.getModel(modelName);
+          let pluralModelName     = Model.getPluralName();
+          let relationName        = Nife.uncapitalize(pluralModelName);
+          let relationshipModels  = model._[relationName];
+          let modelIndexes        = relationships[modelName];
+          let models              = modelDataMap[modelName];
+
+          if (!relationshipModels)
+            relationshipModels = model._[relationName] = [];
+
+          model._[relationName] = relationshipModels.concat(modelIndexes.map((modelIndex) => {
+            let modelData = models[modelIndex];
+            return new Model(modelData);
+          }));
+        }
+      }
+
       model.clearDirty();
 
       return model;
     });
-
-    let queryGenerator    = this.getQueryGenerator();
-    let projection        = queryGenerator.getProjectionFromQueryEngine(queryEngine);
-    let projectionModels  = projection.filter((item) => (item.prototype instanceof ModelBase));
-
-    if (Nife.isNotEmpty(projectionModels)) {
-      for (let i = 0, il = projectionModels.length; i < il; i++) {
-        let Model           = projectionModels[i];
-        let modelName       = Model.getModelName();
-        let modelData       = modelDataMap[modelName];
-
-        if (Nife.isEmpty(modelData))
-          continue;
-
-        let pluralModelName = Model.getPluralName();
-        let relationName    = Nife.uncapitalize(pluralModelName);
-
-        // TODO: Figure out how to stich models together
-        // Maybe a simple memory DB over a QueryEngine?
-      }
-    }
 
     return rootModels;
   }
