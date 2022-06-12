@@ -976,52 +976,6 @@ class QueryGeneratorBase {
     return `CREATE TABLE ${ifNotExists}${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
   }
 
-  prepareAllModelsForOperation(Model, _models, _options) {
-    let options           = _options || {};
-    let finalizedModels   = [];
-    let dirtyFieldNames   = {};
-    let dirtyFields       = [];
-    let hasAllFieldNames  = false;
-    let totalFieldCount   = Model.getConcreteFieldCount();
-    let startIndex        = options.startIndex || 0;
-    let models            = Nife.toArray(_models);
-    let endIndex          = models.length;
-
-    if (options.endIndex)
-      endIndex = Math.min(options.endIndex, endIndex);
-    else if (options.batchSize)
-      endIndex = Math.min(startIndex + options.batchSize, endIndex);
-
-    // Make sure all data is models,
-    // and find all the dirty fields
-    for (let i = startIndex; i < endIndex; i++) {
-      let model = models[i];
-      if (!(model instanceof ModelBase))
-        model = new Model(model);
-
-      if (!hasAllFieldNames) {
-        Object.assign(dirtyFieldNames, model.changes);
-
-        if (Object.keys(dirtyFieldNames).length >= totalFieldCount)
-          hasAllFieldNames = true;
-      }
-
-      finalizedModels.push(model);
-    }
-
-    let fieldNames = Object.keys(dirtyFieldNames);
-    for (let i = 0, il = fieldNames.length; i < il; i++) {
-      let fieldName = fieldNames[i];
-      let field     = Model.getField(fieldName);
-      if (!field)
-        continue;
-
-      dirtyFields.push(field);
-    }
-
-    return { models: finalizedModels, dirtyFields };
-  }
-
   generateInsertFieldValuesFromModel(model, _options) {
     if (!model)
       return '';
@@ -1054,20 +1008,10 @@ class QueryGeneratorBase {
   }
 
   generateInsertValuesFromModels(Model, _models, _options) {
-    if (!_models || _models.length === 0)
-      return '';
-
-    let options     = _options || {};
-    let models      = options.preparedModels;
-    let dirtyFields = options.fields;
-
-    if (!models || !dirtyFields) {
-      let preparedResult = this.prepareAllModelsForOperation(Model, _models, options);
-      models = preparedResult.models;
-      dirtyFields = preparedResult.dirtyFields;
-    }
-
-    if (!models)
+    let options                 = _options || {};
+    let preparedModels          = this.connection.prepareAllModelsForOperation(Model, _models, options);
+    let { models, dirtyFields } = preparedModels;
+    if (Nife.isEmpty(models))
       return '';
 
     let sqlParts    = [];
@@ -1086,23 +1030,20 @@ class QueryGeneratorBase {
   }
 
   generateInsertStatement(Model, _models, _options) {
-    if (!_models || _models.length === 0)
-      return '';
-
     let options                 = _options || {};
-    let { models, dirtyFields } = this.prepareAllModelsForOperation(Model, _models, options);
-    if (!models)
+    let preparedModels          = this.connection.prepareAllModelsForOperation(Model, _models, options);
+    let { models, dirtyFields } = preparedModels;
+    if (Nife.isEmpty(models))
       return '';
 
     let subOptions  = Object.assign(Object.create(options), {
       asColumn:       true,
       columnNameOnly: true,
       fields:         dirtyFields,
-      preparedModels: models,
       dirtyFields,
     });
 
-    let values = this.generateInsertValuesFromModels(Model, _models, subOptions);
+    let values = this.generateInsertValuesFromModels(Model, preparedModels, subOptions);
     if (!values)
       return '';
 

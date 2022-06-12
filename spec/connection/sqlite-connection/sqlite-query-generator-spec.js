@@ -1174,8 +1174,7 @@ describe('SQLiteQueryGenerator', () => {
 
   describe('prepareAllModelsForOperation', () => {
     it('should convert everything to a model', () => {
-      let queryGenerator  = connection.getQueryGenerator();
-      let result          = queryGenerator.prepareAllModelsForOperation(User, [
+      let result          = connection.prepareAllModelsForOperation(User, [
         { firstName: 'Test', lastName: 'User' },
         new User({ lastName: 'Brain' }),
       ]);
@@ -1187,8 +1186,7 @@ describe('SQLiteQueryGenerator', () => {
     });
 
     it('should get dirty fields for models', () => {
-      let queryGenerator  = connection.getQueryGenerator();
-      let models          = [
+      let models = [
         new User(),
         new User(),
       ];
@@ -1196,7 +1194,7 @@ describe('SQLiteQueryGenerator', () => {
       Object.assign(models[0], { firstName: 'Test' });
       Object.assign(models[1], { lastName: 'User' });
 
-      let result = queryGenerator.prepareAllModelsForOperation(User, models);
+      let result = connection.prepareAllModelsForOperation(User, models);
 
       expect(result.models[0]).toBeInstanceOf(User);
       expect(result.models[1]).toBeInstanceOf(User);

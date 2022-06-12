@@ -27,22 +27,9 @@ class QueryEngine extends QueryEngineBase {
       },
     );
 
-    if (!context.queryRoot) {
-      let queryRoot = [];
-
-      context.queryRoot = queryRoot;
-      context.query = queryRoot;
-    }
-
-    context.queryEngineContext = context;
-
     super(context);
 
-    if (!('and' in context))
-      context.and = true;
-
-    if (!('or' in context))
-      context.or = false;
+    context.queryEngineScope = this;
   }
 
   Model(modelName) {
@@ -50,7 +37,7 @@ class QueryEngine extends QueryEngineBase {
     if (!model)
       throw new Error(`QueryEngine::Model: Requested model "${modelName}" not found.`);
 
-    return this._newModelScope(this.currentContext, model);
+    return this._newModelScope(model);
   }
 
   unscoped(context) {
@@ -74,7 +61,7 @@ class QueryEngine extends QueryEngineBase {
 
     let model = this.getConnection().getModel(prop);
     if (model) {
-      return this._newModelScope(this.currentContext, model).__call(function(fieldName) {
+      return this._newModelScope(model).__call(function(fieldName) {
         return this.Field(fieldName);
       });
     }

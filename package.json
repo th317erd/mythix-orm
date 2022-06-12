@@ -23,6 +23,8 @@
   "devDependencies": {
     "@spothero/eslint-plugin-spothero": "github:spothero/eslint-plugin-spothero",
     "better-sqlite3": "^7.5.3",
+    "colors": "^1.4.0",
+    "diff": "^5.1.0",
     "eslint": "^8.13.0",
     "jasmine": "^4.1.0",
     "nyc": "^15.1.0"

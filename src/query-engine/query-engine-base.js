@@ -57,6 +57,7 @@ class QueryEngineBase extends ProxyClass {
   _inheritContext(context, name, ...args) {
     let newContext = Object.assign(
       Object.create(context),
+      { value: undefined },
       ...args,
       {
         level:      (context.level || 0) + 1,
@@ -72,38 +73,52 @@ class QueryEngineBase extends ProxyClass {
     return newContext;
   }
 
-  _fetchContext(name) {
-    return this.currentContext[`${name}Context`];
-  }
-
-  _fetchScope(scopeName, fallbackScopeName) {
+  _fetchScope(...scopeNames) {
     let context = this._getRawQueryContext();
-    let scope = context[`${scopeName}Scope`];
-    if (!scope)
-      scope = context[`${fallbackScopeName}Scope`];
 
-    return scope;
+    for (let i = 0, il = scopeNames.length; i < il; i++) {
+      let scopeName = scopeNames[i];
+      if (scopeName === 'queryEngine') {
+        return this._newQueryEngineScope();
+      } else if (scopeName === 'model') {
+        let Model = context.Model || context.rootModel;
+        if (!Model)
+          continue;
+
+        return this._newModelScope(Model);
+      } else if (scopeName === 'field') {
+        let Field = context.Field;
+        if (!Field)
+          continue;
+
+        return this._newFieldScope(context.Field);
+      }
+    }
+
+    return this;
   }
 
-  _newQueryEngineScope(context, props) {
+  _newQueryEngineScope() {
     const QueryEngine = this.getQueryEngineClass();
-    let newContext    = this._inheritContext(context, 'queryEngine', props || {});
+    let context       = this.currentContext;
+    let newContext    = this._inheritContext(context, 'queryEngine');
     let newScope      = new QueryEngine(newContext);
 
     return newScope;
   }
 
-  _newModelScope(context, Model, props) {
+  _newModelScope(Model) {
     let ModelScopeClass = this.getModelScopeClass();
     let extra           = {};
     let modelName       = Model.getModelName();
+    let context         = this.currentContext;
 
     if (!context.rootModelName) {
       extra.rootModelName = modelName;
       extra.rootModel = Model;
     }
 
-    let newContext  = this._inheritContext(context, 'model', { Model, modelName }, props || {}, extra);
+    let newContext  = this._inheritContext(context, 'model', { Model, modelName }, extra);
     let newScope    = new ModelScopeClass(newContext);
 
     this._addToQuery({ operator: 'MODEL' }, newContext);
@@ -111,11 +126,12 @@ class QueryEngineBase extends ProxyClass {
     return newScope;
   }
 
-  _newFieldScope(context, Field, props) {
+  _newFieldScope(Field) {
     let FieldScopeClass = this.getFieldScopeClass();
     let fieldName       = Field.fieldName;
+    let context         = this.currentContext;
 
-    let newContext  = this._inheritContext(context, 'field', props || {}, { Field, fieldName });
+    let newContext  = this._inheritContext(context, 'field', { Field, fieldName });
     let newScope    = new FieldScopeClass(newContext);
 
     this._addToQuery({ operator: 'FIELD', fieldName }, newContext);
@@ -132,53 +148,70 @@ class QueryEngineBase extends ProxyClass {
     if (!context.connection)
       throw new TypeError('QueryEngineBase::constructor: "context.connection" is blank, but it must be specified.');
 
-    context[`${context.currentScopeName || 'queryEngine'}Scope`] = this;
-    context[`${context.currentScopeName || 'queryEngine'}Context`] = context;
+    // context[`${context.currentScopeName || 'queryEngine'}Scope`] = this;
+    // context[`${context.currentScopeName || 'queryEngine'}Context`] = context;
 
     if (!context.rootContext)
       context.rootContext = context;
 
+    if (!context.queryRoot)
+      context.queryRoot = [];
+
+    if (!('and' in context))
+      context.and = true;
+
+    if (!('or' in context))
+      context.or = false;
+
     // console.log(`Creating new ${this.constructor.name} scope: `, context, Object.getPrototypeOf(context));
 
+    let queryRoot = context.queryRoot;
     Object.defineProperties(this, {
-      ['currentContext']: {
+      queryRoot: {
+        writable:     false,
         enumberable:  false,
         configurable: true,
-        get:          () => context,
+        value:        queryRoot,
+      },
+      currentContext: {
+        enumberable:  false,
+        configurable: true,
+        get:          () => {
+          let currentContext = queryRoot[queryRoot.length - 1];
+          return currentContext || context;
+        },
         set:          () => {},
       },
     });
   }
 
-  _addToQuery(queryPart, _context) {
-    let context       = _context || this._getRawQueryContext();
-    let currentQuery  = context.query;
+  _getTopContextID() {
+    return this.currentContext.contextID;
+  }
 
-    currentQuery.push(
+  _getRawQueryContext() {
+    return this.currentContext;
+  }
+
+  _getRawQuery() {
+    return this.currentContext.queryRoot;
+  }
+
+  _addToQuery(queryPart, _context) {
+    let context   = _context || this._getRawQueryContext();
+    let queryRoot = context.queryRoot;
+
+    queryRoot.push(
       this._inheritContext(
         context,
         null,
         queryPart,
         {
-          partIndex:        currentQuery.length,
-          partParentQuery:  currentQuery,
+          partIndex:        queryRoot.length,
+          partParentQuery:  queryRoot[queryRoot.length - 1],
         },
       ),
     );
-  }
-
-  _getTopContextID() {
-    let context = this._getRawQueryContext();
-    return context.contextID;
-  }
-
-  _getRawQueryContext() {
-    let rawQuery = this._getRawQuery();
-    return rawQuery[rawQuery.length - 1] || this.currentContext;
-  }
-
-  _getRawQuery() {
-    return this.currentContext.queryRoot;
   }
 
   getConnection() {
@@ -191,6 +224,17 @@ class QueryEngineBase extends ProxyClass {
 
   getQueryEngineClass() {
     return this.currentContext.queryEngineScope.constructor;
+  }
+
+  clone() {
+    const Klass           = this.constructor;
+    let context           = this._getRawQueryContext();
+    let queryRootCopy     = this._getRawQuery().slice();
+    let newContext        = Object.assign(Object.create(context), { queryRoot: queryRootCopy });
+
+    queryRootCopy.push(newContext);
+
+    return new Klass(newContext);
   }
 }
 

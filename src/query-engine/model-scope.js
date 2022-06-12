@@ -24,7 +24,7 @@ class ModelScope extends QueryEngineBase {
     if (!field)
       throw new Error(`QueryEngine::ModelScope::Field: Requested field "${fieldName}" not found.`);
 
-    return this._newFieldScope(this.currentContext, field);
+    return this._newFieldScope(field);
   }
 
   [ProxyClass.MISSING](target, prop) {
@@ -33,7 +33,7 @@ class ModelScope extends QueryEngineBase {
 
     let field = this._getField(prop);
     if (field)
-      return this._newFieldScope(this.currentContext, field);
+      return this._newFieldScope(field);
 
     let lowerScope = this._fetchScope('queryEngine');
     return lowerScope[prop];

@@ -7,6 +7,7 @@
 const UUID = require('uuid');
 const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
 const { SQLLiteral } = require('../../../src/connection/sql-literals');
+const { UUID_REGEXP } = require('../../support/test-helpers');
 
 describe('SQLiteConnection', () => {
   describe('connection management', () => {
@@ -226,6 +227,323 @@ describe('SQLiteConnection', () => {
       // Truncate
       await connection.query('DELETE FROM "users"');
       await connection.query('DELETE FROM "roles"');
+    });
+
+    describe('select', () => {
+      it('should be able to select models', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        await connection.insert(User, insertModels);
+
+        let users = await connection.select(User.where);
+        expect(users).toBeInstanceOf(Array);
+        expect(users.length).toEqual(2);
+        expect(users[0]).toBeInstanceOf(User);
+        expect(users[1]).toBeInstanceOf(User);
+        expect(users[0].id).toEqual(insertModels[0].id);
+        expect(users[1].id).toEqual(insertModels[1].id);
+      });
+
+      it('should be able to select specific models', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        await connection.insert(User, insertModels);
+
+        let users = await connection.select(User.where.lastName.EQ('Anne'));
+        expect(users).toBeInstanceOf(Array);
+        expect(users.length).toEqual(1);
+        expect(users[0]).toBeInstanceOf(User);
+        expect(users[0].id).toEqual(insertModels[1].id);
+      });
+    });
+
+    describe('insert', () => {
+      it('should be able to insert models', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        spyOn(connection, 'prepareAllModelsForOperation').and.callThrough();
+
+        let storedModels = await connection.insert(User, insertModels);
+
+        expect(connection.prepareAllModelsForOperation.calls.count()).toEqual(3);
+        expect(storedModels).toBeInstanceOf(Array);
+        expect(storedModels.length).toEqual(2);
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let query           = User.where;
+        let sqlStatement    = queryGenerator.generateSelectStatement(query);
+        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
+        let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
+
+        expect(users).toBeInstanceOf(Array);
+        expect(users.length).toEqual(2);
+        expect(users[0]).toBeInstanceOf(User);
+        expect(users[1]).toBeInstanceOf(User);
+        expect(users[0].id).toEqual(insertModels[0].id);
+        expect(users[1].id).toEqual(insertModels[1].id);
+      });
+
+      it('should be able to change batchSize', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        spyOn(connection, 'prepareAllModelsForOperation').and.callThrough();
+
+        let storedModels = await connection.insert(User, insertModels, { batchSize: 1 });
+
+        expect(connection.prepareAllModelsForOperation.calls.count()).toEqual(6);
+        expect(storedModels).toBeInstanceOf(Array);
+        expect(storedModels.length).toEqual(2);
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let query           = User.where;
+        let sqlStatement    = queryGenerator.generateSelectStatement(query);
+        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
+        let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
+
+        expect(users).toBeInstanceOf(Array);
+        expect(users.length).toEqual(2);
+        expect(users[0]).toBeInstanceOf(User);
+        expect(users[1]).toBeInstanceOf(User);
+        expect(users[0].id).toEqual(insertModels[0].id);
+        expect(users[1].id).toEqual(insertModels[1].id);
+      });
+    });
+
+    describe('update', () => {
+      it('should be able to update models', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        let storedModels = await connection.insert(User, insertModels);
+        expect(storedModels).toBeInstanceOf(Array);
+        expect(storedModels.length).toEqual(2);
+
+        storedModels[0].firstName = 'Test1';
+        storedModels[1].lastName = 'Test1';
+
+        let users = await connection.update(User, storedModels);
+
+        expect(users).toBeInstanceOf(Array);
+        expect(users.length).toEqual(2);
+        expect(users[0]).toBeInstanceOf(User);
+        expect(users[1]).toBeInstanceOf(User);
+        expect(users[0].id).toEqual(insertModels[0].id);
+        expect(users[1].id).toEqual(insertModels[1].id);
+
+        // Ensure the changes were persisted
+        let storedUsers = await connection.select(User);
+        expect(storedUsers).toBeInstanceOf(Array);
+        expect(storedUsers.length).toEqual(2);
+        expect(storedUsers[0]).toBeInstanceOf(User);
+        expect(storedUsers[1]).toBeInstanceOf(User);
+        expect(storedUsers[0].id).toEqual(insertModels[0].id);
+        expect(storedUsers[0].firstName).toEqual('Test1');
+        expect(storedUsers[0].lastName).toEqual(insertModels[0].lastName);
+        expect(storedUsers[1].id).toEqual(insertModels[1].id);
+        expect(storedUsers[1].firstName).toEqual(insertModels[1].firstName);
+        expect(storedUsers[1].lastName).toEqual('Test1');
+      });
+    });
+
+    describe('destroy', () => {
+      it('should be able to delete models', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        let storedModels = await connection.insert(User, insertModels);
+        expect(storedModels).toBeInstanceOf(Array);
+        expect(storedModels.length).toEqual(2);
+
+        storedModels[0].firstName = 'Test1';
+        storedModels[1].lastName = 'Test1';
+
+        await connection.destroy(User, storedModels);
+
+        // Ensure the changes were persisted
+        let storedUsers = await connection.select(User);
+        expect(storedUsers).toBeInstanceOf(Array);
+        expect(storedUsers.length).toEqual(0);
+      });
+
+      it('should be able to delete specific models', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        let storedModels = await connection.insert(User, insertModels);
+        expect(storedModels).toBeInstanceOf(Array);
+        expect(storedModels.length).toEqual(2);
+
+        await connection.destroy(User, storedModels[0]);
+
+        // Ensure the changes were persisted
+        let storedUsers = await connection.select(User);
+        expect(storedUsers).toBeInstanceOf(Array);
+        expect(storedUsers.length).toEqual(1);
+        expect(storedUsers[0].id).toEqual(insertModels[1].id);
+        expect(storedUsers[0].firstName).toEqual(insertModels[1].firstName);
+        expect(storedUsers[0].lastName).toEqual(insertModels[1].lastName);
+      });
+
+      it('should be able to delete specific models via query', async () => {
+        let insertModels = [
+          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+        ];
+
+        let storedModels = await connection.insert(User, insertModels);
+        expect(storedModels).toBeInstanceOf(Array);
+        expect(storedModels.length).toEqual(2);
+
+        await connection.destroy(User, User.where.lastName.EQ('Anne'));
+
+        // Ensure the changes were persisted
+        let storedUsers = await connection.select(User);
+        expect(storedUsers).toBeInstanceOf(Array);
+        expect(storedUsers.length).toEqual(1);
+        expect(storedUsers[0].id).toEqual(insertModels[0].id);
+        expect(storedUsers[0].firstName).toEqual(insertModels[0].firstName);
+        expect(storedUsers[0].lastName).toEqual(insertModels[0].lastName);
+      });
+    });
+
+    describe('destroy query', () => {
+      it('should be able to destroy a model', async () => {
+        let models = await connection.insert(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          ],
+        );
+
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(1);
+        expect(models[0].id).toMatch(UUID_REGEXP);
+        expect(models[0].firstName).toMatch('Test');
+        expect(models[0].lastName).toMatch('User');
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateDeleteStatement(User, User.where.id.EQ(models[0].id));
+        await connection.query(sqlStr);
+
+        models = await connection.select(User.where);
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(0);
+      });
+
+      it('should be able to delete a specific model', async () => {
+        let models = await connection.insert(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User1', primaryRoleID: UUID.v4() }),
+            new User({ firstName: 'Test', lastName: 'User2', primaryRoleID: UUID.v4() }),
+          ],
+        );
+
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(2);
+        expect(models[0].id).toMatch(UUID_REGEXP);
+        expect(models[0].firstName).toMatch('Test');
+        expect(models[0].lastName).toMatch('User1');
+        expect(models[1].id).toMatch(UUID_REGEXP);
+        expect(models[1].firstName).toMatch('Test');
+        expect(models[1].lastName).toMatch('User2');
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateDeleteStatement(User, User.where.lastName.EQ('User2'));
+        await connection.query(sqlStr);
+
+        models = await connection.select(User.where);
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(1);
+        expect(models[0].id).toMatch(models[0].id);
+        expect(models[0].firstName).toMatch('Test');
+        expect(models[0].lastName).toMatch('User1');
+      });
+    });
+
+    describe('update query', () => {
+      it('should be able to update a model', async () => {
+        let models = await connection.insert(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          ],
+        );
+
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(1);
+        expect(models[0].id).toMatch(UUID_REGEXP);
+        expect(models[0].firstName).toMatch('Test');
+        expect(models[0].lastName).toMatch('User');
+
+        let model = models[0];
+        model.firstName = 'Derp';
+        model.lastName = 'Burp';
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateUpdateStatement(User, models[0]);
+        await connection.query(sqlStr);
+
+        models = await connection.select(User.where);
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(1);
+        expect(models[0].id).toMatch(UUID_REGEXP);
+        expect(models[0].firstName).toMatch('Derp');
+        expect(models[0].lastName).toMatch('Burp');
+      });
+
+      it('should be able to update a specific model', async () => {
+        let models = await connection.insert(
+          User,
+          [
+            new User({ firstName: 'Test', lastName: 'User1', primaryRoleID: UUID.v4() }),
+            new User({ firstName: 'Test', lastName: 'User2', primaryRoleID: UUID.v4() }),
+          ],
+        );
+
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(2);
+        expect(models[0].id).toMatch(UUID_REGEXP);
+        expect(models[0].firstName).toMatch('Test');
+        expect(models[0].lastName).toMatch('User1');
+        expect(models[1].id).toMatch(UUID_REGEXP);
+        expect(models[1].firstName).toMatch('Test');
+        expect(models[1].lastName).toMatch('User2');
+
+        let queryGenerator  = connection.getQueryGenerator();
+        let sqlStr          = queryGenerator.generateUpdateStatement(User, { firstName: 'Derp', lastName: 'Burp' }, User.where.lastName.EQ('User2'));
+        await connection.query(sqlStr);
+
+        models = await connection.select(User.where);
+        expect(models).toBeInstanceOf(Array);
+        expect(models.length).toEqual(2);
+        expect(models[0].id).toMatch(models[0].id);
+        expect(models[0].firstName).toMatch('Test');
+        expect(models[0].lastName).toMatch('User1');
+        expect(models[1].id).toMatch(models[1].id);
+        expect(models[1].firstName).toMatch('Derp');
+        expect(models[1].lastName).toMatch('Burp');
+      });
     });
 
     describe('insert query', () => {

@@ -95,8 +95,6 @@ class ProxyClass {
         if (shouldSkipProxy(prop))
           return me[prop];
 
-        // console.log('PROXY KEY: ', prop, me);
-
         if (typeof prop !== 'symbol' && prop !== '__autoCall' && prop !== '__call') {
           let autoCall = me[AUTO_CALL_CALLER];
           if (typeof autoCall === 'function' && me[AUTO_CALL_CALLED] === false) {
