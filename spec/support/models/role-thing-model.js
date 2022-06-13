@@ -11,8 +11,8 @@ class RoleThing extends Model {
       primaryKey:   true,
     },
     'roleID': {
-      type:       Types.UUIDV4,
-      allowNull:  false,
+      type:       Types.FOREIGN_KEY('Role:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
+      allowNull:  true,
       index:      true,
     },
     'userThing': {

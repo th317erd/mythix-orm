@@ -930,6 +930,77 @@ class QueryGeneratorBase {
   }
 
   // eslint-disable-next-line no-unused-vars
+  generateCreateTableStatementInnerTail(Model, options) {
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  generateIndexName(Model, field, index, options) {
+    let tableName = Model.getTableName();
+
+    if (index === true)
+      return this.escapeID(`idx_${tableName}_${field.columnName}`);
+
+    let fieldNames = [];
+    for (let i = 0, il = index.length; i < il; i++) {
+      let indexFieldName  = index[i];
+      let indexField      = Model.getField(indexFieldName);
+      if (!indexField)
+        throw new Error(`${this.constructor.name}::generateIndexName: Unable to find field named "${indexFieldName}".`);
+
+      fieldNames.push(indexField.columnName);
+    }
+
+    return this.escapeID(`idx_${tableName}_${fieldNames.join('_')}`);
+  }
+
+  generateColumnIndex(Model, field, index, options) {
+    let escapedTableName  = this.escapeID(Model.getTableName());
+    let indexName         = this.generateIndexName(Model, field, index, options);
+
+    if (index === true)
+      return `CREATE INDEX ${indexName} ON ${escapedTableName} (${this.escapeID(field.columnName)});`;
+
+    let fieldNames = [];
+    for (let i = 0, il = index.length; i < il; i++) {
+      let indexFieldName  = index[i];
+      let indexField      = Model.getField(indexFieldName);
+      if (!indexField)
+        throw new Error(`${this.constructor.name}::generateColumnIndex: Unable to find field named "${indexFieldName}".`);
+
+      fieldNames.push(this.escapeID(indexField.columnName));
+    }
+
+    return `CREATE INDEX ${indexName} ON ${escapedTableName} (${fieldNames.join(',')});`;
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  generateCreateTableStatementOuterTail(Model, options) {
+    let fieldParts = [];
+
+    Model.iterateFields(({ field }) => {
+      if (field.type.isVirtual())
+        return;
+
+      if (field.type.isForeignKey())
+        return;
+
+      if (!field.index)
+        return;
+
+      let Model   = field.Model;
+      let indexes = Nife.toArray(field.index).filter(Boolean);
+      for (let i = 0, il = indexes.length; i < il; i++) {
+        let index   = indexes[i];
+        let result  = this.generateColumnIndex(Model, field, index);
+        if (result)
+          fieldParts.push(result);
+      }
+    });
+
+    return fieldParts;
+  }
+
+  // eslint-disable-next-line no-unused-vars
   generateCreateTableStatement(Model, _options) {
     let options = _options || {};
     let fieldParts = [];
@@ -938,7 +1009,15 @@ class QueryGeneratorBase {
       if (field.type.isVirtual())
         return;
 
-      let columnName      = field.field || fieldName;
+      // if (field.type.isForeignKey()) {
+      //   let result = this.generateForeignKeyColumn(field, field.type);
+      //   if (result)
+      //     fieldParts.push(`  ${result}`);
+
+      //   return;
+      // }
+
+      let columnName      = field.columnName || fieldName;
       let constraintParts = [];
 
       if (field.primaryKey) {
@@ -972,6 +1051,10 @@ class QueryGeneratorBase {
     let ifNotExists = 'IF NOT EXISTS ';
     if (options.ifNotExists === false)
       ifNotExists = '';
+
+    let trailingParts = Nife.toArray(this.generateCreateTableStatementInnerTail(Model, options)).filter(Boolean);
+    if (Nife.isNotEmpty(trailingParts))
+      fieldParts = fieldParts.concat(trailingParts.map((part) => `  ${part.trim()}`));
 
     return `CREATE TABLE ${ifNotExists}${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
   }

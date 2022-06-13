@@ -7,6 +7,7 @@
 
 const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
 const { SQLLiteral } = require('../../../src/connection/sql-literals');
+const Types = require('../../../src/types');
 const ModelBase = require('../../../src/model');
 
 describe('SQLiteQueryGenerator', () => {
@@ -16,6 +17,7 @@ describe('SQLiteQueryGenerator', () => {
   let UserThing;
   let RoleThing;
   let ExtendedUser;
+  let FKModel;
 
   beforeEach(() => {
     connection = new SQLiteConnection({
@@ -28,6 +30,7 @@ describe('SQLiteQueryGenerator', () => {
     UserThing = models.UserThing;
     RoleThing = models.RoleThing;
     ExtendedUser = models.ExtendedUser;
+    FKModel = models.FKModel;
   });
 
   describe('getProjectionRequiredFields', () => {
@@ -387,6 +390,11 @@ describe('SQLiteQueryGenerator', () => {
     it('can generate a create table statement #2', () => {
       let queryGenerator = connection.getQueryGenerator();
       expect(queryGenerator.generateCreateTableStatement(ExtendedUser)).toEqual('CREATE TABLE IF NOT EXISTS "extended_users" (  "id" INTEGER PRIMARY KEY AUTOINCREMENT,\n  "createdAt" DATETIME NOT NULL DEFAULT (datetime(\'now\')),\n  "email" VARCHAR(256) UNIQUE NOT NULL,\n  "firstName" VARCHAR(64),\n  "lastName" VARCHAR(64),\n  "playerType" VARCHAR(256) NOT NULL DEFAULT \'wizard\',\n  "primaryRole" VARCHAR(256) NOT NULL,\n  "primaryRoleID" VARCHAR(36) NOT NULL\n);');
+    });
+
+    it('can generate a create table statement with a foreign key', () => {
+      let queryGenerator = connection.getQueryGenerator();
+      expect(queryGenerator.generateCreateTableStatement(RoleThing)).toEqual('CREATE TABLE IF NOT EXISTS "role_things" (  "id" VARCHAR(36) PRIMARY KEY,\n  "roleID" VARCHAR(36),\n  FOREIGN KEY("roleID") REFERENCES "roles"("id") ON DELETE CASCADE ON UPDATE CASCADE\n);');
     });
   });
 

@@ -13,7 +13,7 @@ class UUIDV4Type extends Type {
     UUIDV4: UUIDV4,
   };
 
-  static castToType({ value }) {
+  castToType({ value }) {
     if (value == null)
       return value;
 

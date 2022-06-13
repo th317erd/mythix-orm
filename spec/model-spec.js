@@ -455,7 +455,7 @@ describe('Model', () => {
   describe('_castFieldValue', () => {
     it('should be able cast a value', () => {
       let user = new User();
-      expect(user._castFieldValue({ type: { castToType: () => 'derp' } }, 'hello')).toEqual('derp');
+      expect(user._castFieldValue({ type: { _castToType: () => 'derp' } }, 'hello')).toEqual('derp');
     });
 
     it('should return value if type is empty', () => {

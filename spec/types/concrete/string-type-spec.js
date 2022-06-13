@@ -64,18 +64,19 @@ describe('StringType', () => {
   });
 
   it('can cast to type', () => {
-    let value = Types.STRING.castToType({ value: 123 });
+    let type = Types.STRING(123);
+    let value = type.castToType({ value: 123 });
     expect(typeof value).toEqual('string');
     expect(value).toEqual('123');
 
-    value = Types.STRING.castToType({ value: {} });
+    value = type.castToType({ value: {} });
     expect(typeof value).toEqual('string');
     expect(value).toEqual('[object Object]');
 
-    value = Types.STRING.castToType({ value: undefined });
+    value = type.castToType({ value: undefined });
     expect(value).toBe(undefined);
 
-    value = Types.STRING.castToType({ value: null });
+    value = type.castToType({ value: null });
     expect(value).toBe(null);
   });
 });

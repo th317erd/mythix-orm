@@ -42,31 +42,32 @@ describe('BooleanType', () => {
   });
 
   it('can cast to type', () => {
-    let value = Types.BOOLEAN.castToType({ value: 1 });
+    let type = Types.BOOLEAN();
+    let value = type.castToType({ value: 1 });
     expect(typeof value).toEqual('boolean');
     expect(value).toEqual(true);
 
-    value = Types.BOOLEAN.castToType({ value: 0 });
+    value = type.castToType({ value: 0 });
     expect(typeof value).toEqual('boolean');
     expect(value).toEqual(false);
 
-    value = Types.BOOLEAN.castToType({ value: -1 });
+    value = type.castToType({ value: -1 });
     expect(typeof value).toEqual('boolean');
     expect(value).toEqual(true);
 
-    value = Types.BOOLEAN.castToType({ value: false });
+    value = type.castToType({ value: false });
     expect(typeof value).toEqual('boolean');
     expect(value).toEqual(false);
 
-    value = Types.BOOLEAN.castToType({ value: true });
+    value = type.castToType({ value: true });
     expect(typeof value).toEqual('boolean');
     expect(value).toEqual(true);
 
-    value = Types.BOOLEAN.castToType({ value: 'false' });
+    value = type.castToType({ value: 'false' });
     expect(typeof value).toEqual('boolean');
     expect(value).toEqual(false);
 
-    value = Types.BOOLEAN.castToType({ value: 'true' });
+    value = type.castToType({ value: 'true' });
     expect(typeof value).toEqual('boolean');
     expect(value).toEqual(true);
   });

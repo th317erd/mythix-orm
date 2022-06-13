@@ -31,7 +31,16 @@ class Type {
     return false;
   }
 
-  static onModelInitialize() {
+  static isRelational() {
+    return false;
+  }
+
+  static isForeignKey() {
+    return false;
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  static onModelInitialize(Model, field, type, connection) {
   }
 
   static wrapConstructor(TypeKlass) {
@@ -94,16 +103,20 @@ class Type {
     return new this.constructor(...this._args);
   }
 
-  isRelational() {
-    return false;
+  isVirtual() {
+    return this.constructor.isVirtual.call(this.constructor);
   }
 
-  isVirtual() {
-    return this.constructor.isVirtual();
+  isRelational() {
+    return this.constructor.isRelational.call(this.constructor);
+  }
+
+  isForeignKey() {
+    return this.constructor.isForeignKey.call(this.constructor);
   }
 
   onModelInitialize(...args) {
-    return this.constructor.onModelInitialize(...args);
+    return this.constructor.onModelInitialize.call(this.constructor, ...args);
   }
 
   getModelInstance() {
@@ -152,12 +165,12 @@ class Type {
     return modelInstance.getConnection();
   }
 
-  castToType(params) {
-    let Model = this.getModel();
+  _castToType(params) {
+    let Model         = this.getModel();
     let modelInstance = this.getModelInstance();
 
-    return this.constructor.castToType.call(
-      this.constructor,
+    return this.castToType.call(
+      this,
       Object.assign({}, params || {}, {
         typeInstance: this,
         connection:   this.getConnection(),
@@ -165,6 +178,10 @@ class Type {
         modelInstance,
       }),
     );
+  }
+
+  castToType({ value }) {
+    return value;
   }
 
   initialize(Model, modelInstance, field) {

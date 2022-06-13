@@ -216,11 +216,6 @@ class SQLConnectionBase extends ConnectionBase {
         if (!models)
           models = modelData[modelName] = [];
 
-        // TODO: Use model projection to build relationships
-        // This should work if it just happens at the projection
-        // level, as that is what will project the fields, and
-        // collect the models for these operations.
-
         if (pkFieldName) {
           let id = model[pkFieldName];
 
@@ -428,6 +423,23 @@ class SQLConnectionBase extends ConnectionBase {
     }
 
     return finalResults;
+  }
+
+  async createTable(Model, options) {
+    let queryGenerator  = this.getQueryGenerator();
+    let createTableSQL  = queryGenerator.generateCreateTableStatement(Model);
+
+    // Create table
+    await this.query(createTableSQL, options);
+
+    // Create indexes and constraints
+    let trailingStatements = Nife.toArray(queryGenerator.generateCreateTableStatementOuterTail(Model, options)).filter(Boolean);
+    if (Nife.isNotEmpty(trailingStatements)) {
+      for (let i = 0, il = trailingStatements.length; i < il; i++) {
+        let trailingStatement = trailingStatements[i];
+        await this.query(trailingStatement, options);
+      }
+    }
   }
 
   async insert(Model, models, _options) {

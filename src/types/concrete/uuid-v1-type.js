@@ -11,7 +11,7 @@ class UUIDV1Type extends Type {
     }),
   };
 
-  static castToType({ value }) {
+  castToType({ value }) {
     if (value == null)
       return value;
 

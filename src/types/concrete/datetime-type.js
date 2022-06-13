@@ -11,7 +11,7 @@ class DateTimeType extends Type {
     NOW: DATETIME_NOW,
   };
 
-  static castToType({ value }) {
+  castToType({ value }) {
     if (value == null)
       return value;
 

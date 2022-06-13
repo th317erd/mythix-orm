@@ -42,20 +42,21 @@ describe('IntegerType', () => {
   });
 
   it('can cast to type', () => {
-    let value = Types.INTEGER.castToType({ value: '1234' });
+    let type = Types.INTEGER();
+    let value = type.castToType({ value: '1234' });
     expect(typeof value).toEqual('number');
     expect(value).toEqual(1234);
 
-    value = Types.INTEGER.castToType({ value: '-1234.6' });
+    value = type.castToType({ value: '-1234.6' });
     expect(typeof value).toEqual('number');
     expect(value).toEqual(-1235);
 
-    value = Types.INTEGER.castToType({ value: undefined });
+    value = type.castToType({ value: undefined });
     expect(value).toBe(undefined);
 
-    value = Types.INTEGER.castToType({ value: null });
+    value = type.castToType({ value: null });
     expect(value).toBe(null);
 
-    expect(() => Types.INTEGER.castToType({ value: 'derp' })).toThrow(new TypeError('IntegerType::castToType: Value provided ("derp") can not be cast into an integer.'));
+    expect(() => type.castToType({ value: 'derp' })).toThrow(new TypeError('IntegerType::castToType: Value provided ("derp") can not be cast into an integer.'));
   });
 });

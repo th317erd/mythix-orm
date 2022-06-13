@@ -8,7 +8,7 @@ class BigIntType extends Type {
     AUTO_INCREMENT,
   };
 
-  static castToType({ value }) {
+  castToType({ value }) {
     if (value == null)
       return value;
 

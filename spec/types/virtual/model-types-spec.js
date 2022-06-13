@@ -26,7 +26,8 @@ describe('ModelType', () => {
   });
 
   it('will throw error on attempt to cast without a type instance', () => {
-    expect(() => Types.Model.castToType({})).toThrow(new TypeError('ModelType::castToType: Type instance is required to cast.'));
+    let type = Types.Model('Role:userID');
+    expect(() => type.castToType({})).toThrow(new TypeError('ModelType::castToType: Type instance is required to cast.'));
   });
 });
 
@@ -42,7 +43,8 @@ describe('ModelsType', () => {
   });
 
   it('will throw error on attempt to cast without a type instance', () => {
-    expect(() => Types.Models.castToType({})).toThrow(new TypeError('ModelsType::castToType: Type instance is required to cast.'));
+    let type = Types.Models('Role:userID');
+    expect(() => type.castToType({})).toThrow(new TypeError('ModelsType::castToType: Type instance is required to cast.'));
   });
 });
 

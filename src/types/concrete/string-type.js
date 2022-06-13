@@ -5,7 +5,7 @@ const Type = require('../type');
 const DEFAULT_STRING_LENGTH = 256;
 
 class StringType extends Type {
-  static castToType({ value }) {
+  castToType({ value }) {
     if (value == null)
       return value;
 

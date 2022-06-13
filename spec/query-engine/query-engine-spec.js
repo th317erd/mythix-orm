@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeAll, __dirname */
+/* global describe, it, expect, beforeAll */
 
 const Nife = require('nife');
 const { ConnectionBase, QueryEngine } = require('../../src');

@@ -56,10 +56,11 @@ describe('BigIntType', () => {
   });
 
   it('can cast to type', () => {
-    let value = Types.BIGINT.castToType({ value: '1234' });
+    let type = Types.BIGINT();
+    let value = type.castToType({ value: '1234' });
     expect(typeof value).toEqual('bigint');
     expect(value).toEqual(BigInt(1234));
 
-    expect(() => Types.BIGINT.castToType({ value: 'derp' })).toThrow(new SyntaxError('Cannot convert derp to a BigInt'));
+    expect(() => type.castToType({ value: 'derp' })).toThrow(new SyntaxError('Cannot convert derp to a BigInt'));
   });
 });

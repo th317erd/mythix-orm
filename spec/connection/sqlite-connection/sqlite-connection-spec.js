@@ -199,12 +199,10 @@ describe('SQLiteConnection', () => {
     let connection;
     let User;
     let Role;
+    let RoleThing;
 
     const createTable = async (connection, Model) => {
-      let queryGenerator  = connection.getQueryGenerator();
-      let sqlStr          = queryGenerator.generateCreateTableStatement(Model);
-
-      return await connection.query(sqlStr);
+      return await connection.createTable(Model, { logger: console });
     };
 
     beforeAll(async () => {
@@ -216,11 +214,13 @@ describe('SQLiteConnection', () => {
 
       User = models.User;
       Role = models.Role;
+      RoleThing = models.RoleThing;
 
       await connection.start();
 
       await createTable(connection, User);
       await createTable(connection, Role);
+      await createTable(connection, RoleThing);
     });
 
     beforeEach(async () => {

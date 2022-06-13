@@ -92,6 +92,10 @@ class Model {
       return class ${modelName} extends ConnectionModel {
         static fields = Model.cloneFields(ConnectionModel.fields);
 
+        constructor(...args) {
+          super(...args);
+        }
+
         static _getConnection = function() {
           return connection;
         };
@@ -106,7 +110,7 @@ class Model {
       field.Model = ConnectionModel;
 
       if (typeof field.type.onModelInitialize === 'function')
-        field.type.onModelInitialize(ConnectionModel, field, field.type);
+        field.type.onModelInitialize.call(field.type, ConnectionModel, field, field.type, connection);
     });
 
     Object.defineProperties(ConnectionModel, {
@@ -400,7 +404,7 @@ class Model {
     if (!type)
       return value;
 
-    return type.castToType({ value });
+    return type._castToType({ value });
   }
 
   _initializeFieldData(fieldName, field, fieldValue, data) {

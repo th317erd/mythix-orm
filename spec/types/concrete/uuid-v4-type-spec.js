@@ -43,13 +43,14 @@ describe('UUIDV4Type', () => {
   });
 
   it('can cast to type', () => {
-    expect(() => Types.UUIDV4.castToType({ value: '1234' })).toThrow(new TypeError('UUIDV4Type::castToType: Provided value "1234" is not a valid UUID.'));
+    let type = Types.UUIDV4();
+    expect(() => type.castToType({ value: '1234' })).toThrow(new TypeError('UUIDV4Type::castToType: Provided value "1234" is not a valid UUID.'));
 
     let uuid = Types.UUIDV4.Default.UUIDV4();
     expect(uuid).toMatch(UUID_REGEXP);
-    expect(Types.UUIDV4.castToType({ value: uuid })).toEqual(uuid);
+    expect(type.castToType({ value: uuid })).toEqual(uuid);
 
-    expect(Types.UUIDV4.castToType({ value: undefined })).toBe(undefined);
-    expect(Types.UUIDV4.castToType({ value: null })).toBe(null);
+    expect(type.castToType({ value: undefined })).toBe(undefined);
+    expect(type.castToType({ value: null })).toBe(null);
   });
 });

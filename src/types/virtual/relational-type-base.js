@@ -11,6 +11,10 @@ class RelationalTypeBase extends Type {
     return true;
   }
 
+  static isRelational() {
+    return true;
+  }
+
   // Model types work by specifying a "target"
   // and a "value provider".
   // These are fully qualified names, meaning
@@ -43,10 +47,6 @@ class RelationalTypeBase extends Type {
         value:        sourceRelation,
       },
     });
-  }
-
-  isRelational() {
-    return true;
   }
 
   getTargetModel(connection) {

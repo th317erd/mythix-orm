@@ -42,18 +42,20 @@ describe('DateType', () => {
   });
 
   it('can cast to type', () => {
-    let value = Types.DATE.castToType({ value: '2001-01-01' });
+    let type = Types.DATE();
+    let value = type.castToType({ value: '2001-01-01' });
     expect(value).toBeInstanceOf(Date);
     expect(value.toISOString()).toEqual('2001-01-01T00:00:00.000Z');
 
-    value = Types.DATE.castToType({ value: undefined });
+    value = type.castToType({ value: undefined });
     expect(value).toBe(undefined);
 
-    value = Types.DATE.castToType({ value: null });
+    value = type.castToType({ value: null });
     expect(value).toBe(null);
   });
 
   it('should throw an error on bad datetime string', () => {
-    expect(() => Types.DATE.castToType({ value: 'derp' })).toThrow(new TypeError('DateType::castToType: Value provided ("derp") can not be cast into a date.'));
+    let type = Types.DATE();
+    expect(() => type.castToType({ value: 'derp' })).toThrow(new TypeError('DateType::castToType: Value provided ("derp") can not be cast into a date.'));
   });
 });

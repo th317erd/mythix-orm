@@ -38,7 +38,7 @@ const INJECT_TYPE_METHODS = {
 const INJECT_TYPE_METHODS_KEYS = Object.keys(INJECT_TYPE_METHODS);
 
 class ModelType extends RelationalTypeBase {
-  static castToType({ value, typeInstance, connection }) {
+  castToType({ value, typeInstance, connection }) {
     if (!typeInstance)
       throw new TypeError('ModelType::castToType: Type instance is required to cast.');
 
