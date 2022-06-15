@@ -111,6 +111,17 @@ class SQLConnectionBase extends ConnectionBase {
     return SqlString.escapeId(value).replace(/`/g, '"');
   }
 
+  getDefaultOrder(Model, options) {
+    let order = Nife.toArray(Model.getDefaultOrder(options));
+
+    order = Nife.arrayFlatten(order).filter(Boolean);
+
+    if (Nife.isEmpty(order))
+      return;
+
+    return order;
+  }
+
   generateSavePointName() {
     let id = UUID.v4();
 
@@ -450,6 +461,11 @@ class SQLConnectionBase extends ConnectionBase {
     });
   }
 
+  // eslint-disable-next-line no-unused-vars
+  async upsert(Model, models, _options) {
+    throw new Error(`${this.constructor.name}::upsert: This connection type does not support "upsert" operations.`);
+  }
+
   async update(Model, models, _options, _queryEngine) {
     let queryEngine = _queryEngine;
     let options     = _options;
@@ -492,8 +508,12 @@ class SQLConnectionBase extends ConnectionBase {
     let options         = _options;
     let queryGenerator  = this.getQueryGenerator();
 
-    if (QueryEngine.isQuery(models)) {
-      let sqlStr          = queryGenerator.generateDeleteStatement(Model, models);
+    if (QueryEngine.isQuery(models) || (models == null || Array.isArray(models) && Nife.isEmpty(models))) {
+      let query = models;
+      if (!query)
+        query = Model.where.unscoped();
+
+      let sqlStr = queryGenerator.generateDeleteStatement(Model, query);
       return await this.query(sqlStr);
     } else if (!options) {
       options = {};
@@ -524,7 +544,7 @@ class SQLConnectionBase extends ConnectionBase {
     });
   }
 
-  async select(_queryEngine, _options) {
+  async *select(_queryEngine, _options) {
     let queryEngine = _queryEngine;
     if (!queryEngine)
       throw new TypeError(`${this.constructor.name}::select: First argument must be a model class or a query.`);
@@ -537,13 +557,125 @@ class SQLConnectionBase extends ConnectionBase {
     }
 
     let options         = _options || {};
+    let batchSize       = options.batchSize || 500;
+    let startIndex      = 0;
     let queryGenerator  = this.getQueryGenerator();
-    let sqlStatement    = queryGenerator.generateSelectStatement(queryEngine);
-    let result          = await this.query(sqlStatement, { formatResponse: true, logger: options.logger });
-    let modelDataMap    = this.buildModelDataMapFromSelectResults(queryEngine, result);
-    let models          = this.buildModelsFromModelDataMap(queryEngine, modelDataMap);
 
-    return models;
+    while (true) {
+      let query         = queryEngine.clone().LIMIT(batchSize).OFFSET(startIndex);
+      let sqlStatement  = queryGenerator.generateSelectStatement(query, options);
+      let result        = await this.query(sqlStatement, { formatResponse: true, logger: options.logger });
+
+      if (!result.rows || result.rows.length === 0)
+        break;
+
+      startIndex += result.rows.length;
+
+      if (options.raw === true) {
+        yield result;
+      } else {
+        let modelDataMap  = this.buildModelDataMapFromSelectResults(queryEngine, result);
+        let models        = this.buildModelsFromModelDataMap(queryEngine, modelDataMap);
+
+        for (let i = 0, il = models.length; i < il; i++) {
+          let model = models[i];
+          yield model;
+        }
+      }
+
+      if (result.rows.length < batchSize)
+        break;
+    }
+  }
+
+  async count(_queryEngine, _field, options) {
+    let queryEngine = _queryEngine;
+    if (!queryEngine)
+      throw new TypeError(`${this.constructor.name}::count: First argument must be a model class or a query.`);
+
+    if (!QueryEngine.isQuery(queryEngine)) {
+      if (Object.prototype.hasOwnProperty.call(queryEngine, 'where'))
+        queryEngine = queryEngine.where;
+      else
+        throw new TypeError(`${this.constructor.name}::count: First argument must be a model class or a query.`);
+    }
+
+    let queryGenerator    = this.getQueryGenerator();
+    let allModels         = queryGenerator.getAllModelsUsedInQuery(queryEngine);
+    let field             = _field;
+    let escapedFieldName  = '*';
+    let projectionFields  = [];
+
+    if (Nife.isNotEmpty(field)) {
+      if (Nife.instanceOf(field, 'string')) {
+        let fieldName = field;
+        let def       = ModelUtils.parseQualifiedName(field);
+
+        if (!def.modelName) {
+          if (allModels.length > 1)
+            throw new Error(`${this.constructor.name}::count: "${fieldName}" ambiguous. You must use a fully qualified field name for a PROJECT clause. Example: "-Model:id".`);
+
+          def.modelName = allModels[0].getModelName();
+        }
+
+        field = this.getField(def.fieldNames[0], def.modelName);
+        if (!field)
+          throw new Error(`${this.constructor.name}::count: "${fieldName}" not found.`);
+      }
+
+      projectionFields.push(`+${field.Model.getModelName()}:${field.fieldName}`);
+      escapedFieldName = queryGenerator.getEscapedColumnName(field);
+    }
+
+    let literal     = new SQLLiterals.SQLLiteral(`COUNT(${escapedFieldName})`);
+    let literalStr  = literal.toString(this);
+    let projection  = [ literal ].concat(projectionFields);
+    let query       = queryEngine.clone().PROJECT().PROJECT(...projection);
+    let sqlStr      = queryGenerator.generateSelectStatement(query, options);
+
+    let result = await this.query(sqlStr, Object.assign({}, options || {}, { formatResponse: true }));
+    let {
+      rows,
+      columns,
+    } = result;
+
+    let countIndex = columns.indexOf(literalStr);
+    if (countIndex < 0)
+      throw new Error(`${this.constructor.name}::count: Unable to find COUNT column in returned columns.`);
+
+    return rows[0][countIndex];
+  }
+
+  async pluck(_queryEngine, ..._fields) {
+    let fields = Nife.arrayFlatten(_fields).filter(Boolean);
+    if (Nife.isEmpty(fields))
+      throw new Error(`${this.constructor.name}::pluck: You must supply "fields" to pluck.`);
+
+    let queryEngine = _queryEngine;
+    if (!queryEngine)
+      throw new TypeError(`${this.constructor.name}::pluck: First argument must be a model class or a query.`);
+
+    if (!QueryEngine.isQuery(queryEngine)) {
+      if (Object.prototype.hasOwnProperty.call(queryEngine, 'where'))
+        queryEngine = queryEngine.where;
+      else
+        throw new TypeError(`${this.constructor.name}::pluck: First argument must be a model class or a query.`);
+    }
+
+    let queryGenerator  = this.getQueryGenerator();
+    let query           = queryEngine.clone().PROJECT(fields);
+    let sqlStr          = queryGenerator.generateSelectStatement(query);
+
+    let result = await this.query(sqlStr, { formatResponse: true });
+    let {
+      rows,
+      columns,
+    } = result;
+
+    if (fields.length === 1 && rows[0] && rows[0].length === 1)
+      return rows.map((row) => row[0]);
+
+    return rows;
   }
 }
 

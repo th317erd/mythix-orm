@@ -25,6 +25,17 @@ class FieldScope extends QueryEngineBase {
     return this.currentContext.queryEngineScope.unscoped(this.currentContext);
   }
 
+  toString(...args) {
+    if (args.length === 0)
+      return `${this.constructor.name} {}`;
+
+    return this.currentContext.queryEngineScope.toString(...args);
+  }
+
+  toSQL() {
+    return this.currentContext.queryEngineScope.toSQL();
+  }
+
   _fetchOperatorValue(_value) {
     let value = _value;
     if (!value)

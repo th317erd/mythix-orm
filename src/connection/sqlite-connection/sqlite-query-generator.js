@@ -1,7 +1,6 @@
 'use strict';
 
-const Nife                = require('nife');
-const QueryGeneratorBase  = require('../query-generator-base');
+const QueryGeneratorBase = require('../query-generator-base');
 
 class SQLiteQueryGenerator extends QueryGeneratorBase {
   // eslint-disable-next-line no-unused-vars

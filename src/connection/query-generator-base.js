@@ -145,6 +145,23 @@ class QueryGeneratorBase {
   }
 
   getProjectionFromQueryEngine(queryEngine, options) {
+    const shouldResetProjection = (fields) => {
+      if (fields.length === 0)
+        return true;
+
+      for (let i = 0, il = fields.length; i < il; i++) {
+        let field = fields[i];
+        if (!Nife.instanceOf(field, 'string'))
+          continue;
+
+        if (!(/^\s*[+-]/).test(field))
+          return true;
+      }
+
+      return false;
+    };
+
+    let projectionReset       = false;
     let queryEngineContextID  = queryEngine._getTopContextID();
     let cache                 = this.getOptionsCache(options, `getProjectionFromQueryEngine.${queryEngineContextID}`);
     if (cache)
@@ -162,13 +179,18 @@ class QueryGeneratorBase {
       if (queryPart.control !== true)
         continue;
 
-      if (queryPart.operator === 'PROJECT')
-        projections = projections.concat(queryPart.value);
+      if (queryPart.operator === 'PROJECT') {
+        let fields = queryPart.value;
+        if (shouldResetProjection(fields)) {
+          projectionReset = true;
+          projections = fields.slice();
+        } else {
+          projections = projections.concat(fields);
+        }
+      }
     }
 
     projections = Nife.uniq(Nife.arrayFlatten(projections));
-
-    let areAllSubtractions = true;
 
     if (Nife.isNotEmpty(projections)) {
       let allModels = this.getAllModelsUsedInQuery(queryEngine, options);
@@ -183,22 +205,9 @@ class QueryGeneratorBase {
         if (_fieldName.prototype instanceof ModelBase)
           return _fieldName;
 
-        if (_fieldName === '-*') {
-          areAllSubtractions = false;
-          return;
-        }
-
-        if (_fieldName === '*') {
-          areAllSubtractions = false;
-          return _fieldName;
-        }
-
-        let { fieldName, direction } = this.getFieldDirectionSpecifier(_fieldName);
+        let { fieldName, direction, hasDirection } = this.getFieldDirectionSpecifier(_fieldName);
         if (!fieldName)
           return;
-
-        if (direction !== '-')
-          areAllSubtractions = false;
 
         let def = ModelUtils.parseQualifiedName(fieldName);
         if (!def.modelName) {
@@ -218,6 +227,9 @@ class QueryGeneratorBase {
         if (allModels.indexOf(field.Model) < 0)
           return;
 
+        if (!hasDirection)
+          projectionReset = true;
+
         let modelName = field.Model.getModelName();
 
         return {
@@ -232,8 +244,8 @@ class QueryGeneratorBase {
       }).filter(Boolean);
     }
 
-    if (areAllSubtractions)
-      projections.push('*');
+    if (!projectionReset)
+      projections = [ '*' ].concat(projections);
 
     if (options)
       this.setOptionsCache(options, `getProjectionFromQueryEngine.${queryEngineContextID}`, projections);
@@ -242,8 +254,27 @@ class QueryGeneratorBase {
   }
 
   sortFieldProjectionMap(fieldProjectionMap) {
-    let keys    = Array.from(fieldProjectionMap.keys()).sort();
-    let newMap  = new Map();
+    let keys = Array.from(fieldProjectionMap.keys()).sort((a, b) => {
+      var x = fieldProjectionMap.get(a);
+      var y = fieldProjectionMap.get(b);
+
+      if ((typeof x === 'string' && typeof y === 'string') || (x instanceof SQLLiteralBase && y instanceof SQLLiteralBase)) {
+        if (a === b)
+          return 0;
+
+        return (a < b) ? -1 : 1;
+      }
+
+      if (typeof x === 'string')
+        return -1;
+
+      if (typeof y === 'string')
+        return 1;
+
+      return 0;
+    });
+
+    let newMap = new Map();
 
     for (let i = 0, il = keys.length; i < il; i++) {
       let key = keys[i];
@@ -288,16 +319,19 @@ class QueryGeneratorBase {
     return `${modelName}:${fieldName}`;
   };
 
+  isFieldProjection(str) {
+    return (/^"[^"]+"."[^"]+"|"\w+:[\w.]+"/i).test(str);
+  }
+
   parseFieldProjectionToFieldMap(selectStatement) {
     let firstPart           = selectStatement.replace(/[\r\n]/g, ' ').split(/\s+FROM\s+"/i)[0].replace(/^SELECT\s+/i, '').trim();
     let fieldParts          = firstPart.split(',');
     let projectionFieldMap  = new Map();
 
     for (let i = 0, il = fieldParts.length; i < il; i++) {
-      let fieldPart     = fieldParts[i];
+      let fieldPart     = fieldParts[i].trim();
       let fullFieldName = this.parseFieldProjection(fieldPart);
 
-      // getEscapedProjectionName
       if (fullFieldName.indexOf(':') >= 0) {
         let def = ModelUtils.parseQualifiedName(fullFieldName);
         if (!def.modelName || def.fieldNames.length === 0) {
@@ -315,6 +349,10 @@ class QueryGeneratorBase {
       } else {
         projectionFieldMap.set(fullFieldName, fullFieldName);
       }
+
+      // If this isn't a field, then add it
+      if (!this.isFieldProjection(fieldPart))
+        projectionFieldMap.set(fieldPart, fieldPart);
     }
 
     return this.sortFieldProjectionMap(projectionFieldMap);
@@ -339,7 +377,13 @@ class QueryGeneratorBase {
         if (projectionField instanceof SQLLiteralBase) {
           let result        = projectionField.toString(this.connection);
           let fullFieldName = this.parseFieldProjection(result);
+          if (!fullFieldName)
+            fullFieldName = result;
+
           allProjectionFields.set(fullFieldName, result);
+
+          if (!this.isFieldProjection(result))
+            allProjectionFields.set(result, result);
 
           return;
         }
@@ -397,6 +441,9 @@ class QueryGeneratorBase {
             fullFieldName = result;
 
           allProjectionFields.set(fullFieldName, result);
+
+          if (!this.isFieldProjection(result))
+            allProjectionFields.set(result, result);
 
           continue;
         }
@@ -693,6 +740,14 @@ class QueryGeneratorBase {
     if (order instanceof SQLLiteralBase)
       return order;
 
+    if (order && order.Model && order.fieldName) {
+      return {
+        hasDirection: true,
+        direction:    '+',
+        fieldName:    order.fieldName,
+      };
+    }
+
     let sign;
 
     let fieldName = ('' + order).replace(/^[+-]+/, (m) => {
@@ -701,7 +756,8 @@ class QueryGeneratorBase {
     });
 
     return {
-      direction: (sign === '-') ? '-' : '+',
+      hasDirection: !!sign,
+      direction:    (sign === '-') ? '-' : '+',
       fieldName,
     };
   }
@@ -713,7 +769,8 @@ class QueryGeneratorBase {
     if (cache)
       return cache;
 
-    let query = queryEngine._getRawQuery();
+    let query     = queryEngine._getRawQuery();
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
     let limit;
     let offset;
     let order;
@@ -769,6 +826,9 @@ class QueryGeneratorBase {
           direction,
         };
       });
+    } else if (Nife.isEmpty(order)) {
+      if (options && options.selectStatement === true)
+        order = this.connection.getDefaultOrder(rootModel, options);
     }
 
     let orderLimitOffset = { limit, order, offset };
@@ -780,15 +840,16 @@ class QueryGeneratorBase {
   }
 
   // eslint-disable-next-line no-unused-vars
-  generateOrderClause(_orders, options) {
+  generateOrderClause(_orders, _options) {
     if (_orders instanceof SQLLiteralBase)
       return _orders.toString(this.connection);
 
-    let orders = Nife.toArray(_orders).filter(Boolean);
+    let orders  = Nife.toArray(_orders).filter(Boolean);
     if (Nife.isEmpty(orders))
       return '';
 
-    let orderByParts = [];
+    let options       = _options || {};
+    let orderByParts  = [];
     for (let i = 0, il = orders.length; i < il; i++) {
       let order = orders[i];
 
@@ -799,8 +860,14 @@ class QueryGeneratorBase {
 
       let escapedTableName  = this.escapeID(order.Model.getTableName());
       let escapedColumnName = this.escapeID(order.Field.columnName);
+      let orderStr;
 
-      orderByParts.push(`${escapedTableName}.${escapedColumnName} ${(order.direction === '-') ? 'DESC' : 'ASC'}`);
+      if (options.reverseOrder !== true)
+        orderStr = (order.direction === '-') ? 'DESC' : 'ASC';
+      else
+        orderStr = (order.direction === '-') ? 'ASC' : 'DESC';
+
+      orderByParts.push(`${escapedTableName}.${escapedColumnName} ${orderStr}`);
     }
 
     return `ORDER BY ${orderByParts.join(',')}`;
@@ -871,9 +938,11 @@ class QueryGeneratorBase {
     if (!rootModel)
       throw new Error(`${this.constructor.name}::generateSelectQueryJoinTables: No root model found.`);
 
-    let options   = _options || {};
+    let options   = Object.create(_options || {});
     let sqlParts  = [ 'SELECT' ];
     let projectionFields;
+
+    options.selectStatement = true;
 
     if (options.returnFieldProjection === true || options.asMap === true) {
       projectionFields = this.generateSelectQueryFieldProjection(queryEngine, options, true);

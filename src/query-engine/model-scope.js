@@ -43,6 +43,17 @@ class ModelScope extends QueryEngineBase {
     return this.currentContext.queryEngineScope.unscoped(this.currentContext);
   }
 
+  toString(...args) {
+    if (args.length === 0)
+      return `${this.constructor.name} {}`;
+
+    return this.currentContext.queryEngineScope.toString(...args);
+  }
+
+  toSQL() {
+    return this.currentContext.queryEngineScope.toSQL();
+  }
+
   NOT = ProxyClass.autoCall(function() {
     this._addToQuery({ logical: true, operator: 'NOT', not: !this.currentContext.not });
     return this._fetchScope('model');
@@ -104,8 +115,14 @@ class ModelScope extends QueryEngineBase {
       if (value.prototype instanceof ModelBase)
         return true;
 
+      if (value.Model)
+        return true;
+
       if (!Nife.instanceOf(value, 'string'))
         throw new Error('QueryEngine::ModelScope::PROJECT: Invalid value provided. All values provided must be strings.');
+
+      if (value === '+' || value === '*' || value === '-')
+        return false;
 
       return true;
     });

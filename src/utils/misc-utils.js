@@ -33,7 +33,17 @@ function copyStaticProps(Klass, destination) {
   });
 }
 
+async function collect(iterator) {
+  let items = [];
+
+  for await (let item of iterator)
+    items.push(item);
+
+  return items;
+}
+
 module.exports = {
   iterateStaticProps,
   copyStaticProps,
+  collect,
 };

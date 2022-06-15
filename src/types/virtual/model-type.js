@@ -8,21 +8,34 @@ const INJECT_TYPE_METHODS = {
   'create': function(field) {
 
   },
-  'get': function(field) {
-    /*
-      User.getRoles() =
+  'get': function(field, queryEngine) {
+    let connection      = this.getConnection();
+    let type            = field.type;
+    let OriginModel     = field.Model;
+    let originModelName = OriginModel.getModelName();
+    let TargetModel     = type.getTargetModel(connection);
+    let relations       = type.getJoinableRelations(connection);
+    let query           = TargetModel.where;
 
-      Role
-        .where
-        .UserRole.roleID
-          .EQ(Role.where.id)
-        .AND
-        .UserRole.userID
-          .EQ(User.where.id)
-        .AND
-        .User.id
-          .EQ(this.id)
-    */
+    for (let i = 0, il = relations.length; i < il; i++) {
+      let relation = relations[i];
+      let {
+        sourceModelName,
+        sourceFieldName,
+        targetModelName,
+        targetFieldName,
+      } = relation;
+
+      if (targetModelName === originModelName) {
+        query = query.AND[sourceModelName][sourceFieldName].EQ(this[targetFieldName]);
+      } else if (sourceModelName === originModelName) {
+        query = query.AND[targetModelName][targetFieldName].EQ(this[sourceFieldName]);
+      } else {
+        let targetModel = connection.getModel(targetModelName);
+        query = query.AND[sourceModelName][sourceFieldName].EQ(targetModel.where[targetFieldName]);
+      }
+    }
+
   },
   'update': function(field) {
 

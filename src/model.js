@@ -309,6 +309,9 @@ class Model {
     return count;
   }
 
+  static getDefaultOrder() {
+  }
+
   constructor(data) {
     Object.defineProperties(this, {
       '_isModelInstance': {

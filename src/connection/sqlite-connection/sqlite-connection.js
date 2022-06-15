@@ -24,6 +24,18 @@ class SQLiteConnection extends SQLConnectionBase {
     });
   }
 
+  getDefaultOrder(Model, _options) {
+    let options = _options || {};
+    let result  = super.getDefaultOrder(Model, options);
+    if (result)
+      return result;
+
+    let escapedTableName  = this.escapeID(Model.getTableName());
+    let escapedFieldName  = this.escapeID('rowid');
+
+    return [ new SQLLiteral(`${escapedTableName}.${escapedFieldName} ${(options.reverseOrder === true) ? 'DESC' : 'ASC'}`) ];
+  }
+
   async start() {
     let options = this.getOptions();
 
@@ -75,6 +87,9 @@ class SQLiteConnection extends SQLConnectionBase {
       let statement   = this.db.prepare(sql);
       let methodName  = ((/\s*SELECT\s+/i).test(sql)) ? 'all' : 'run';
       let parameters  = (Nife.isNotEmpty(options.parameters)) ? [].concat(parameters) : [];
+
+      // if (options.logger)
+      //   console.log('QUERY: ', statement);
 
       if (methodName === 'all')
         statement.raw(true);
@@ -157,6 +172,10 @@ class SQLiteConnection extends SQLConnectionBase {
       rows: result,
       columns,
     };
+  }
+
+  async truncate(Model) {
+    return await this.destroy(Model);
   }
 }
 

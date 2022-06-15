@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "ORM for Mythix framework",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "coverage": "clear ; node ./node_modules/.bin/nyc ./node_modules/.bin/jasmine",
     "test": "node ./node_modules/.bin/jasmine",

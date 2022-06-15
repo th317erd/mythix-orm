@@ -31,12 +31,26 @@ function parseQualifiedName(str) {
 }
 
 function injectModelMethod(modelInstance, method, methodName, fullMethodName) {
-  modelInstance[fullMethodName] = method;
+  Object.defineProperties(modelInstance, {
+    [fullMethodName]: {
+      writable:     true,
+      enumberable:  false,
+      configurable: true,
+      value:        method,
+    },
+  });
 
   if (!Object.prototype.hasOwnProperty.call(modelInstance, methodName)) {
-    modelInstance[methodName] = function(...args) {
-      return method.apply(this, args);
-    };
+    Object.defineProperties(modelInstance, {
+      [methodName]: {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        function(...args) {
+          return method.apply(this, args);
+        },
+      },
+    });
   }
 }
 
