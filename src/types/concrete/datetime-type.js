@@ -11,6 +11,12 @@ class DateTimeType extends Type {
     NOW: DATETIME_NOW,
   };
 
+  constructor(length) {
+    super(length);
+
+    this.length = length || null;
+  }
+
   castToType({ value }) {
     if (value == null)
       return value;
@@ -20,12 +26,6 @@ class DateTimeType extends Type {
       throw new TypeError(`DateTimeType::castToType: Value provided ("${value}") can not be cast into a date.`);
 
     return dateTime.toDate();
-  }
-
-  constructor(length) {
-    super(length);
-
-    this.length = length || null;
   }
 
   toConnectionType(connection) {

@@ -588,62 +588,75 @@ class SQLConnectionBase extends ConnectionBase {
     }
   }
 
+  async aggregate(_queryEngine, literal, options) {
+    if (!(literal instanceof SQLLiterals.SQLLiteralBase))
+      throw new Error(`${this.constructor.name}::aggregate: Second argument must be a SQLLiteral instance.`);
+
+    let queryEngine = this.toQueryEngine(_queryEngine);
+    if (!queryEngine)
+      throw new TypeError(`${this.constructor.name}::aggregate: First argument must be a model class or a query.`);
+
+    let queryGenerator  = this.getQueryGenerator();
+    let query           = queryEngine.clone().PROJECT().PROJECT(literal);
+    let sqlStr          = queryGenerator.generateSelectStatement(query, options);
+
+    let result = await this.query(sqlStr, Object.assign({}, options || {}, { formatResponse: true }));
+    return result.rows[0][0];
+  }
+
+  async average(_queryEngine, _field, options) {
+    let queryEngine = this.toQueryEngine(_queryEngine);
+    if (!queryEngine)
+      throw new TypeError(`${this.constructor.name}::average: First argument must be a model class or a query.`);
+
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    let field     = ModelUtils.fieldToFullyQualifiedName(_field, rootModel);
+
+    return await this.aggregate(queryEngine, new SQLLiterals.AverageSQLLiteral(field), options);
+  }
+
   async count(_queryEngine, _field, options) {
-    let queryEngine = _queryEngine;
+    let queryEngine = this.toQueryEngine(_queryEngine);
     if (!queryEngine)
       throw new TypeError(`${this.constructor.name}::count: First argument must be a model class or a query.`);
 
-    if (!QueryEngine.isQuery(queryEngine)) {
-      if (Object.prototype.hasOwnProperty.call(queryEngine, 'where'))
-        queryEngine = queryEngine.where;
-      else
-        throw new TypeError(`${this.constructor.name}::count: First argument must be a model class or a query.`);
-    }
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    let field     = ModelUtils.fieldToFullyQualifiedName(_field, rootModel);
 
-    let queryGenerator    = this.getQueryGenerator();
-    let allModels         = queryGenerator.getAllModelsUsedInQuery(queryEngine);
-    let field             = _field;
-    let escapedFieldName  = '*';
-    let projectionFields  = [];
+    return await this.aggregate(queryEngine, new SQLLiterals.CountSQLLiteral(field), options);
+  }
 
-    if (Nife.isNotEmpty(field)) {
-      if (Nife.instanceOf(field, 'string')) {
-        let fieldName = field;
-        let def       = ModelUtils.parseQualifiedName(field);
+  async min(_queryEngine, _field, options) {
+    let queryEngine = this.toQueryEngine(_queryEngine);
+    if (!queryEngine)
+      throw new TypeError(`${this.constructor.name}::min: First argument must be a model class or a query.`);
 
-        if (!def.modelName) {
-          if (allModels.length > 1)
-            throw new Error(`${this.constructor.name}::count: "${fieldName}" ambiguous. You must use a fully qualified field name for a PROJECT clause. Example: "-Model:id".`);
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    let field     = ModelUtils.fieldToFullyQualifiedName(_field, rootModel);
 
-          def.modelName = allModels[0].getModelName();
-        }
+    return await this.aggregate(queryEngine, new SQLLiterals.MinSQLLiteral(field), options);
+  }
 
-        field = this.getField(def.fieldNames[0], def.modelName);
-        if (!field)
-          throw new Error(`${this.constructor.name}::count: "${fieldName}" not found.`);
-      }
+  async max(_queryEngine, _field, options) {
+    let queryEngine = this.toQueryEngine(_queryEngine);
+    if (!queryEngine)
+      throw new TypeError(`${this.constructor.name}::max: First argument must be a model class or a query.`);
 
-      projectionFields.push(`+${field.Model.getModelName()}:${field.fieldName}`);
-      escapedFieldName = queryGenerator.getEscapedColumnName(field);
-    }
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    let field     = ModelUtils.fieldToFullyQualifiedName(_field, rootModel);
 
-    let literal     = new SQLLiterals.SQLLiteral(`COUNT(${escapedFieldName})`);
-    let literalStr  = literal.toString(this);
-    let projection  = [ literal ].concat(projectionFields);
-    let query       = queryEngine.clone().PROJECT().PROJECT(...projection);
-    let sqlStr      = queryGenerator.generateSelectStatement(query, options);
+    return await this.aggregate(queryEngine, new SQLLiterals.MaxSQLLiteral(field), options);
+  }
 
-    let result = await this.query(sqlStr, Object.assign({}, options || {}, { formatResponse: true }));
-    let {
-      rows,
-      columns,
-    } = result;
+  async sum(_queryEngine, _field, options) {
+    let queryEngine = this.toQueryEngine(_queryEngine);
+    if (!queryEngine)
+      throw new TypeError(`${this.constructor.name}::sum: First argument must be a model class or a query.`);
 
-    let countIndex = columns.indexOf(literalStr);
-    if (countIndex < 0)
-      throw new Error(`${this.constructor.name}::count: Unable to find COUNT column in returned columns.`);
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    let field     = ModelUtils.fieldToFullyQualifiedName(_field, rootModel);
 
-    return rows[0][countIndex];
+    return await this.aggregate(queryEngine, new SQLLiterals.SumSQLLiteral(field), options);
   }
 
   async pluck(_queryEngine, ..._fields) {

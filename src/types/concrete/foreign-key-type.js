@@ -9,18 +9,6 @@ class ForeignKeyType extends Type {
     return true;
   }
 
-  castToType(args) {
-    let { value, typeInstance } = args;
-    if (!typeInstance && value == null)
-      return value;
-
-    let targetField = typeInstance.getTargetField();
-    if (!targetField)
-      return value;
-
-    return targetField.type.castToType(args);
-  }
-
   constructor(_fullyQualifiedName, _options) {
     if (arguments.length === 0)
       throw new TypeError('ForeignKeyType::constructor: You must specify a fully qualified field name, or provide complete options.');
@@ -50,6 +38,18 @@ class ForeignKeyType extends Type {
 
     this.options = options;
     this.fullyQualifiedName = fullyQualifiedName;
+  }
+
+  castToType(args) {
+    let { value, typeInstance } = args;
+    if (!typeInstance && value == null)
+      return value;
+
+    let targetField = typeInstance.getTargetField();
+    if (!targetField)
+      return value;
+
+    return targetField.type.castToType(args);
   }
 
   parseOptionsAndCheckForErrors(SourceModel, sourceField, type, connection) {

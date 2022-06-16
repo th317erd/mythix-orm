@@ -201,6 +201,7 @@ describe('SQLiteConnection', () => {
     let User;
     let Role;
     let RoleThing;
+    let Number;
 
     const createTable = async (connection, Model) => {
       return await connection.createTable(Model, { logger: console });
@@ -216,18 +217,22 @@ describe('SQLiteConnection', () => {
       User = models.User;
       Role = models.Role;
       RoleThing = models.RoleThing;
+      Number = models.Number;
 
       await connection.start();
 
       await createTable(connection, User);
       await createTable(connection, Role);
       await createTable(connection, RoleThing);
+      await createTable(connection, Number);
     });
 
     beforeEach(async () => {
       // Truncate
-      await connection.query('DELETE FROM "users"');
-      await connection.query('DELETE FROM "roles"');
+      await connection.truncate(User);
+      await connection.truncate(Role);
+      await connection.truncate(RoleThing);
+      await connection.truncate(Number);
     });
 
     describe('query operations', () => {
@@ -363,6 +368,82 @@ describe('SQLiteConnection', () => {
 
           count = await User.where.count('lastName');
           expect(count).toEqual(1);
+        });
+      });
+
+      describe('average', () => {
+        it('can get average of models from a query', async () => {
+          let insertModels = [
+            new Number({ numberInt: 10, numberFloat: 12.34 }),
+            new Number({ numberInt: 11, numberFloat: 15.56 }),
+            new Number({ numberInt: 12, numberFloat: 17.89 }),
+            new Number({ numberInt: 15, numberFloat: 20.00 }),
+          ];
+
+          await connection.insert(Number, insertModels);
+
+          let avg = await Number.where.average('numberInt');
+          expect(avg).toEqual(12);
+
+          avg = await Number.where.average('numberFloat');
+          expect(avg).toEqual(16.447499999999998);
+        });
+      });
+
+      describe('sum', () => {
+        it('can get sum of models from a query', async () => {
+          let insertModels = [
+            new Number({ numberInt: 10, numberFloat: 12.34 }),
+            new Number({ numberInt: 11, numberFloat: 15.56 }),
+            new Number({ numberInt: 12, numberFloat: 17.89 }),
+            new Number({ numberInt: 15, numberFloat: 20.00 }),
+          ];
+
+          await connection.insert(Number, insertModels);
+
+          let avg = await Number.where.sum('numberInt');
+          expect(avg).toEqual(48);
+
+          avg = await Number.where.sum('numberFloat');
+          expect(avg).toEqual(65.78999999999999);
+        });
+      });
+
+      describe('min', () => {
+        it('can get min of models from a query', async () => {
+          let insertModels = [
+            new Number({ numberInt: 10, numberFloat: 12.34 }),
+            new Number({ numberInt: 11, numberFloat: 15.56 }),
+            new Number({ numberInt: 12, numberFloat: 17.89 }),
+            new Number({ numberInt: 15, numberFloat: 20.00 }),
+          ];
+
+          await connection.insert(Number, insertModels);
+
+          let avg = await Number.where.min('numberInt');
+          expect(avg).toEqual(10);
+
+          avg = await Number.where.min('numberFloat');
+          expect(avg).toEqual(12.34);
+        });
+      });
+
+      describe('max', () => {
+        it('can get max of models from a query', async () => {
+          let insertModels = [
+            new Number({ numberInt: 10, numberFloat: 12.34 }),
+            new Number({ numberInt: 11, numberFloat: 15.56 }),
+            new Number({ numberInt: 12, numberFloat: 17.89 }),
+            new Number({ numberInt: 15, numberFloat: 20.00 }),
+          ];
+
+          await connection.insert(Number, insertModels);
+
+          let avg = await Number.where.max('numberInt');
+          expect(avg).toEqual(15);
+
+          avg = await Number.where.max('numberFloat');
+          expect(avg).toEqual(20.00);
         });
       });
 

@@ -8,17 +8,17 @@ class BigIntType extends Type {
     AUTO_INCREMENT,
   };
 
+  constructor(length) {
+    super(length);
+
+    this.length = length || null;
+  }
+
   castToType({ value }) {
     if (value == null)
       return value;
 
     return BigInt(value);
-  }
-
-  constructor(length) {
-    super(length);
-
-    this.length = length || null;
   }
 
   toConnectionType(connection) {

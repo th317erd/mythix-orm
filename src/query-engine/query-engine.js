@@ -97,9 +97,29 @@ class QueryEngine extends QueryEngineBase {
     return await connection.pluck(this, fields);
   }
 
+  async average(field, options) {
+    let connection = this.getConnection();
+    return await connection.average(this, field, options);
+  }
+
   async count(field, options) {
     let connection = this.getConnection();
     return await connection.count(this, field, options);
+  }
+
+  async min(field, options) {
+    let connection = this.getConnection();
+    return await connection.min(this, field, options);
+  }
+
+  async max(field, options) {
+    let connection = this.getConnection();
+    return await connection.max(this, field, options);
+  }
+
+  async sum(field, options) {
+    let connection = this.getConnection();
+    return await connection.sum(this, field, options);
   }
 
   [ProxyClass.MISSING](target, prop) {

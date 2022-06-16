@@ -38,6 +38,21 @@ class ConnectionBase {
     this.registerModels(options.models);
   }
 
+  toQueryEngine(_queryEngine) {
+    let queryEngine = _queryEngine;
+    if (!queryEngine)
+      return;
+
+    if (!QueryEngine.isQuery(queryEngine)) {
+      if (Object.prototype.hasOwnProperty.call(queryEngine, 'where'))
+        queryEngine = queryEngine.where;
+      else
+        queryEngine = undefined;
+    }
+
+    return queryEngine;
+  }
+
   registerModel(_Model) {
     let modelName = _Model.getModelName();
     let Model = _Model.initializeModel(_Model, this);

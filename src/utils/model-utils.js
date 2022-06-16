@@ -1,6 +1,7 @@
 'use strict';
 
-const UUID = require('uuid');
+const Nife  = require('nife');
+const UUID  = require('uuid');
 
 function isUUID(value) {
   return UUID.validate(value);
@@ -54,9 +55,30 @@ function injectModelMethod(modelInstance, method, methodName, fullMethodName) {
   }
 }
 
+function fieldToFullyQualifiedName(field, Model) {
+  if (!field)
+    return;
+
+  if (field.Model && field.fieldName)
+    return `${field.Model.getModelName()}:${field.fieldName}`;
+
+  if (!Nife.instanceOf(field, 'string'))
+    return;
+
+  let def = parseQualifiedName(field);
+  if (!def.modelName && Model)
+    def.modelName = Model.getModelName();
+
+  if (Nife.isEmpty(def.modelName) || Nife.isEmpty(def.fieldNames))
+    return;
+
+  return `${def.modelName}:${def.fieldNames[0]}`;
+}
+
 module.exports = {
   isUUID,
   parseQualifiedName,
   sanitizeFieldString,
   injectModelMethod,
+  fieldToFullyQualifiedName,
 };

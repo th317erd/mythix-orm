@@ -1,6 +1,7 @@
 'use strict';
 
 const ExtendedUser  = require('./extended-user-model');
+const Number        = require('./number-model');
 const Role          = require('./role-model');
 const RoleThing     = require('./role-thing-model');
 const ScopedUser    = require('./scoped-user-model');
@@ -10,6 +11,7 @@ const UserThing     = require('./user-thing-model');
 
 module.exports = {
   ExtendedUser,
+  Number,
   Role,
   RoleThing,
   ScopedUser,
