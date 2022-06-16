@@ -5,46 +5,48 @@ const RelationalTypeBase  = require('./relational-type-base');
 const ModelUtils          = require('../../utils/model-utils');
 
 const INJECT_TYPE_METHODS = {
-  'create': function(field) {
+  'create': function(field, type) {
 
   },
-  'get': function(field, queryEngine) {
-    let connection      = this.getConnection();
-    let type            = field.type;
-    let OriginModel     = field.Model;
-    let originModelName = OriginModel.getModelName();
-    let TargetModel     = type.getTargetModel(connection);
-    let relations       = type.getJoinableRelations(connection);
-    let query           = TargetModel.where;
+  'get': async function(field, type, queryEngine, options) {
+    let query = type.prepareQuery(this, field, queryEngine);
+    return await query.first(options);
+  },
+  'update': async function(field, type, attributes, options) {
+    let query = type.prepareQuery(this, field);
+    let model = await query.first(options);
 
-    for (let i = 0, il = relations.length; i < il; i++) {
-      let relation = relations[i];
-      let {
-        sourceModelName,
-        sourceFieldName,
-        targetModelName,
-        targetFieldName,
-      } = relation;
+    if (!model)
+      return false;
 
-      if (targetModelName === originModelName) {
-        query = query.AND[sourceModelName][sourceFieldName].EQ(this[targetFieldName]);
-      } else if (sourceModelName === originModelName) {
-        query = query.AND[targetModelName][targetFieldName].EQ(this[sourceFieldName]);
-      } else {
-        let targetModel = connection.getModel(targetModelName);
-        query = query.AND[sourceModelName][sourceFieldName].EQ(targetModel.where[targetFieldName]);
-      }
+    model.setAttributes(attributes, true);
+
+    let connection = this.getConnection();
+    await connection.update(model.getModel(), [ model ], options);
+
+    return true;
+  },
+  'destroy': async function(field, type, options) {
+    let query = type.prepareQuery(this, field);
+    let model = await query.first(options);
+
+    if (!model)
+      return false;
+
+    let connection = this.getConnection();
+    await connection.destroy(model.getModel(), [ model ], options);
+
+    let sourceField = type.getSourceField(true);
+    if (sourceField && sourceField.Model.getModelName() === this.getModelName()) {
+      this[sourceField.fieldName] = null;
+      await this.save();
     }
 
+    return true;
   },
-  'update': function(field) {
-
-  },
-  'destroy': function(field) {
-
-  },
-  'exists': function(field) {
-
+  'exists': async function(field, type, options) {
+    let query = type.prepareQuery(this, field);
+    return await query.exists(options);
   },
 };
 
@@ -83,7 +85,7 @@ class ModelType extends RelationalTypeBase {
       let methodName      = `${key}${Nife.capitalize(fieldName)}`;
       let fullMethodName  = `__${key}${Nife.capitalize(fieldName)}`;
 
-      ModelUtils.injectModelMethod(modelInstance, method.bind(modelInstance, field), methodName, fullMethodName);
+      ModelUtils.injectModelMethod(modelInstance, method.bind(modelInstance, field, this), methodName, fullMethodName);
     }
   }
 }

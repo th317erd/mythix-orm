@@ -22,7 +22,7 @@ class User extends Model {
     },
     'primaryRoleID': {
       type:       Types.UUIDV4,
-      allowNull:  false,
+      allowNull:  true,
     },
     'roles': {
       type:       Types.Models('UserRole:role', 'UserRole:user'),

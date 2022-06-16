@@ -203,8 +203,8 @@ describe('SQLiteConnection', () => {
     let RoleThing;
     let Number;
 
-    const createTable = async (connection, Model) => {
-      return await connection.createTable(Model, { logger: console });
+    const createTable = async (connection, Model, options) => {
+      return await connection.createTable(Model, options);
     };
 
     beforeAll(async () => {
@@ -236,246 +236,453 @@ describe('SQLiteConnection', () => {
     });
 
     describe('query operations', () => {
-      describe('all', () => {
-        it('can fetch all models from a query', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+      describe('relational operations', () => {
+        describe('get single model', () => {
+          it('can fetch a single model through a relational field', async () => {
+            let roleModels = [
+              new Role({ name: 'member', id: UUID.v4() }),
+              new Role({ name: 'admin', id: UUID.v4() }),
+            ];
 
-          await connection.insert(User, insertModels);
+            let userModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: roleModels[0].id }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: roleModels[0].id }),
+            ];
 
-          let users = await Utils.collect(User.where.all());
-          expect(users).toBeInstanceOf(Array);
-          expect(users.length).toEqual(2);
-          expect(users[0]).toBeInstanceOf(User);
-          expect(users[1]).toBeInstanceOf(User);
-          expect(users[0].id).toEqual(insertModels[0].id);
-          expect(users[1].id).toEqual(insertModels[1].id);
+            await connection.insert(Role, roleModels);
+            await connection.insert(User, userModels);
 
-          users = await Utils.collect(User.where.firstName.EQ('Test').all());
-          expect(users).toBeInstanceOf(Array);
-          expect(users.length).toEqual(1);
-          expect(users[0]).toBeInstanceOf(User);
-          expect(users[0].id).toEqual(insertModels[0].id);
+            let user = await User.where.first();
+            expect(user).toBeInstanceOf(User);
+
+            let primaryRole = await user.getPrimaryRole();
+            expect(primaryRole).toBeInstanceOf(Role);
+            expect(primaryRole.id).toEqual(roleModels[0].id);
+            expect(primaryRole.name).toEqual(roleModels[0].name);
+          });
+        });
+
+        describe('update single model', () => {
+          it('can update a single model through a relational field', async () => {
+            let roleModels = [
+              new Role({ name: 'member', id: UUID.v4() }),
+              new Role({ name: 'admin', id: UUID.v4() }),
+            ];
+
+            let userModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: roleModels[0].id }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: roleModels[0].id }),
+            ];
+
+            await connection.insert(Role, roleModels);
+            await connection.insert(User, userModels);
+
+            let user = await User.where.first();
+            expect(user).toBeInstanceOf(User);
+
+            let result = await user.updatePrimaryRole({ name: 'bigboy' });
+            expect(result).toEqual(true);
+
+            let primaryRole = await user.getPrimaryRole();
+            expect(primaryRole).toBeInstanceOf(Role);
+            expect(primaryRole.id).toEqual(roleModels[0].id);
+            expect(primaryRole.name).toEqual('bigboy');
+          });
+        });
+
+        describe('destroy single model', () => {
+          it('can destroy a single model through a relational field', async () => {
+            let roleModels = [
+              new Role({ name: 'member', id: UUID.v4() }),
+              new Role({ name: 'admin', id: UUID.v4() }),
+            ];
+
+            let userModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: roleModels[0].id }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: roleModels[0].id }),
+            ];
+
+            await connection.insert(Role, roleModels);
+            await connection.insert(User, userModels);
+
+            expect(await Role.where.count()).toEqual(2);
+
+            let user = await User.where.first();
+            let result = await user.destroyPrimaryRole();
+            expect(result).toEqual(true);
+
+            expect(await Role.where.count()).toEqual(1);
+            expect(await User.where.count()).toEqual(2);
+
+            user = await User.where.first();
+            expect(user).toBeInstanceOf(User);
+            expect(user.id).toEqual(userModels[0].id);
+            expect(user.primaryRoleID).toEqual(null);
+          });
         });
       });
 
-      describe('first', () => {
-        it('can fetch first model from a query', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+      describe('QueryEngine query methods', () => {
+        describe('all', () => {
+          it('can fetch all models from a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
 
-          await connection.insert(User, insertModels);
+            await connection.insert(User, insertModels);
 
-          let user = await User.where.first();
-          expect(user).toBeInstanceOf(User);
-          expect(user.id).toEqual(insertModels[0].id);
+            let users = await Utils.collect(User.where.all());
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(2);
+            expect(users[0]).toBeInstanceOf(User);
+            expect(users[1]).toBeInstanceOf(User);
+            expect(users[0].id).toEqual(insertModels[0].id);
+            expect(users[1].id).toEqual(insertModels[1].id);
+
+            users = await Utils.collect(User.where.firstName.EQ('Test').all());
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(1);
+            expect(users[0]).toBeInstanceOf(User);
+            expect(users[0].id).toEqual(insertModels[0].id);
+          });
         });
 
-        it('can fetch first count models from a query', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+        describe('update', () => {
+          it('can update models using a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
 
-          await connection.insert(User, insertModels);
+            await connection.insert(User, insertModels);
 
-          let users = await User.where.first(10);
-          expect(users).toBeInstanceOf(Array);
-          expect(users.length).toEqual(2);
-          expect(users[0]).toBeInstanceOf(User);
-          expect(users[0].id).toEqual(insertModels[0].id);
-          expect(users[1]).toBeInstanceOf(User);
-          expect(users[1].id).toEqual(insertModels[1].id);
-        });
-      });
+            await User.where.update({ firstName: 'The', lastName: 'Thang' });
 
-      describe('last', () => {
-        it('can fetch last model from a query', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+            let users = await Utils.collect(User.where.all());
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(2);
+            expect(users[0].id).toEqual(insertModels[0].id);
+            expect(users[0].firstName).toEqual('The');
+            expect(users[0].lastName).toEqual('Thang');
+            expect(users[1].id).toEqual(insertModels[1].id);
+            expect(users[1].firstName).toEqual('The');
+            expect(users[1].lastName).toEqual('Thang');
+          });
 
-          await connection.insert(User, insertModels);
+          it('can update specific models using a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
 
-          let user = await User.where.last();
-          expect(user).toBeInstanceOf(User);
-          expect(user.id).toEqual(insertModels[1].id);
-        });
+            await connection.insert(User, insertModels);
 
-        it('can fetch last count models from a query', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+            await User.where.firstName.EQ('Mary').update({ firstName: 'The', lastName: 'Thang' });
 
-          await connection.insert(User, insertModels);
-
-          let users = await User.where.last(10);
-          expect(users).toBeInstanceOf(Array);
-          expect(users.length).toEqual(2);
-          expect(users[0]).toBeInstanceOf(User);
-          expect(users[0].id).toEqual(insertModels[0].id);
-          expect(users[1]).toBeInstanceOf(User);
-          expect(users[1].id).toEqual(insertModels[1].id);
+            let users = await Utils.collect(User.where.all());
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(2);
+            expect(users[0].id).toEqual(insertModels[0].id);
+            expect(users[0].firstName).toEqual('Test');
+            expect(users[0].lastName).toEqual('User');
+            expect(users[1].id).toEqual(insertModels[1].id);
+            expect(users[1].firstName).toEqual('The');
+            expect(users[1].lastName).toEqual('Thang');
+          });
         });
 
-        it('can fetch last count models from a query specifying an order', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+        describe('destroy', () => {
+          it('can destroy models using a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
 
-          await connection.insert(User, insertModels);
+            await connection.insert(User, insertModels);
 
-          let users = await User.where.ORDER('lastName').last(10);
-          expect(users).toBeInstanceOf(Array);
-          expect(users.length).toEqual(2);
-          expect(users[0]).toBeInstanceOf(User);
-          expect(users[0].id).toEqual(insertModels[1].id);
-          expect(users[1]).toBeInstanceOf(User);
-          expect(users[1].id).toEqual(insertModels[0].id);
-        });
-      });
+            let count = await User.where.count();
+            expect(count).toEqual(2);
 
-      describe('count', () => {
-        it('can count models from a query', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+            await User.where.destroy({ firstName: 'The', lastName: 'Thang' });
 
-          await connection.insert(User, insertModels);
+            count = await User.where.count();
+            expect(count).toEqual(0);
+          });
 
-          let count = await User.where.count();
-          expect(count).toEqual(2);
-        });
+          it('can destroy specific models using a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
 
-        it('can count specified fields from a query', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: null, primaryRoleID: UUID.v4() }),
-          ];
+            await connection.insert(User, insertModels);
 
-          await connection.insert(User, insertModels);
+            let count = await User.where.count();
+            expect(count).toEqual(2);
 
-          let count = await User.where.count('firstName');
-          expect(count).toEqual(2);
+            await User.where.firstName.EQ('Mary').destroy();
 
-          count = await User.where.count('lastName');
-          expect(count).toEqual(1);
-        });
-      });
-
-      describe('average', () => {
-        it('can get average of models from a query', async () => {
-          let insertModels = [
-            new Number({ numberInt: 10, numberFloat: 12.34 }),
-            new Number({ numberInt: 11, numberFloat: 15.56 }),
-            new Number({ numberInt: 12, numberFloat: 17.89 }),
-            new Number({ numberInt: 15, numberFloat: 20.00 }),
-          ];
-
-          await connection.insert(Number, insertModels);
-
-          let avg = await Number.where.average('numberInt');
-          expect(avg).toEqual(12);
-
-          avg = await Number.where.average('numberFloat');
-          expect(avg).toEqual(16.447499999999998);
-        });
-      });
-
-      describe('sum', () => {
-        it('can get sum of models from a query', async () => {
-          let insertModels = [
-            new Number({ numberInt: 10, numberFloat: 12.34 }),
-            new Number({ numberInt: 11, numberFloat: 15.56 }),
-            new Number({ numberInt: 12, numberFloat: 17.89 }),
-            new Number({ numberInt: 15, numberFloat: 20.00 }),
-          ];
-
-          await connection.insert(Number, insertModels);
-
-          let avg = await Number.where.sum('numberInt');
-          expect(avg).toEqual(48);
-
-          avg = await Number.where.sum('numberFloat');
-          expect(avg).toEqual(65.78999999999999);
-        });
-      });
-
-      describe('min', () => {
-        it('can get min of models from a query', async () => {
-          let insertModels = [
-            new Number({ numberInt: 10, numberFloat: 12.34 }),
-            new Number({ numberInt: 11, numberFloat: 15.56 }),
-            new Number({ numberInt: 12, numberFloat: 17.89 }),
-            new Number({ numberInt: 15, numberFloat: 20.00 }),
-          ];
-
-          await connection.insert(Number, insertModels);
-
-          let avg = await Number.where.min('numberInt');
-          expect(avg).toEqual(10);
-
-          avg = await Number.where.min('numberFloat');
-          expect(avg).toEqual(12.34);
-        });
-      });
-
-      describe('max', () => {
-        it('can get max of models from a query', async () => {
-          let insertModels = [
-            new Number({ numberInt: 10, numberFloat: 12.34 }),
-            new Number({ numberInt: 11, numberFloat: 15.56 }),
-            new Number({ numberInt: 12, numberFloat: 17.89 }),
-            new Number({ numberInt: 15, numberFloat: 20.00 }),
-          ];
-
-          await connection.insert(Number, insertModels);
-
-          let avg = await Number.where.max('numberInt');
-          expect(avg).toEqual(15);
-
-          avg = await Number.where.max('numberFloat');
-          expect(avg).toEqual(20.00);
-        });
-      });
-
-      describe('pluck', () => {
-        it('can pluck values from models', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
-
-          await connection.insert(User, insertModels);
-
-          let results = await User.where.ORDER('firstName').pluck('firstName');
-          expect(results).toEqual([
-            'Mary',
-            'Test',
-          ]);
+            let users = await Utils.collect(User.where.all());
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(1);
+            expect(users[0].id).toEqual(insertModels[0].id);
+            expect(users[0].firstName).toEqual('Test');
+            expect(users[0].lastName).toEqual('User');
+          });
         });
 
-        it('can pluck multiple values from models', async () => {
-          let insertModels = [
-            new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-            new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
-          ];
+        describe('exists', () => {
+          it('can check if models exist', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
 
-          await connection.insert(User, insertModels);
+            await connection.insert(User, insertModels);
 
-          let results = await User.where.ORDER('firstName').pluck('firstName', [ 'lastName' ]);
-          expect(results).toEqual([
-            [ 'Mary', 'Anne' ],
-            [ 'Test', 'User' ],
-          ]);
+            expect(await User.where.exists()).toEqual(true);
+          });
+
+          it('can check if models exist with a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            expect(await User.where.firstName.EQ('Mary').exists()).toEqual(true);
+          });
+
+          it('will report false when nothing matches query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            expect(await User.where.firstName.EQ('Derp').exists()).toEqual(false);
+          });
+        });
+
+        describe('first', () => {
+          it('can fetch first model from a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let user = await User.where.first();
+            expect(user).toBeInstanceOf(User);
+            expect(user.id).toEqual(insertModels[0].id);
+          });
+
+          it('can fetch first count models from a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let users = await User.where.first(10);
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(2);
+            expect(users[0]).toBeInstanceOf(User);
+            expect(users[0].id).toEqual(insertModels[0].id);
+            expect(users[1]).toBeInstanceOf(User);
+            expect(users[1].id).toEqual(insertModels[1].id);
+          });
+        });
+
+        describe('last', () => {
+          it('can fetch last model from a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let user = await User.where.last();
+            expect(user).toBeInstanceOf(User);
+            expect(user.id).toEqual(insertModels[1].id);
+          });
+
+          it('can fetch last count models from a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let users = await User.where.last(10);
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(2);
+            expect(users[0]).toBeInstanceOf(User);
+            expect(users[0].id).toEqual(insertModels[0].id);
+            expect(users[1]).toBeInstanceOf(User);
+            expect(users[1].id).toEqual(insertModels[1].id);
+          });
+
+          it('can fetch last count models from a query specifying an order', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let users = await User.where.ORDER('lastName').last(10);
+            expect(users).toBeInstanceOf(Array);
+            expect(users.length).toEqual(2);
+            expect(users[0]).toBeInstanceOf(User);
+            expect(users[0].id).toEqual(insertModels[1].id);
+            expect(users[1]).toBeInstanceOf(User);
+            expect(users[1].id).toEqual(insertModels[0].id);
+          });
+        });
+
+        describe('count', () => {
+          it('can count models from a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let count = await User.where.count();
+            expect(count).toEqual(2);
+          });
+
+          it('can count specified fields from a query', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: null, primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let count = await User.where.count('firstName');
+            expect(count).toEqual(2);
+
+            count = await User.where.count('lastName');
+            expect(count).toEqual(1);
+          });
+        });
+
+        describe('average', () => {
+          it('can get average of models from a query', async () => {
+            let insertModels = [
+              new Number({ numberInt: 10, numberFloat: 12.34 }),
+              new Number({ numberInt: 11, numberFloat: 15.56 }),
+              new Number({ numberInt: 12, numberFloat: 17.89 }),
+              new Number({ numberInt: 15, numberFloat: 20.00 }),
+            ];
+
+            await connection.insert(Number, insertModels);
+
+            let avg = await Number.where.average('numberInt');
+            expect(avg).toEqual(12);
+
+            avg = await Number.where.average('numberFloat');
+            expect(avg).toEqual(16.447499999999998);
+          });
+        });
+
+        describe('sum', () => {
+          it('can get sum of models from a query', async () => {
+            let insertModels = [
+              new Number({ numberInt: 10, numberFloat: 12.34 }),
+              new Number({ numberInt: 11, numberFloat: 15.56 }),
+              new Number({ numberInt: 12, numberFloat: 17.89 }),
+              new Number({ numberInt: 15, numberFloat: 20.00 }),
+            ];
+
+            await connection.insert(Number, insertModels);
+
+            let avg = await Number.where.sum('numberInt');
+            expect(avg).toEqual(48);
+
+            avg = await Number.where.sum('numberFloat');
+            expect(avg).toEqual(65.78999999999999);
+          });
+        });
+
+        describe('min', () => {
+          it('can get min of models from a query', async () => {
+            let insertModels = [
+              new Number({ numberInt: 10, numberFloat: 12.34 }),
+              new Number({ numberInt: 11, numberFloat: 15.56 }),
+              new Number({ numberInt: 12, numberFloat: 17.89 }),
+              new Number({ numberInt: 15, numberFloat: 20.00 }),
+            ];
+
+            await connection.insert(Number, insertModels);
+
+            let avg = await Number.where.min('numberInt');
+            expect(avg).toEqual(10);
+
+            avg = await Number.where.min('numberFloat');
+            expect(avg).toEqual(12.34);
+          });
+        });
+
+        describe('max', () => {
+          it('can get max of models from a query', async () => {
+            let insertModels = [
+              new Number({ numberInt: 10, numberFloat: 12.34 }),
+              new Number({ numberInt: 11, numberFloat: 15.56 }),
+              new Number({ numberInt: 12, numberFloat: 17.89 }),
+              new Number({ numberInt: 15, numberFloat: 20.00 }),
+            ];
+
+            await connection.insert(Number, insertModels);
+
+            let avg = await Number.where.max('numberInt');
+            expect(avg).toEqual(15);
+
+            avg = await Number.where.max('numberFloat');
+            expect(avg).toEqual(20.00);
+          });
+        });
+
+        describe('pluck', () => {
+          it('can pluck values from models', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let results = await User.where.ORDER('firstName').pluck('firstName');
+            expect(results).toEqual([
+              'Mary',
+              'Test',
+            ]);
+          });
+
+          it('can pluck multiple values from models', async () => {
+            let insertModels = [
+              new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+              new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+            ];
+
+            await connection.insert(User, insertModels);
+
+            let results = await User.where.ORDER('firstName').pluck('firstName', [ 'lastName' ]);
+            expect(results).toEqual([
+              [ 'Mary', 'Anne' ],
+              [ 'Test', 'User' ],
+            ]);
+          });
         });
       });
     });
@@ -649,7 +856,7 @@ describe('SQLiteConnection', () => {
         let queryGenerator  = connection.getQueryGenerator();
         let query           = User.where;
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
-        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let result          = await connection.query(sqlStatement, { formatResponse: true });
         let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
         let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 
@@ -678,7 +885,7 @@ describe('SQLiteConnection', () => {
         let queryGenerator  = connection.getQueryGenerator();
         let query           = User.where;
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
-        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let result          = await connection.query(sqlStatement, { formatResponse: true });
         let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
         let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 
@@ -1058,7 +1265,7 @@ describe('SQLiteConnection', () => {
         let query           = User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
         let queryGenerator  = connection.getQueryGenerator();
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
-        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let result          = await connection.query(sqlStatement, { formatResponse: true });
 
         expect(connection.buildModelDataMapFromSelectResults(query, result)).toEqual({
           User: [
@@ -1093,7 +1300,7 @@ describe('SQLiteConnection', () => {
 
         let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
-        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let result          = await connection.query(sqlStatement, { formatResponse: true });
 
         expect(connection.buildModelDataMapFromSelectResults(query, result)).toEqual({
           User: [
@@ -1133,7 +1340,7 @@ describe('SQLiteConnection', () => {
 
         let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
-        let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+        let result          = await connection.query(sqlStatement, { formatResponse: true });
         let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
         let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 

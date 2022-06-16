@@ -466,42 +466,45 @@ class SQLConnectionBase extends ConnectionBase {
     throw new Error(`${this.constructor.name}::upsert: This connection type does not support "upsert" operations.`);
   }
 
-  async update(Model, models, _options, _queryEngine) {
-    let queryEngine = _queryEngine;
-    let options     = _options;
-
-    if (QueryEngine.isQuery(options)) {
-      queryEngine = options;
-      options = {};
-    } else if (!options) {
-      options = {};
-    }
+  async update(Model, models, _options) {
+    let options = _options || {};
 
     let primaryKeyFieldName = Model.getPrimaryKeyFieldName();
-    if (Nife.isEmpty(primaryKeyFieldName) && (!queryEngine || !QueryEngine.isQuery(queryEngine)))
-      throw new Error(`${this.constructor.name}::update: Model has no primary key field. You must supply a query when updating models with no primary key.`);
-
-    if (!queryEngine)
-      queryEngine = Model.where;
+    if (Nife.isEmpty(primaryKeyFieldName))
+      throw new Error(`${this.constructor.name}::update: Model has no primary key field.`);
 
     return await this.bulkModelOperation(Model, models, options, async (Model, preparedModels, options, queryGenerator) => {
       let models = preparedModels.models;
       for (let i = 0, il = models.length; i < il; i++) {
-        let model         = models[i];
-        let query         = queryEngine.clone();
+        let model = models[i];
+        let query = Model.where;
 
-        if (!_queryEngine) {
-          let pkFieldValue = model[primaryKeyFieldName];
-          if (!pkFieldValue)
-            throw new Error(`${this.constructor.name}::update: Model's primary key is empty. Models being updated must have a valid primary key value unless you specify a query for the update.`);
+        let pkFieldValue = model[primaryKeyFieldName];
+        if (!pkFieldValue)
+          throw new Error(`${this.constructor.name}::update: Model's primary key is empty. Models being updated must have a valid primary key.`);
 
-          query = query[primaryKeyFieldName].EQ(pkFieldValue);
-        }
+        query = query[primaryKeyFieldName].EQ(pkFieldValue);
 
-        let sqlStr = queryGenerator.generateUpdateStatement(Model, model, options, query);
+        let sqlStr = queryGenerator.generateUpdateStatement(Model, model, query, options);
         await this.query(sqlStr, { formatResponse: true });
       }
     });
+  }
+
+  async updateAll(_queryEngine, model, _options) {
+    let queryEngine = this.toQueryEngine(_queryEngine);
+    if (!queryEngine)
+      throw new Error(`${this.constructor.name}::updateAll: Model class or query is required to update.`);
+
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    if (!rootModel)
+      throw new Error(`${this.constructor.name}::updateAll: Root model not found, and is required to update.`);
+
+    let options         = _options || {};
+    let queryGenerator  = this.getQueryGenerator();
+    let sqlStr          = queryGenerator.generateUpdateStatement(rootModel, model, queryEngine, options);
+
+    return await this.query(sqlStr, { formatResponse: true, logger: options.logger });
   }
 
   async destroy(Model, models, _options) {
@@ -542,6 +545,22 @@ class SQLConnectionBase extends ConnectionBase {
       let sqlStr = queryGenerator.generateDeleteStatement(Model, Model.where.id.EQ(pkIDs));
       await this.query(sqlStr, { formatResponse: true });
     });
+  }
+
+  async destroyAll(_queryEngine, _options) {
+    let queryEngine = this.toQueryEngine(_queryEngine);
+    if (!queryEngine)
+      throw new Error(`${this.constructor.name}::destroyAll: Model class or query is required to destroy.`);
+
+    let rootModel = queryEngine._getRawQueryContext().rootModel;
+    if (!rootModel)
+      throw new Error(`${this.constructor.name}::updateAll: Root model not found, and is required to destroy.`);
+
+    let options         = _options || {};
+    let queryGenerator  = this.getQueryGenerator();
+    let sqlStr          = queryGenerator.generateDeleteStatement(rootModel, queryEngine, options);
+
+    return await this.query(sqlStr, { formatResponse: true, logger: options.logger });
   }
 
   async *select(_queryEngine, _options) {
@@ -678,17 +697,18 @@ class SQLConnectionBase extends ConnectionBase {
     let queryGenerator  = this.getQueryGenerator();
     let query           = queryEngine.clone().PROJECT(fields);
     let sqlStr          = queryGenerator.generateSelectStatement(query);
-
-    let result = await this.query(sqlStr, { formatResponse: true });
-    let {
-      rows,
-      columns,
-    } = result;
+    let result          = await this.query(sqlStr, { formatResponse: true });
+    let { rows }        = result;
 
     if (fields.length === 1 && rows[0] && rows[0].length === 1)
       return rows.map((row) => row[0]);
 
     return rows;
+  }
+
+  async exists(queryEngine, options) {
+    let count = await this.count(queryEngine, null, options);
+    return (count > 0);
   }
 }
 

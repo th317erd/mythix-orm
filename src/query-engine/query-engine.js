@@ -92,9 +92,14 @@ class QueryEngine extends QueryEngineBase {
     return (_limit == null) ? result[0] : result.reverse();
   }
 
-  async pluck(...fields) {
-    let connection = this.getConnection();
-    return await connection.pluck(this, fields);
+  async update(attributes, options) {
+    let connection  = this.getConnection();
+    return await connection.updateAll(this, attributes, options);
+  }
+
+  async destroy(options) {
+    let connection  = this.getConnection();
+    return await connection.destroyAll(this, options);
   }
 
   async average(field, options) {
@@ -120,6 +125,16 @@ class QueryEngine extends QueryEngineBase {
   async sum(field, options) {
     let connection = this.getConnection();
     return await connection.sum(this, field, options);
+  }
+
+  async pluck(...fields) {
+    let connection = this.getConnection();
+    return await connection.pluck(this, fields);
+  }
+
+  async exists(options) {
+    let connection = this.getConnection();
+    return await connection.exists(this, options);
   }
 
   [ProxyClass.MISSING](target, prop) {

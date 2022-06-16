@@ -1205,23 +1205,25 @@ class QueryGeneratorBase {
     return `INSERT INTO ${escapedTableName} (${escapedFieldNames}) VALUES ${values}`;
   }
 
-  generateUpdateStatement(Model, _model, _options, _queryEngine) {
+  generateUpdateStatement(Model, _model, _queryEngine, _options) {
     if (!_model)
       return '';
 
     let queryEngine = _queryEngine;
-    let options     = _options;
+    let options     = _options || {};
 
-    if (QueryEngine.isQuery(options)) {
-      queryEngine = options;
-      options = {};
-    } else if (!options) {
-      options = {};
+    if (!QueryEngine.isQuery(queryEngine)) {
+      queryEngine = null;
+      options = _queryEngine || {};
     }
 
     let model = _model;
-    if (!(model instanceof ModelBase))
-      model = new Model(model);
+    if (!(model instanceof ModelBase)) {
+      let newModel = new Model();
+      newModel.clearDirty();
+      newModel.setAttributes(model);
+      model = newModel;
+    }
 
     let modelChanges    = model.changes;
     let dirtyFieldNames = Object.keys(modelChanges);
@@ -1270,17 +1272,13 @@ class QueryGeneratorBase {
     return sqlParts.join('');
   }
 
-  generateDeleteStatement(Model, _options, _queryEngine) {
+  generateDeleteStatement(Model, _queryEngine, _options) {
     let queryEngine = _queryEngine;
     let options     = _options;
     let where;
 
-    if (QueryEngine.isQuery(options)) {
-      queryEngine = options;
-      options = {};
-    } else if (!options) {
-      options = {};
-    }
+    if (!QueryEngine.isQuery(options))
+      options = _queryEngine;
 
     if (queryEngine)
       where = this.generateWhereAndOrderLimitOffset(queryEngine, options);

@@ -533,7 +533,7 @@ class Model {
     dirtyFieldData[fieldName] = newValue;
   }
 
-  toJSON() {
+  getAttributes() {
     let result = {};
 
     this.iterateFields(({ field, fieldName }) => {
@@ -548,6 +548,43 @@ class Model {
     });
 
     return result;
+  }
+
+  setAttributes(attributes, noPrimaryKey) {
+    let isObject = Nife.instanceOf(attributes, 'object');
+
+    this.iterateFields(({ field, fieldName }) => {
+      if (field.type.isVirtual())
+        return;
+
+      if (field.primaryKey === true && noPrimaryKey === true)
+        return;
+
+      if (isObject && !Object.prototype.hasOwnProperty.call(attributes, fieldName))
+        return;
+
+      let fieldValue = attributes[fieldName];
+      if (fieldValue === undefined)
+        return;
+
+      this[fieldName] = fieldValue;
+    });
+  }
+
+  async save(_options) {
+    let options = _options || {};
+
+    if (options.force !== true && Nife.isEmpty(this.changes))
+      return false;
+
+    let connection = this.getConnection();
+    await connection.update(this.getModel(), [ this ], options);
+
+    return true;
+  }
+
+  toJSON() {
+    return this.getAttributes();
   }
 }
 
