@@ -67,7 +67,7 @@ describe('Model relations', () => {
       let user  = new User();
       let field = user.getField('primaryRole');
 
-      let result = field.type.getSourceField(true);
+      let result = field.type.getSourceField(null, true);
       expect(result).toBe(User.fields.primaryRoleID);
     });
   });

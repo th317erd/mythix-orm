@@ -4,9 +4,26 @@ const Nife                = require('nife');
 const RelationalTypeBase  = require('./relational-type-base');
 const ModelUtils          = require('../../utils/model-utils');
 
+// These get injected into the class as
+// i.e. create{fieldName}
+// get{fieldName}
 const INJECT_TYPE_METHODS = {
-  'create': function(field, type) {
+  'create': async function(field, type, model, options) {
+    if (!model)
+      return false;
 
+    let targetModel = type.getTargetModel();
+    let connection  = this.getConnection();
+    let result      = await connection.insert(targetModel, [ model ], options);
+
+    let sourceField = type.getSourceField(connection, true);
+    let targetField = type.getTargetField(connection, true);
+    if (targetField && sourceField && targetModel.getModelName() === targetField.Model.getModelName()) {
+      this[sourceField.fieldName] = result[0][targetField.fieldName];
+      await this.save();
+    }
+
+    return true;
   },
   'get': async function(field, type, queryEngine, options) {
     let query = type.prepareQuery(this, field, queryEngine);
@@ -36,7 +53,7 @@ const INJECT_TYPE_METHODS = {
     let connection = this.getConnection();
     await connection.destroy(model.getModel(), [ model ], options);
 
-    let sourceField = type.getSourceField(true);
+    let sourceField = type.getSourceField(connection, true);
     if (sourceField && sourceField.Model.getModelName() === this.getModelName()) {
       this[sourceField.fieldName] = null;
       await this.save();

@@ -49,6 +49,34 @@ class RelationalTypeBase extends Type {
     });
   }
 
+  getTargetField(_connection, concrete) {
+    let connection = _connection || this.getConnection();
+    if (!connection)
+      throw new TypeError(`${this.constructor.name}::getTargetField: Must have a valid "connection" to get the requested model.`);
+
+    let def = this.getFullyQualifiedName(this.getTargetRelation());
+    if (!def.modelName)
+      def.modelName = this.getModel().getModelName();
+
+    let modelName = def.modelName;
+    let field     = connection.getField(def.fieldNames[0], modelName);
+    if (!concrete)
+      return field;
+
+    if (!field.type.isVirtual())
+      return field;
+
+    let relations = this.getJoinableRelations(connection);
+    for (let i = 0, il = relations.length; i < il; i++) {
+      let relation = relations[i];
+      if (relation.targetModelName === modelName) {
+        field = connection.getField(relation.targetFieldName, relation.targetModelName);
+        if (!field.type.isVirtual())
+          return field;
+      }
+    }
+  }
+
   getTargetModel(_connection) {
     let connection = _connection || this.getConnection();
     if (!connection)
@@ -61,10 +89,10 @@ class RelationalTypeBase extends Type {
     return connection.getModel(def.modelName);
   }
 
-  getSourceField(concrete, _connection) {
+  getSourceField(_connection, concrete) {
     let connection = _connection || this.getConnection();
     if (!connection)
-      throw new TypeError(`${this.constructor.name}::getTargetModel: Must have a valid "connection" to get the requested model.`);
+      throw new TypeError(`${this.constructor.name}::getSourceField: Must have a valid "connection" to get the requested model.`);
 
     let def = this.getFullyQualifiedName(this.getSourceRelation());
     if (!def.modelName)
