@@ -1137,6 +1137,9 @@ class QueryGeneratorBase {
     let hasParts  = false;
 
     model.iterateFields(({ field, fieldName }) => {
+      if (field.type.isVirtual())
+        return;
+
       let fieldValue = model[fieldName];
       if (fieldValue === undefined)
         fieldValue = this.getFieldDefaultValue(field, fieldName, { useDefaultKeyword: false, escape: false });
@@ -1151,7 +1154,7 @@ class QueryGeneratorBase {
 
       hasParts = true;
       sqlParts.push(this.escape(field, fieldValue));
-    }, options.dirtyFields);
+    }, options.dirtyFields || model.getDirtyFields());
 
     if (!hasParts)
       return '';

@@ -4,7 +4,7 @@ const Nife        = require('nife');
 const Type        = require('../type');
 const ModelUtils  = require('../../utils/model-utils');
 
-const MAX_RECURSE_DEPTH = 14;
+const MAX_RECURSE_DEPTH = 20;
 
 class RelationalTypeBase extends Type {
   static isVirtual() {
@@ -16,7 +16,7 @@ class RelationalTypeBase extends Type {
   }
 
   // Model types work by specifying a "target"
-  // and a "value provider".
+  // and a "value provider" (source).
   // These are fully qualified names, meaning
   // they also point to the model as well as the field.
   // If no model is specified, then it always defaults to
@@ -49,84 +49,140 @@ class RelationalTypeBase extends Type {
     });
   }
 
-  getTargetField(_connection, concrete) {
+  _walkRelationFields(type, callback, _connection) {
     let connection = _connection || this.getConnection();
     if (!connection)
-      throw new TypeError(`${this.constructor.name}::getTargetField: Must have a valid "connection" to get the requested model.`);
+      throw new TypeError(`${this.constructor.name}::_walkRelation: Must have a valid "connection".`);
 
-    let def = this.getFullyQualifiedName(this.getTargetRelation());
-    if (!def.modelName)
-      def.modelName = this.getModel().getModelName();
+    const getFieldDefinition = (relation, modelName) => {
+      let def = this.getFullyQualifiedName(relation);
+      if (!def.modelName)
+        def.modelName = (modelName) ? modelName : this.getModel().getModelName();
 
-    let modelName = def.modelName;
-    let field     = connection.getField(def.fieldNames[0], modelName);
-    if (!concrete)
-      return field;
+      return { modelName: def.modelName, fieldNames: def.fieldNames };
+    };
 
-    if (!field.type.isVirtual())
-      return field;
+    const fieldToArgs = (field) => {
+      return {
+        field:      field,
+        fieldName:  field.fieldName,
+        fieldType:  field.type,
+        modelName:  field.Model.getModelName(),
+        connection,
+      };
+    };
 
-    let relations = this.getJoinableRelations(connection);
-    for (let i = 0, il = relations.length; i < il; i++) {
-      let relation = relations[i];
-      if (relation.targetModelName === modelName) {
-        field = connection.getField(relation.targetFieldName, relation.targetModelName);
-        if (!field.type.isVirtual())
-          return field;
+    let relation        = (type === 'target') ? this.getTargetRelation() : this.getSourceRelation();
+    let fieldDefinition = getFieldDefinition(relation);
+    if (!fieldDefinition)
+      return;
+
+    let field;
+    let {
+      modelName,
+      fieldNames,
+    } = fieldDefinition;
+
+    let _stop       = false;
+    const stop      = () => (_stop = true);
+
+    let sourceField = this.getField();
+    let sourceArgs  = fieldToArgs(sourceField);
+    let results     = [];
+
+    for (let i = 0, il = fieldNames.length; i < il; i++) {
+      let fieldName = fieldNames[i];
+      field = connection.getField(fieldName, modelName);
+
+      let fieldType   = field.type;
+      let targetArgs  = fieldToArgs(field);
+      let result      = callback({ source: sourceArgs, target: targetArgs, stop });
+
+      if (_stop)
+        return results;
+
+      results.push(result);
+
+      if ((i + 1) >= il) {
+        if (fieldType.isForeignKey()) {
+          let targetField = fieldType.getTargetField();
+          result = callback({ source: targetArgs, target: fieldToArgs(targetField) });
+
+          if (_stop)
+            return results;
+
+          results.push(result);
+        } else if (fieldType.isRelational()) {
+          result = fieldType._walkRelationFields(type, callback, connection);
+
+          if (_stop)
+            return results;
+
+          results = results.concat(result);
+        }
+      }
+
+      if (il > 1) {
+        sourceArgs = fieldToArgs(field);
+
+        let subDefinition = getFieldDefinition(fieldType.getTargetRelation(), field.Model.getModelName());
+        modelName = subDefinition.modelName;
       }
     }
+
+    return results;
   }
 
-  getTargetModel(_connection) {
-    let connection = _connection || this.getConnection();
-    if (!connection)
-      throw new TypeError(`${this.constructor.name}::getTargetModel: Must have a valid "connection" to get the requested model.`);
-
-    let def = this.getFullyQualifiedName(this.getTargetRelation());
-    if (!def.modelName)
-      def.modelName = this.getModel().getModelName();
-
-    return connection.getModel(def.modelName);
+  walkTargetRelation(callback, _connection) {
+    return this._walkRelationFields('target', callback, _connection);
   }
 
-  getSourceField(_connection, concrete) {
-    let connection = _connection || this.getConnection();
-    if (!connection)
-      throw new TypeError(`${this.constructor.name}::getSourceField: Must have a valid "connection" to get the requested model.`);
-
-    let def = this.getFullyQualifiedName(this.getSourceRelation());
-    if (!def.modelName)
-      def.modelName = this.getModel().getModelName();
-
-    let modelName = def.modelName;
-    let field     = connection.getField(def.fieldNames[0], modelName);
-    if (!concrete)
-      return field;
-
-    if (!field.type.isVirtual())
-      return field;
-
-    let relations = this.getJoinableRelations(connection);
-    for (let i = 0, il = relations.length; i < il; i++) {
-      let relation = relations[i];
-      if (relation.sourceModelName === modelName) {
-        field = connection.getField(relation.sourceFieldName, relation.sourceModelName);
-        if (!field.type.isVirtual())
-          return field;
-      }
-    }
+  walkSourceRelation(callback, _connection) {
+    return this._walkRelationFields('source', callback, _connection);
   }
 
-  getSourceModel(_connection) {
-    let connection = _connection || this.getConnection();
-    if (!connection)
-      throw new TypeError(`${this.constructor.name}::getSourceModel: Must have a valid "connection" to get the requested model.`);
+  getTargetModel(options, _connection) {
+    let field = this.getTargetField(options, _connection);
+    return field.Model;
+  }
 
-    let def = this.getFullyQualifiedName(this.getSourceRelation());
-    if (!def.modelName)
-      def.modelName = this.getModel().getModelName();
+  getSourceModel(options, _connection) {
+    let field = this.getSourceField(options, _connection);
+    return field.Model;
+  }
 
-    return connection.getModel(def.modelName);
+  getTargetField(_options, _connection) {
+    let options = _options || {};
+    let field;
+
+    this.walkTargetRelation(({ target, stop }) => {
+      if (options.recursive !== true)
+        stop();
+
+      if (options.followForeignKeys === false && target.fieldType.isForeignKey())
+        stop();
+
+      field = target.field;
+    }, _connection);
+
+    return field;
+  }
+
+  getSourceField(_options, _connection) {
+    let options = _options || {};
+    let field;
+
+    this.walkSourceRelation(({ target, stop }) => {
+      if (options.recursive !== true)
+        stop();
+
+      if (options.followForeignKeys === false && target.fieldType.isForeignKey())
+        stop();
+
+      field = target.field;
+    }, _connection);
+
+    return field;
   }
 
   getTargetRelation() {
@@ -143,7 +199,7 @@ class RelationalTypeBase extends Type {
       def.modelName = this.getModel().getModelName();
 
     if (!def.modelName)
-      console.log('Failed getting model name: ', qualifiedName);
+      throw new Error(`${this.constructor.name}::getFullyQualifiedName: Error while attempting to parse qualified name "${qualifiedName}" on field "${this.getModel().getModelName()}.${this.getField().fieldName}": Model not found.`);
 
     if (Nife.isEmpty(def.fieldNames)) {
       let pkName = this.getModel().getPrimaryKeyFieldName();
@@ -253,7 +309,7 @@ class RelationalTypeBase extends Type {
     let type            = field.type;
     let OriginModel     = field.Model;
     let originModelName = OriginModel.getModelName();
-    let TargetModel     = type.getTargetModel(connection);
+    let TargetModel     = type.getTargetModel({ recursive: true }, connection);
     let relations       = type.getJoinableRelations(connection);
     let query           = TargetModel.where;
 

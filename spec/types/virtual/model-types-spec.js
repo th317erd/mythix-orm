@@ -62,13 +62,104 @@ describe('Model relations', () => {
     RoleThing = models.RoleThing;
   });
 
+  describe('walkTargetRelation', () => {
+    it('can walk target relation #1', () => {
+      let user  = new User();
+      let field = user.getField('roles');
+
+      let result = field.type.walkTargetRelation(({ source, target }) => {
+        let sourceStr = `${source.modelName}:${source.fieldName}`;
+        let targetStr = `${target.modelName}:${target.fieldName}`;
+        return `${sourceStr} -> ${targetStr}`;
+      });
+
+      expect(result).toEqual([
+        'User:roles -> Role:id',
+      ]);
+    });
+
+    it('can walk target relation #2', () => {
+      let user  = new User();
+      let field = user.getField('userThingRole');
+
+      let result = field.type.walkTargetRelation(({ source, target }) => {
+        let sourceStr = `${source.modelName}:${source.fieldName}`;
+        let targetStr = `${target.modelName}:${target.fieldName}`;
+        return `${sourceStr} -> ${targetStr}`;
+      });
+
+      expect(result).toEqual([
+        'User:userThingRole -> Role:id',
+      ]);
+    });
+  });
+
+  describe('walkSourceRelation', () => {
+    it('can walk source relation #1', () => {
+      let user  = new User();
+      let field = user.getField('roles');
+
+      let result = field.type.walkSourceRelation(({ source, target }) => {
+        let sourceStr = `${source.modelName}:${source.fieldName}`;
+        let targetStr = `${target.modelName}:${target.fieldName}`;
+        return `${sourceStr} -> ${targetStr}`;
+      });
+
+      expect(result).toEqual([
+        'User:roles -> User:userRoles',
+        'User:userRoles -> UserRole:role',
+        'UserRole:role -> UserRole:roleID',
+        'UserRole:roleID -> Role:id',
+      ]);
+    });
+
+    it('can walk source relation #2', () => {
+      let user  = new User();
+      let field = user.getField('userThingRole');
+
+      let result = field.type.walkSourceRelation(({ source, target }) => {
+        let sourceStr = `${source.modelName}:${source.fieldName}`;
+        let targetStr = `${target.modelName}:${target.fieldName}`;
+        return `${sourceStr} -> ${targetStr}`;
+      });
+
+      expect(result).toEqual([
+        'User:userThingRole -> User:userThing',
+        'User:userThing -> UserThing:role',
+        'UserThing:role -> UserThing:roleThing',
+        'UserThing:roleThing -> RoleThing:role',
+        'RoleThing:role -> RoleThing:roleID',
+        'RoleThing:roleID -> Role:id',
+      ]);
+    });
+  });
+
   describe('getSourceField', () => {
     it('can get source field', () => {
       let user  = new User();
       let field = user.getField('primaryRole');
 
-      let result = field.type.getSourceField(null, true);
+      let result = field.type.getSourceField();
       expect(result).toBe(User.fields.primaryRoleID);
+    });
+
+    it('will skip following foreign keys if requested', () => {
+      let roleThing = new RoleThing();
+      let field = roleThing.getField('user');
+
+      let result = field.type.getSourceField({ recursive: true, followForeignKeys: false });
+      expect(result).toBe(UserThing.fields.userID);
+
+      result = field.type.getSourceField({ recursive: true });
+      expect(result).toBe(User.fields.id);
+    });
+
+    it('can get source field recursively', () => {
+      let user  = new User();
+      let field = user.getField('roles');
+
+      let result = field.type.getSourceField({ recursive: true });
+      expect(result).toBe(Role.fields.id);
     });
   });
 
@@ -82,17 +173,17 @@ describe('Model relations', () => {
         {
           relationType:     'target',
           fieldIndex:       0,
-          sourceModelName:  'UserRole',
-          sourceFieldName:  'roleID',
-          targetModelName:  'Role',
-          targetFieldName:  'id',
+          sourceModelName:  'User',
+          sourceFieldName:  'id',
+          targetModelName:  'UserRole',
+          targetFieldName:  'userID',
         },
         {
           relationType:     'target',
           fieldIndex:       0,
           sourceModelName:  'UserRole',
-          sourceFieldName:  'userID',
-          targetModelName:  'User',
+          sourceFieldName:  'roleID',
+          targetModelName:  'Role',
           targetFieldName:  'id',
         },
       ]);
@@ -107,10 +198,10 @@ describe('Model relations', () => {
         {
           relationType:     'target',
           fieldIndex:       0,
-          sourceModelName:  'UserThing',
-          sourceFieldName:  'userID',
-          targetModelName:  'User',
-          targetFieldName:  'id',
+          sourceModelName:  'User',
+          sourceFieldName:  'id',
+          targetModelName:  'UserThing',
+          targetFieldName:  'userID',
         },
         {
           relationType:     'target',
@@ -140,17 +231,17 @@ describe('Model relations', () => {
         {
           relationType:     'target',
           fieldIndex:       0,
-          sourceModelName:  'UserRole',
-          sourceFieldName:  'roleID',
-          targetModelName:  'Role',
-          targetFieldName:  'id',
+          sourceModelName:  'User',
+          sourceFieldName:  'id',
+          targetModelName:  'UserRole',
+          targetFieldName:  'userID',
         },
         {
           relationType:     'target',
           fieldIndex:       0,
           sourceModelName:  'UserRole',
-          sourceFieldName:  'userID',
-          targetModelName:  'User',
+          sourceFieldName:  'roleID',
+          targetModelName:  'Role',
           targetFieldName:  'id',
         },
       ]);
@@ -165,10 +256,10 @@ describe('Model relations', () => {
         {
           relationType:     'target',
           fieldIndex:       0,
-          sourceModelName:  'UserThing',
-          sourceFieldName:  'userID',
-          targetModelName:  'User',
-          targetFieldName:  'id',
+          sourceModelName:  'User',
+          sourceFieldName:  'id',
+          targetModelName:  'UserThing',
+          targetFieldName:  'userID',
         },
         {
           relationType:     'target',

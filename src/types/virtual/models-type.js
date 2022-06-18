@@ -32,7 +32,7 @@ class ModelsType extends RelationalTypeBase {
     if (value == null)
       return [];
 
-    let Model = typeInstance.getTargetModel(connection);
+    let Model = typeInstance.getTargetModel({ recursive: true }, connection);
     if (!Model)
       throw new TypeError('ModelsType::castToType: Failed when attempting to fetch the required model.');
 

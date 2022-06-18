@@ -53,11 +53,11 @@ class ForeignKeyType extends Type {
   }
 
   parseOptionsAndCheckForErrors(SourceModel, sourceField, type, connection) {
-    let options = this.options;
-    let fullyQualifiedName = this.fullyQualifiedName;
-    let Model = options.Model;
-    let Field = options.Field;
-    let fieldName = options.fieldName;
+    let options             = this.options;
+    let fullyQualifiedName  = this.fullyQualifiedName;
+    let Model               = options.Model;
+    let Field               = options.Field;
+    let fieldName           = options.fieldName;
 
     if (!Model) {
       if (options.modelName) {

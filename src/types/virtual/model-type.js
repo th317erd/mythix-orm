@@ -16,8 +16,8 @@ const INJECT_TYPE_METHODS = {
     let connection  = this.getConnection();
     let result      = await connection.insert(targetModel, [ model ], options);
 
-    let sourceField = type.getSourceField(connection, true);
-    let targetField = type.getTargetField(connection, true);
+    let sourceField = type.getSourceField({ recursive: true, followForeignKeys: true }, connection);
+    let targetField = type.getTargetField({ recursive: true, followForeignKeys: true }, connection);
     if (targetField && sourceField && targetModel.getModelName() === targetField.Model.getModelName()) {
       this[sourceField.fieldName] = result[0][targetField.fieldName];
       await this.save();
@@ -53,7 +53,7 @@ const INJECT_TYPE_METHODS = {
     let connection = this.getConnection();
     await connection.destroy(model.getModel(), [ model ], options);
 
-    let sourceField = type.getSourceField(connection, true);
+    let sourceField = type.getSourceField({ recursive: true, followForeignKeys: true }, connection);
     if (sourceField && sourceField.Model.getModelName() === this.getModelName()) {
       this[sourceField.fieldName] = null;
       await this.save();
@@ -77,7 +77,7 @@ class ModelType extends RelationalTypeBase {
     if (value == null)
       return value;
 
-    let Model = typeInstance.getTargetModel(connection);
+    let Model = typeInstance.getTargetModel({ recursive: true }, connection);
     if (!Model)
       throw new TypeError('ModelType::castToType: Failed when attempting to fetch the required model.');
 

@@ -273,6 +273,9 @@ class Model {
 
     let primaryKeyField;
     this.iterateFields(({ field, stop }) => {
+      if (field.type.isVirtual())
+        return;
+
       if (field.primaryKey) {
         primaryKeyField = field;
         return stop();
@@ -386,7 +389,10 @@ class Model {
 
     // First initialize field values from data
     if (data) {
-      this.iterateFields(({ fieldName }) => {
+      this.iterateFields(({ field, fieldName }) => {
+        if (field.type.isVirtual())
+          return;
+
         let fieldValue  = (data) ? data[fieldName] : undefined;
         if (fieldValue === undefined)
           return;
@@ -397,6 +403,9 @@ class Model {
 
     // Next initialize default values
     this.iterateFields(({ field, fieldName }) => {
+      if (field.type.isVirtual())
+        return;
+
       let fieldValue = (data) ? data[fieldName] : undefined;
       this._initializeFieldData(fieldName, field, fieldValue, data);
     });
@@ -497,6 +506,13 @@ class Model {
       Object.assign(this._fieldData, this._dirtyFieldData);
       this._dirtyFieldData = {};
     }
+  }
+
+  getDirtyFields() {
+    let modelChanges    = this.changes;
+    let dirtyFieldNames = Object.keys(modelChanges);
+
+    return this.getFields(dirtyFieldNames);
   }
 
   getDataValue(fieldName) {

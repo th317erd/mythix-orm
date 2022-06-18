@@ -25,10 +25,13 @@ class User extends Model {
       allowNull:  true,
     },
     'roles': {
-      type:       Types.Models('UserRole:role', 'UserRole:user'),
+      type:       Types.Models('Role', 'userRoles.role'),
+    },
+    'userRoles': {
+      type:       Types.Models('UserRole:userID'),
     },
     'userThing': {
-      type:       Types.Model('UserThing:user'),
+      type:       Types.Model('UserThing:userID'),
     },
     'userThingRole': {
       type:       Types.Model('Role', 'userThing.role'),

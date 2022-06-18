@@ -16,7 +16,7 @@ class RoleThing extends Model {
       index:      true,
     },
     'userThing': {
-      type:       Types.Model('UserThing', 'UserThing:roleThing'),
+      type:       Types.Model('UserThing:roleThingID'),
     },
     'role': {
       type:       Types.Model('Role:id', 'roleID'),

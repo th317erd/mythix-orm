@@ -11,12 +11,12 @@ class UserRole extends Model {
       primaryKey:   true,
     },
     'roleID': {
-      type:       Types.UUIDV4,
+      type:       Types.FOREIGN_KEY('Role:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
       allowNull:  false,
       index:      true,
     },
     'userID': {
-      type:       Types.UUIDV4,
+      type:       Types.FOREIGN_KEY('User:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
       allowNull:  false,
       index:      true,
     },
