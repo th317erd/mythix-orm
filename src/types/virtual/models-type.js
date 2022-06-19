@@ -5,19 +5,28 @@ const RelationalTypeBase  = require('./relational-type-base');
 const ModelUtils          = require('../../utils/model-utils');
 
 const INJECT_TYPE_METHODS = {
-  'create': function(field) {
+  'add': async function(field) {
 
   },
-  'get': function(field) {
+  'create': async function(field) {
 
   },
-  'update': function(field) {
+  'get': async function(field) {
 
   },
-  'destroy': function(field) {
+  'set': async function(field) {
 
   },
-  'exists': function(field) {
+  'update': async function(field) {
+
+  },
+  'remove': async function(field) {
+
+  },
+  'destroy': async function(field) {
+
+  },
+  'exists': async function(field) {
 
   },
 };

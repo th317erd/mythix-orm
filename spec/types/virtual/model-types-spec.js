@@ -45,7 +45,6 @@ describe('Model relations', () => {
   let connection;
   let User;
   let Role;
-  let UserRole;
   let UserThing;
   let RoleThing;
 
@@ -57,7 +56,6 @@ describe('Model relations', () => {
     let models = connection.getModels();
     User = models.User;
     Role = models.Role;
-    UserRole = models.UserRole;
     UserThing = models.UserThing;
     RoleThing = models.RoleThing;
   });

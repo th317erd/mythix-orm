@@ -26,11 +26,6 @@ class SQLiteQueryGenerator extends QueryGeneratorBase {
       ')',
     ];
 
-    if (field.allowNull === false) {
-      sqlParts.push(' ');
-      sqlParts.push('NOT NULL');
-    }
-
     if (options.deferred === true) {
       sqlParts.push(' ');
       sqlParts.push('DEFERRABLE INITIALLY DEFERRED');
