@@ -5,6 +5,7 @@
 
 /* global describe, it, expect, beforeEach */
 
+const UUID = require('uuid');
 const { Types, ConnectionBase } = require('../../../src');
 
 describe('ModelType', () => {
@@ -58,6 +59,25 @@ describe('Model relations', () => {
     Role = models.Role;
     UserThing = models.UserThing;
     RoleThing = models.RoleThing;
+  });
+
+  describe('setRelationalValues', () => {
+    it('can set relational values on a model instance', () => {
+      let user  = new User();
+      let role  = new Role({ id: UUID.v4(), name: 'test' });
+
+      user.getField('primaryRole').type.setRelationalValues(User, user, Role, role);
+
+      expect(user.primaryRoleID).toEqual(role.id);
+    });
+
+    it('can set relational values on a model instance when related model is null', () => {
+      let user  = new User({ primaryRoleID: UUID.v4() });
+
+      user.getField('primaryRole').type.setRelationalValues(User, user, Role);
+
+      expect(user.primaryRoleID).toBe(null);
+    });
   });
 
   describe('walkTargetRelation', () => {

@@ -640,7 +640,7 @@ class SQLConnectionBase extends ConnectionBase {
       throw new TypeError(`${this.constructor.name}::count: First argument must be a model class or a query.`);
 
     let rootModel = queryEngine._getRawQueryContext().rootModel;
-    let field     = ModelUtils.fieldToFullyQualifiedName(_field, rootModel);
+    let field     = (_field) ? ModelUtils.fieldToFullyQualifiedName(_field, rootModel) : null;
 
     return await this.aggregate(queryEngine, new SQLLiterals.CountSQLLiteral(field), options);
   }

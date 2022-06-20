@@ -94,6 +94,9 @@ class RelationalTypeBase extends Type {
       let fieldName = fieldNames[i];
       field = connection.getField(fieldName, modelName);
 
+      if (!field)
+        throw new Error(`${this.constructor.name}::_walkRelationFields: Unable to find field ${modelName}:${fieldName}.`);
+
       let fieldType   = field.type;
       let targetArgs  = fieldToArgs(field);
       let result      = callback({ source: sourceArgs, target: targetArgs, stop });
@@ -305,13 +308,13 @@ class RelationalTypeBase extends Type {
   }
 
   prepareQuery(modelInstance, field, queryEngine) {
-    let connection      = modelInstance.getConnection();
-    let type            = field.type;
-    let OriginModel     = field.Model;
-    let originModelName = OriginModel.getModelName();
-    let TargetModel     = type.getTargetModel({ recursive: true }, connection);
-    let relations       = type.getJoinableRelations(connection);
-    let query           = TargetModel.where;
+    let connection          = modelInstance.getConnection();
+    let type                = field.type;
+    let OriginModel         = field.Model;
+    let originModelName     = OriginModel.getModelName();
+    let ResultingModel      = type.getTargetModel({ recursive: true, followForeignKeys: false }, connection);
+    let relations           = type.getJoinableRelations(connection);
+    let query               = ResultingModel.where;
 
     for (let i = 0, il = relations.length; i < il; i++) {
       let relation = relations[i];
@@ -322,20 +325,67 @@ class RelationalTypeBase extends Type {
         targetFieldName,
       } = relation;
 
-      if (targetModelName === originModelName) {
-        query = query.AND[sourceModelName][sourceFieldName].EQ(modelInstance[targetFieldName]);
-      } else if (sourceModelName === originModelName) {
-        query = query.AND[targetModelName][targetFieldName].EQ(modelInstance[sourceFieldName]);
-      } else {
-        let targetModel = connection.getModel(targetModelName);
-        query = query.AND[sourceModelName][sourceFieldName].EQ(targetModel.where[targetFieldName]);
-      }
+      let targetModel = connection.getModel(targetModelName);
+      query.AND[sourceModelName][sourceFieldName].EQ(targetModel.where[targetFieldName]);
+
+      if (targetModelName === originModelName)
+        query = query.AND[targetModelName][targetModelName].EQ(modelInstance[targetFieldName]);
+      else if (sourceModelName === originModelName)
+        query = query.AND[sourceModelName][sourceFieldName].EQ(modelInstance[sourceFieldName]);
     }
 
     if (queryEngine)
       query = query.AND(queryEngine);
 
     return query;
+  }
+
+  setRelationalValues(Model, modelInstance, RelatedModel, relatedModelInstance) {
+    let fieldsToSet       = {};
+    let modelName         = Model.getModelName();
+    let relatedModelName  = RelatedModel.getModelName();
+
+    if (modelName === relatedModelName)
+      return modelInstance;
+
+    // Collect fields that are connected to the related model
+    Model.iterateFields(({ field, fieldName }) => {
+      let fieldType = field.type;
+      if (fieldType.isRelational()) {
+        let sourceField = fieldType.getSourceField({ recursive: true, followForeignKeys: true });
+        if (sourceField.Model.getModelName() !== modelName)
+          return;
+
+        let targetField = fieldType.getTargetField({ recursive: true, followForeignKeys: true });
+        if (targetField.Model.getModelName() !== relatedModelName)
+          return;
+
+        if (targetField.primaryKey)
+          return;
+
+        fieldsToSet[sourceField.fieldName] = targetField.fieldName;
+
+        return;
+      } else if (fieldType.isForeignKey()) {
+        let targetField = fieldType.getTargetField();
+        if (targetField.Model.getModelName() !== relatedModelName)
+          return;
+
+        fieldsToSet[fieldName] = targetField.fieldName;
+      }
+    });
+
+    // Update fields to related model
+    let fieldNames = Object.keys(fieldsToSet);
+    for (let i = 0, il = fieldNames.length; i < il; i++) {
+      let fieldName         = fieldNames[i];
+      let relatedFieldName  = fieldsToSet[fieldName];
+      let relatedModelValue = (relatedModelInstance) ? relatedModelInstance[relatedFieldName] : null;
+
+      modelInstance[fieldName] = relatedModelValue;
+    }
+
+    return modelInstance;
   }
 
   toString() {

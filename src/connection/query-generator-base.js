@@ -608,7 +608,7 @@ class QueryGeneratorBase {
     return (joinType) ? `${joinType} ${escapedTableName}` : `FROM ${escapedTableName}`;
   }
 
-  generateSelectJoinOnTableQueryConditions(leftQueryContext, queryEngine, joinType, options) {
+  generateSelectJoinOnTableQueryConditions(leftQueryContext, rightSideQueryEngine, joinType, options) {
     const findFirstField = (query) => {
       for (let i = 0, il = query.length; i < il; i++) {
         let queryPart = query[i];
@@ -622,6 +622,8 @@ class QueryGeneratorBase {
       return -1;
     };
 
+    let rootModel     = leftQueryContext.rootModel;
+    let rootModelName = rootModel.getModelName();
     let leftSideModel = leftQueryContext.Model;
     if (!leftSideModel)
       throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No model found for left-side of join statement.`);
@@ -630,7 +632,7 @@ class QueryGeneratorBase {
     if (!leftSideField)
       throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No left-side field found to match on for table join statement.`);
 
-    let rightQueryContext = queryEngine._getRawQuery();
+    let rightQueryContext = rightSideQueryEngine._getRawQuery();
     let isNot             = leftQueryContext.not;
     let operator          = (isNot) ? leftQueryContext.inverseOperator : leftQueryContext.operator;
     let firstFieldIndex   = findFirstField(rightQueryContext);
@@ -651,10 +653,13 @@ class QueryGeneratorBase {
     if (!rightSideField)
       throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No right-side field found to match on for table join statement.`);
 
+    let swapOrder = rootModelName === leftSideModel.getModelName();
     let sqlParts = [
-      this.generateSelectQueryFromTable(rightSideModel, joinType, options),
+      this.generateSelectQueryFromTable((swapOrder) ? rightSideModel : leftSideModel, joinType, options),
       'ON',
-      this.generateSelectJoinOnTableQueryCondition(leftQueryContext, rightFieldContext, leftSideField, rightSideField, operator, options),
+      (swapOrder)
+        ? this.generateSelectJoinOnTableQueryCondition(rightFieldContext, leftQueryContext, rightSideField, leftSideField, operator, options)
+        : this.generateSelectJoinOnTableQueryCondition(leftQueryContext, rightFieldContext, leftSideField, rightSideField, operator, options),
     ];
 
     return sqlParts.join(' ');
@@ -692,6 +697,7 @@ class QueryGeneratorBase {
   generateSelectWhereConditions(queryEngine, options) {
     let query     = queryEngine._getRawQuery();
     let sqlParts  = [];
+    let hasValue  = false;
 
     for (let i = 0, il = query.length; i < il; i++) {
       let queryPart     = query[i];
@@ -726,9 +732,31 @@ class QueryGeneratorBase {
         }
       }
 
-      if (result)
+      if (result) {
         sqlParts.push(result);
+        hasValue = true;
+      }
     }
+
+    if (!hasValue)
+      return '';
+
+    // Trim any trailing "NOT", "OR", or "AND"
+    // from the parts
+    let lastIndex = sqlParts.length;
+    // eslint-disable-next-line no-unreachable-loop
+    for (let i = sqlParts.length - 1; i >= 0; i--) {
+      let part = sqlParts[i];
+      if (part === 'NOT' || part === 'OR' || part === 'AND') {
+        lastIndex = i;
+        continue;
+      }
+
+      break;
+    }
+
+    if (lastIndex < sqlParts.length)
+      sqlParts = sqlParts.slice(0, lastIndex);
 
     return sqlParts.join(' ');
   }

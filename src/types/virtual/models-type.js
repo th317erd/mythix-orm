@@ -1,32 +1,36 @@
 'use strict';
 
 const Nife                = require('nife');
+const Inflection          = require('inflection');
 const RelationalTypeBase  = require('./relational-type-base');
 const ModelUtils          = require('../../utils/model-utils');
 
+const NAMED_METHOD  = false;
+const ROOT_METHOD   = true;
+
 const INJECT_TYPE_METHODS = {
-  'add': async function(field) {
+  'add': async function({ field, type }) {
 
   },
-  'create': async function(field) {
+  'create': async function({ field, type }) {
 
   },
-  'get': async function(field) {
+  'get': async function({ field, type }) {
 
   },
-  'set': async function(field) {
+  'set': async function({ field, type }) {
 
   },
-  'update': async function(field) {
+  'update': async function({ field, type }) {
 
   },
-  'remove': async function(field) {
+  'remove': async function({ field, type }) {
 
   },
-  'destroy': async function(field) {
+  'destroy': async function({ field, type }) {
 
   },
-  'exists': async function(field) {
+  'exists': async function({ field, type }) {
 
   },
 };
@@ -62,15 +66,25 @@ class ModelsType extends RelationalTypeBase {
     return true;
   }
 
-  onModelInstantiated(modelInstance, field) {
-    let fieldName = field.fieldName;
-    for (let i = 0, il = INJECT_TYPE_METHODS_KEYS.length; i < il; i++) {
-      let key             = INJECT_TYPE_METHODS_KEYS[i];
-      let method          = INJECT_TYPE_METHODS[key];
-      let methodName      = `${key}${Nife.capitalize(fieldName)}`;
-      let fullMethodName  = `__${key}${Nife.capitalize(fieldName)}`;
+  fieldNameToOperationName(field, operation, rootMethod) {
+    let fieldName = field.pluralName;
+    if (!fieldName)
+      fieldName = Inflection.pluralize(field.fieldName);
 
-      ModelUtils.injectModelMethod(modelInstance, method.bind(modelInstance, field), methodName, fullMethodName);
+    if (rootMethod)
+      return `__${operation}${fieldName}`;
+    else
+      return `${operation}${fieldName}`;
+  }
+
+  onModelInstantiated(modelInstance, field) {
+    for (let i = 0, il = INJECT_TYPE_METHODS_KEYS.length; i < il; i++) {
+      let operation       = INJECT_TYPE_METHODS_KEYS[i];
+      let method          = INJECT_TYPE_METHODS[operation];
+      let methodName      = this.fieldNameToOperationName(field, operation, NAMED_METHOD);
+      let fullMethodName  = this.fieldNameToOperationName(field, operation, ROOT_METHOD);
+
+      ModelUtils.injectModelMethod(modelInstance, method.bind(modelInstance, { methodName, fullMethodName, field, type: this }), methodName, fullMethodName);
     }
   }
 }

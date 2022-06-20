@@ -349,7 +349,7 @@ describe('SQLiteConnection', () => {
 
       let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
-      let result          = await connection.query(sqlStatement, { formatResponse: true });
+      let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
       let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
       let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 

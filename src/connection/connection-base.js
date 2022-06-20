@@ -106,6 +106,9 @@ class ConnectionBase {
   }
 
   getModel(modelName) {
+    if (typeof modelName === 'symbol')
+      return;
+
     let def = this.parseQualifiedName(modelName);
     return this.models[def.modelName];
   }

@@ -16,7 +16,7 @@ class Role extends Model {
       index:      true,
     },
     'user': {
-      type:       Types.Model('UserRole:user', 'UserRoles:role'),
+      type:       Types.Model('UserRole:user', 'UserRole:role'),
     },
   };
 }

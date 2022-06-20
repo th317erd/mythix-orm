@@ -20,7 +20,7 @@ async function createConnection() {
     let key   = keys[i];
     let model = models[key];
 
-    await createTable(connection, model, { logger: console });
+    await createTable(connection, model);
   }
 
   return Object.assign({}, models, { connection });

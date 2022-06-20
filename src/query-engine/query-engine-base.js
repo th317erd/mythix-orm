@@ -197,6 +197,22 @@ class QueryEngineBase extends ProxyClass {
     return this.currentContext.queryRoot;
   }
 
+  _debugQuery() {
+    let query = this._getRawQuery();
+    for (let i = 0, il = query.length; i < il; i++) {
+      let queryPart = query[i];
+      let operator  = queryPart.operator;
+
+      if (operator === 'MODEL')
+        console.log(`MODEL -> ${queryPart.Model.getModelName()}`);
+      else if (operator === 'FIELD')
+        console.log(`FIELD -> ${queryPart.Field.fieldName}`);
+      else
+        console.log(`${operator} -> ${queryPart.value}`);
+    }
+
+  }
+
   _addToQuery(queryPart, _context) {
     let context   = _context || this._getRawQueryContext();
     let queryRoot = context.queryRoot;

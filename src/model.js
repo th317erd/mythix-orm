@@ -242,6 +242,19 @@ class Model {
     return results;
   }
 
+  static hasRemoteFieldValues() {
+    let hasRemote = false;
+
+    this.iterateFields(({ field, stop }) => {
+      if (field.type.isRemote()) {
+        hasRemote = true;
+        stop();
+      }
+    });
+
+    return hasRemote;
+  }
+
   static getField(findFieldName) {
     let fields = this.getFields();
     if (!fields)
@@ -315,6 +328,26 @@ class Model {
   static getDefaultOrder() {
   }
 
+  static async create(models, options) {
+    let connection = this.getConnection();
+    if (!connection)
+      throw new Error(`${this.constructor.name}::create: Connection not found. A connection is required to be bound to the model. Is your model not yet initialized through a connection?`);
+
+    let result = await connection.insert(this.getModel(), models, options);
+    if (Array.isArray(models))
+      return result;
+
+    return (Array.isArray(result)) ? result[0] : result;
+  }
+
+  static async count(options) {
+    let connection = this.getConnection();
+    if (!connection)
+      throw new Error(`${this.constructor.name}::count: Connection not found. A connection is required to be bound to the model. Is your model not yet initialized through a connection?`);
+
+    return await connection.count(this.getModel(), null, options);
+  }
+
   constructor(data) {
     Object.defineProperties(this, {
       '_isModelInstance': {
@@ -349,6 +382,14 @@ class Model {
         enumberable:  false,
         configurable: true,
         value:        {},
+      },
+      'where': {
+        enumberable:  false,
+        configurable: true,
+        get:          () => {
+          return this.constructor.where;
+        },
+        set:          () => {},
       },
     });
 
@@ -597,6 +638,14 @@ class Model {
     await connection.update(this.getModel(), [ this ], options);
 
     return true;
+  }
+
+  async first(limit, options) {
+    return await this.where.first(limit, options);
+  }
+
+  async last(limit, options) {
+    return await this.where.last(limit, options);
   }
 
   toJSON() {
