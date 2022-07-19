@@ -2,7 +2,7 @@
 
 const moment            = require('moment');
 const Type              = require('../type');
-const { DATETIME_NOW }  = require('../../helpers/default-helpers');
+const { DATETIME_NOW }  = require('../helpers/default-helpers');
 
 moment.suppressDeprecationWarnings = true;
 

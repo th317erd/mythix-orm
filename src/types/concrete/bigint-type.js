@@ -1,7 +1,7 @@
 'use strict';
 
 const Type                = require('../type');
-const { AUTO_INCREMENT }  = require('../../helpers/default-helpers');
+const { AUTO_INCREMENT }  = require('../helpers/default-helpers');
 
 class BigIntType extends Type {
   static Default = {

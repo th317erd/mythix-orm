@@ -38,14 +38,15 @@ const INJECT_TYPE_METHODS = {
 const INJECT_TYPE_METHODS_KEYS = Object.keys(INJECT_TYPE_METHODS);
 
 class ModelsType extends RelationalTypeBase {
-  castToType({ value, typeInstance, connection }) {
-    if (!typeInstance)
-      throw new TypeError('ModelsType::castToType: Type instance is required to cast.');
+  static exposeToModel() {
+    return false;
+  }
 
+  castToType({ value, connection }) {
     if (value == null)
       return [];
 
-    let Model = typeInstance.getTargetModel({ recursive: true }, connection);
+    let Model = this.getTargetModel({ recursive: true, followForeignKeys: true }, connection);
     if (!Model)
       throw new TypeError('ModelsType::castToType: Failed when attempting to fetch the required model.');
 

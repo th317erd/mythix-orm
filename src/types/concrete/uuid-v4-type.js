@@ -2,7 +2,7 @@
 
 const UUID                  = require('uuid');
 const Type                  = require('../type');
-const { defaultValueFlags } = require('../../helpers/default-helpers');
+const { defaultValueFlags } = require('../helpers/default-helpers');
 
 const UUIDV4 = defaultValueFlags(function() {
   return UUID.v4();

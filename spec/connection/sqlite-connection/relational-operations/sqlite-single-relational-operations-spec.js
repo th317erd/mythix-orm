@@ -60,7 +60,7 @@ describe('SQLiteConnection', () => {
         expect(primaryRole.name).toEqual('admin');
       });
 
-      fit('can create a single model through a relational field using a through table', async () => {
+      it('can create a single model through a relational field using a through table', async () => {
         let user = await User.create({ firstName: 'Space', lastName: 'Pants' });
         expect(user).toBeInstanceOf(User);
         expect(user.id).toMatch(UUID_REGEXP);
@@ -93,7 +93,7 @@ describe('SQLiteConnection', () => {
         expect(role.id).toEqual(storedRole.id);
       });
 
-      fit('can create a single model through a relational field using a through table when through table models already exist', async () => {
+      it('should ignore creating a single model through a relational field using a through table when through table models already exist', async () => {
         let user = await User.create({ firstName: 'Space', lastName: 'Pants' });
         expect(user).toBeInstanceOf(User);
         expect(user.id).toMatch(UUID_REGEXP);
@@ -102,28 +102,29 @@ describe('SQLiteConnection', () => {
         let roleThing = await RoleThing.create({ roleID: role.id });
         let userThing = await UserThing.create({ userID: user.id, roleThingID: roleThing.id });
 
-        expect(await UserThing.count()).toEqual(0);
-        expect(await RoleThing.count()).toEqual(0);
-
-        let storedRole = await user.createUserThingRole({ name: 'admin' });
-        expect(storedRole).toBeInstanceOf(Role);
-
         expect(await UserThing.count()).toEqual(1);
         expect(await RoleThing.count()).toEqual(1);
 
-        let userThing = await user.getUserThing();
-        expect(userThing).toBeInstanceOf(UserThing);
+        let result = await user.createUserThingRole({ name: 'admin' });
+        expect(result).toEqual(false);
+      });
 
-        let roleThing = await userThing.getRoleThing();
-        expect(roleThing).toBeInstanceOf(RoleThing);
+      it('should update a single model through a relational field when the "update" option is true', async () => {
+        let user = await User.create({ firstName: 'Space', lastName: 'Pants' });
+        expect(user).toBeInstanceOf(User);
+        expect(user.id).toMatch(UUID_REGEXP);
 
-        let role = await roleThing.getRole();
-        expect(role).toBeInstanceOf(Role);
+        let role      = await Role.create({ name: 'admin' });
+        let roleThing = await RoleThing.create({ roleID: role.id });
+        await UserThing.create({ userID: user.id, roleThingID: roleThing.id });
 
-        expect(userThing.userID).toEqual(user.id);
-        expect(userThing.roleThingID).toEqual(roleThing.id);
-        expect(roleThing.roleID).toEqual(role.id);
-        expect(role.id).toEqual(storedRole.id);
+        expect(await UserThing.count()).toEqual(1);
+        expect(await RoleThing.count()).toEqual(1);
+        expect(role.name).toEqual('admin');
+
+        let result = await user.createUserThingRole({ name: 'test' }, { update: true });
+        expect(result).toBeInstanceOf(Role);
+        expect(result.name).toEqual('test');
       });
     });
 

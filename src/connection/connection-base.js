@@ -53,23 +53,37 @@ class ConnectionBase {
     return queryEngine;
   }
 
-  registerModel(_Model) {
+  registerModel(_Model, skipModelInitialization) {
     let modelName = _Model.getModelName();
-    let Model = _Model.initializeModel(_Model, this);
-    // console.log('Registering model: ', Model.getModelName(), Model);
+    let Model     = _Model.initializeConnection(_Model, this);
+
+    if (skipModelInitialization !== true)
+      Model = _Model.initializeModel(_Model, this);
+
     this.models[modelName] = Model;
+
+    return Model;
   }
 
   registerModels(models) {
     if (!models)
       return;
 
-    let keys = Object.keys(models);
+    let keys              = Object.keys(models);
+    let initializedModels = [];
+
     for (let i = 0, il = keys.length; i < il; i++) {
       let key = keys[i];
       let Model = models[key];
 
-      this.registerModel(Model);
+      let initializedModel = this.registerModel(Model, true);
+      initializedModels.push(initializedModel);
+    }
+
+    for (let i = 0, il = initializedModels.length; i < il; i++) {
+      let initializedModel = initializedModels[i];
+      initializedModel = initializedModel.initializeModel(initializedModel, this);
+      this.models[initializedModel.getModelName()] = initializedModel;
     }
   }
 

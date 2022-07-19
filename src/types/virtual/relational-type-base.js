@@ -388,6 +388,144 @@ class RelationalTypeBase extends Type {
     return modelInstance;
   }
 
+  _getModelCreationInfo(modelInstance, originField, targetModel, fetchedModel, connection) {
+    let relationMap     = {};
+    let relationsStatus = {
+      [modelInstance.getModelName()]: { create: false, instance: true, value: modelInstance, modelName: modelInstance.getModelName() },
+    };
+
+    const addModelStatus = (modelName, status) => {
+      relationsStatus[modelName] = Object.assign(status, { modelName });
+    };
+
+    const findModelStatus = (modelName) => {
+      return relationsStatus[modelName];
+    };
+
+    const hasModelStatus = (modelName) => {
+      let status = findModelStatus(modelName);
+      return !!status;
+    };
+
+    const addRelationalStatus = (type, Model, fieldType) => {
+      let modelName = Model.getModelName();
+
+      if (fieldType.isRelational() && fieldType.isManyRelation()) {
+        if (hasModelStatus(modelName))
+          return;
+
+        // we must create
+        addModelStatus(modelName, { create: true, instance: false, value: Model });
+        return;
+      } else {
+        // we might already have
+        addSingleRelationStatus(type, Model, fieldType);
+      }
+    };
+
+    const addSingleRelationStatus = (type, Model, fieldType) => {
+      let modelName = Model.getModelName();
+      if (hasModelStatus(modelName))
+        return;
+
+      let model = findLoadedRelationalModel(Model.getPluralName());
+      if (!model)
+        addModelStatus(modelName, { create: true, instance: false, value: Model });
+      else
+        addModelStatus(modelName, { create: false, instance: true, value: model });
+    };
+
+    const findLoadedRelationalModel = (pluralModelName) => {
+      if (!fetchedModel)
+        return;
+
+      if (targetModel.getPluralName() === pluralModelName)
+        return fetchedModel;
+
+      let relationName = Nife.uncapitalize(pluralModelName);
+      let value = fetchedModel._[relationName];
+
+      if (Array.isArray(value)) {
+        if (value.length === 1)
+          return value[0];
+        else
+          return; // we need to create
+      }
+
+      return value;
+    };
+
+    originField.type.walkSourceRelation(({ source, target }) => {
+      let { field: sourceField, fieldType: sourceFieldType } = source;
+      let { field: targetField, fieldType: targetFieldType } = target;
+      let sourceModelName = sourceField.Model.getModelName();
+      let targetModelName = targetField.Model.getModelName();
+
+      if (sourceModelName !== targetModelName) {
+        let sourceTargets = relationMap[sourceModelName];
+        if (!sourceTargets)
+          sourceTargets = relationMap[sourceModelName] = [];
+
+        if (sourceTargets.indexOf(targetModelName) < 0)
+          sourceTargets.push(targetModelName);
+      }
+
+      addRelationalStatus('source', sourceField.Model, sourceFieldType);
+      addRelationalStatus('target', targetField.Model, targetFieldType);
+    }, connection);
+
+    let modelCreationOrder = Object.keys(relationsStatus).filter((status) => relationsStatus[status].create);
+    modelCreationOrder = modelCreationOrder.sort((a, b) => {
+      let relationA = relationMap[a];
+      let relationB = relationMap[b];
+
+      if (!relationA && !relationB)
+        return 0;
+
+      if (!relationA)
+        return -1;
+
+      if (!relationB)
+        return 1;
+
+      if (relationA.indexOf(b) && relationB.indexOf(a))
+        return 0;
+
+      if (relationA.indexOf(b) >= 0)
+        return 1;
+
+      if (relationB.indexOf(a) >= 0)
+        return -1;
+
+      return 0;
+    });
+
+    return { relationsStatus, relationMap, modelCreationOrder };
+  }
+
+  // Update a single model's attributes to
+  // any relational field value that points
+  // to this model
+  _updateValuesToRelated(Model, modelAttributes, relationsStatus, connection) {
+    let thisModelName = Model.getModelName();
+    let modelNames    = Object.keys(relationsStatus);
+
+    for (let i = 0, il = modelNames.length; i < il; i++) {
+      let modelName = modelNames[i];
+      if (thisModelName === modelName)
+        continue;
+
+      let status = relationsStatus[modelName];
+      if (status.create)
+        continue;
+
+      let RelatedModel          = connection.getModel(modelName);
+      let relatedModelInstance  = status.value;
+
+      this.setRelationalValues(Model, modelAttributes, RelatedModel, relatedModelInstance);
+    }
+  }
+
   toString() {
     return '';
   }

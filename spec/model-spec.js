@@ -6,7 +6,7 @@
 /* global describe, it, expect, spyOn */
 
 const Nife = require('nife');
-const { Model, Types, Helpers } = require('../src');
+const { Model, Types } = require('../src');
 
 class User extends Model {
   static fields = {
@@ -60,7 +60,7 @@ class DefaultValuesModel extends Model {
       type:         Types.STRING,
       allowNull:    false,
       primaryKey:   true,
-      defaultValue: Helpers.defaultValueFlags(onSaveDefaultValue, { onStore: true }),
+      defaultValue: Types.Helpers.defaultValueFlags(onSaveDefaultValue, { onStore: true }),
     },
   };
 }

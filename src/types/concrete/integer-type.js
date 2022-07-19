@@ -1,7 +1,7 @@
 'use strict';
 
 const Type                = require('../type');
-const { AUTO_INCREMENT }  = require('../../helpers/default-helpers');
+const { AUTO_INCREMENT }  = require('../helpers/default-helpers');
 
 class IntegerType extends Type {
   static Default = {

@@ -1,6 +1,7 @@
 'use strict';
 
-const MiscUtils = require('../utils/misc-utils');
+const { checkDefaultValueFlags }  = require('./helpers/default-helpers');
+const MiscUtils                   = require('../utils/misc-utils');
 
 class Type {
   static uninitializedType = true;
@@ -37,6 +38,10 @@ class Type {
 
   static isForeignKey() {
     return false;
+  }
+
+  static exposeToModel() {
+    return true;
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -113,6 +118,21 @@ class Type {
 
   isForeignKey() {
     return this.constructor.isForeignKey.call(this.constructor);
+  }
+
+  exposeToModel() {
+    return this.constructor.exposeToModel.call(this.constructor);
+  }
+
+  isRemote() {
+    let field = this.getField();
+    if (!field)
+      throw new Error(`${this.constructor.name}::isRemote: Error, the model type must be initialized before you call "isRemote".`);
+
+    if (field.remote === true)
+      return true;
+
+    return checkDefaultValueFlags(field.defaultValue, [ 'remote' ]);
   }
 
   onModelInitialize(...args) {

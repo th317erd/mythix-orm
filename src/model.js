@@ -1,10 +1,10 @@
 'use strict';
 
 const Nife                    = require('nife');
+const Inflection              = require('inflection');
 const { iterateStaticProps }  = require('./utils/misc-utils');
 const Type                    = require('./types/type');
-const Inflection              = require('inflection');
-const { FLAG_ON_INITIALIZE }  = require('./helpers/default-helpers');
+const { FLAG_ON_INITIALIZE }  = require('./types/helpers/default-helpers');
 
 class Model {
   static isModelClass() {
@@ -76,10 +76,9 @@ class Model {
     return this.defaultScope(queryEngine);
   }
 
-  static initializeModel(_Model, connection) {
+  static initializeConnection(_Model, connection) {
     let ConnectionModel = _Model;
-
-    if (Object.prototype.hasOwnProperty.call(ConnectionModel, 'mythixInitialized') && ConnectionModel.mythixInitialized)
+    if (Object.prototype.hasOwnProperty.call(ConnectionModel, 'mythixConnectionInitialized') && ConnectionModel.mythixConnectionInitialized)
       return ConnectionModel;
 
     let modelName = ConnectionModel.getModelName();
@@ -104,17 +103,24 @@ class Model {
 
     ConnectionModel = classBuilderFunc(ConnectionModel, connection);
 
+    return ConnectionModel;
+  }
+
+  static initializeModel(Model, connection) {
+    if (Object.prototype.hasOwnProperty.call(Model, 'mythixModelInitialized') && Model.mythixModelInitialized)
+      return Model;
+
     // Initialize model fields
-    ConnectionModel.iterateFields(({ field, fieldName }) => {
+    Model.iterateFields(({ field, fieldName }) => {
       field.fieldName = fieldName;
-      field.Model = ConnectionModel;
+      field.Model = Model;
 
       if (typeof field.type.onModelInitialize === 'function')
-        field.type.onModelInitialize.call(field.type, ConnectionModel, field, field.type, connection);
+        field.type.onModelInitialize.call(field.type, Model, field, field.type, connection);
     });
 
-    Object.defineProperties(ConnectionModel, {
-      'mythixInitialized': {
+    Object.defineProperties(Model, {
+      'mythixModelInitialized': {
         writable:     true,
         enumberable:  false,
         configurable: true,
@@ -124,13 +130,13 @@ class Model {
         enumberable:  false,
         configurable: true,
         get:          () => {
-          return ConnectionModel.getQueryEngine();
+          return Model.getQueryEngine();
         },
         set:          () => {},
       },
     });
 
-    return ConnectionModel;
+    return Model;
   }
 
   static getTablePrefix() {
@@ -253,6 +259,14 @@ class Model {
     });
 
     return hasRemote;
+  }
+
+  static primaryKeyHasRemoteValue() {
+    let pkField = this.getPrimaryKeyField();
+    if (!pkField)
+      return false;
+
+    return pkField.type.isRemote();
   }
 
   static getField(findFieldName) {
@@ -431,7 +445,7 @@ class Model {
     // First initialize field values from data
     if (data) {
       this.iterateFields(({ field, fieldName }) => {
-        if (field.type.isVirtual())
+        if (!field.type.exposeToModel())
           return;
 
         let fieldValue  = (data) ? data[fieldName] : undefined;
@@ -444,7 +458,7 @@ class Model {
 
     // Next initialize default values
     this.iterateFields(({ field, fieldName }) => {
-      if (field.type.isVirtual())
+      if (!field.type.exposeToModel())
         return;
 
       let fieldValue = (data) ? data[fieldName] : undefined;
@@ -656,7 +670,8 @@ class Model {
 const staticMethodToSkip = [
   'initializeModel',
   'cloneFields',
-  'mythixInitialized',
+  'mythixConnectionInitialized',
+  'mythixModelInitialized',
   'where',
 ];
 

@@ -22,7 +22,7 @@ class ForeignKeyType extends Type {
     } else {
       let def = ModelUtils.parseQualifiedName(fullyQualifiedName);
       if (Nife.isEmpty(def.modelName))
-        throw new TypeError('ForeignKeyType::constructor: No "Model" found. You must specify a model.');
+        throw new TypeError('ForeignKeyType::constructor: No model found. You must specify a model.');
 
       options = Object.assign(
         {},
@@ -30,6 +30,7 @@ class ForeignKeyType extends Type {
         {
           modelName: def.modelName,
           fieldName: def.fieldNames[0],
+          fullyQualifiedName,
         },
       );
     }
@@ -72,7 +73,7 @@ class ForeignKeyType extends Type {
     }
 
     if (!Model)
-      throw new TypeError('ForeignKeyType::constructor: No "Model" found. You must specify a model.');
+      throw new TypeError('ForeignKeyType::parseOptionsAndCheckForErrors: No model found. You must specify a model.');
 
     if (!Field) {
       let modelName = Model.getModelName();
@@ -86,7 +87,7 @@ class ForeignKeyType extends Type {
     }
 
     if (!Field)
-      throw new TypeError('ForeignKeyType::constructor: No "Field" found. You must specify a field.');
+      throw new TypeError('ForeignKeyType::parseOptionsAndCheckForErrors: No field found. You must specify a field.');
 
     return {
       Model,

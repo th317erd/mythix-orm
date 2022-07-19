@@ -343,7 +343,7 @@ class SQLConnectionBase extends ConnectionBase {
     else if (options.batchSize)
       endIndex = Math.min(startIndex + options.batchSize, endIndex);
 
-    // Make sure all data is models,
+    // Make sure all items are models,
     // and find all the dirty fields
     for (let i = startIndex; i < endIndex; i++) {
       let model = models[i];
@@ -383,6 +383,94 @@ class SQLConnectionBase extends ConnectionBase {
     return finalResult;
   }
 
+  prepareSubModelsForOperation(Model, models, _options) {
+    const buildRelatedModels = (modelInstance, field, fieldType, targetModel, fetchedModel) => {
+      let targetModelName = targetModel.getModelName();
+      let {
+        relationsStatus,
+        modelCreationOrder,
+      } = fieldType._getModelCreationInfo(modelInstance, field, targetModel, fetchedModel, this);
+
+      // Build any models that don't already exist
+      let modelsToBuild = new Map();
+      for (let i = 0, il = modelCreationOrder.length; i < il; i++) {
+        let modelNameToCreate = modelCreationOrder[i];
+        let Model             = this.getModel(modelNameToCreate);
+        let modelAttributes   = {};
+
+        if (modelNameToCreate === targetModelName)
+          modelAttributes = modelInstance.getAttributes();
+
+        fieldType._updateValuesToRelated(Model, modelAttributes, relationsStatus, this);
+
+        let builtModel  = new Model(modelAttributes);
+        let status      = relationsStatus[modelNameToCreate];
+
+        status.create = true;
+        status.instance = true;
+        status.value = builtModel;
+      }
+    };
+
+    let options     = Object.assign({}, _options || {}, { startIndex: undefined, endIndex: undefined, batchSize: undefined });
+    let subModelMap = new Map();
+    let modelName   = Model.getModelName();
+
+    for (let i = 0, il = models.length; i < il; i++) {
+      let model = models[i];
+
+      Model.iterateFields(({ field, fieldName }) => {
+        let fieldType = field.type;
+        if (!fieldType.isVirtual())
+          return;
+
+        if (!fieldType.exposeToModel())
+          return;
+
+        if (!fieldType.isRelational())
+          return;
+
+        // We don't deal with many relations
+        if (fieldType.isManyRelation())
+          return;
+
+        let TargetModel = fieldType.getTargetModel({ recursive: true, followForeignKeys: true });
+        if (!TargetModel)
+          return;
+
+        // Ignore field types that point to "this" model (Model)
+        if (TargetModel.getModelName() === modelName)
+          return;
+
+        let value = model[fieldName];
+        if (value == null)
+          return;
+
+        if (!(value instanceof TargetModel))
+          value = new TargetModel(value);
+
+        if (!value.isDirty())
+          return;
+
+        let typeModels = subModelMap.get(TargetModel);
+        if (!typeModels) {
+          typeModels = [];
+          subModelMap.set(TargetModel, typeModels);
+        }
+
+        typeModels.push(value);
+      });
+    }
+
+    // Now prepare all models
+    for (let [ Model, models ] of subModelMap) {
+      let preparedModels = this.prepareAllModelsForOperation(Model, models, options);
+      subModelMap.set(Model, preparedModels);
+    }
+
+    return subModelMap;
+  }
+
   async bulkModelOperation(Model, _models, _options, callback) {
     let models = _models;
     if (!models)
@@ -402,38 +490,47 @@ class SQLConnectionBase extends ConnectionBase {
     if (batchSize < 1)
       throw new Error(`${this.constructor.name}::bulkModelOperation: "batchSize" can not be less than 1.`);
 
-    let offset        = 0;
-    let totalModels   = models.length;
-    let finalResults  = [];
+    const computeBulkModels = async (Model, preparedModels, options) => {
+      let offset        = 0;
+      let totalModels   = preparedModels.models.length;
+      let finalResults  = [];
 
-    options.endIndex = 0;
+      options.endIndex = 0;
 
-    while (options.endIndex < totalModels) {
-      options.startIndex = offset;
-      options.endIndex = offset + batchSize;
+      while (options.endIndex < totalModels) {
+        options.startIndex = offset;
+        options.endIndex = offset + batchSize;
 
-      if (options.endIndex >= totalModels)
-        options.endIndex = totalModels;
+        if (options.endIndex >= totalModels)
+          options.endIndex = totalModels;
 
-      let preparedModels  = this.prepareAllModelsForOperation(Model, models, options);
-      if (!preparedModels.models || preparedModels.models.length === 0)
-        break;
+        await callback.call(this, Model, preparedModels, options, queryGenerator);
 
-      await callback.call(this, Model, preparedModels, options, queryGenerator);
-
-      let batchModels = preparedModels.models;
-      if (batchModels) {
-        for (let i = 0, il = batchModels.length; i < il; i++) {
-          let batchModel = batchModels[i];
-          batchModel.clearDirty();
-          finalResults.push(batchModel);
+        let batchModels = preparedModels.models;
+        if (batchModels) {
+          for (let i = 0, il = batchModels.length; i < il; i++) {
+            let batchModel = batchModels[i];
+            batchModel.clearDirty();
+            finalResults.push(batchModel);
+          }
         }
+
+        offset += batchSize;
       }
 
-      offset += batchSize;
+      return finalResults;
+    };
+
+    let preparedModels = this.prepareAllModelsForOperation(Model, models, options);
+    if (!preparedModels.models || preparedModels.models.length === 0)
+      return [];
+
+    let subModels = this.prepareSubModelsForOperation(Model, preparedModels.models, options);
+    for (let [ Model, subPreparedModels ] of subModels) {
+      await computeBulkModels(Model, subPreparedModels, options);
     }
 
-    return finalResults;
+    return await computeBulkModels(Model, preparedModels, options);
   }
 
   async createTable(Model, options) {

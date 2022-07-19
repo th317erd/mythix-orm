@@ -31,11 +31,11 @@ describe('SQLiteConnection', () => {
   });
 
   describe('destroy query', () => {
-    it('should be able to destroy a model', async () => {
+    fit('should be able to destroy a model', async () => {
       let models = await connection.insert(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'Test' }) }),
         ],
       );
 
@@ -44,6 +44,9 @@ describe('SQLiteConnection', () => {
       expect(models[0].id).toMatch(UUID_REGEXP);
       expect(models[0].firstName).toMatch('Test');
       expect(models[0].lastName).toMatch('User');
+
+      let primaryRole = await models[0].getPrimaryRole();
+      expect(primaryRole).toBeInstanceOf(Role);
 
       let queryGenerator  = connection.getQueryGenerator();
       let sqlStr          = queryGenerator.generateDeleteStatement(User, User.where.id.EQ(models[0].id));
@@ -349,7 +352,7 @@ describe('SQLiteConnection', () => {
 
       let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
-      let result          = await connection.query(sqlStatement, { formatResponse: true, logger: console });
+      let result          = await connection.query(sqlStatement, { formatResponse: true });
       let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
       let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 

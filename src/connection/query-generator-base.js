@@ -1,7 +1,7 @@
 'use strict';
 
 const Nife            = require('nife');
-const { FLAG_LITERAL } = require('../helpers/default-helpers');
+const { FLAG_LITERAL } = require('../types/helpers/default-helpers');
 const QueryEngine     = require('../query-engine/query-engine');
 const SQLLiteralBase  = require('./sql-literals/sql-literal-base.js');
 const ModelUtils      = require('../utils/model-utils');
