@@ -1153,7 +1153,10 @@ class QueryGeneratorBase {
     if (Nife.isNotEmpty(trailingParts))
       fieldParts = fieldParts.concat(trailingParts.map((part) => `  ${part.trim()}`));
 
-    return `CREATE TABLE ${ifNotExists}${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
+    let finalStatement = `CREATE TABLE ${ifNotExists}${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
+    console.log(finalStatement);
+
+    return finalStatement;
   }
 
   generateInsertFieldValuesFromModel(model, _options) {

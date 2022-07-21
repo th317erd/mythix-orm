@@ -21,7 +21,7 @@ class User extends Model {
       index:      true,
     },
     'primaryRoleID': {
-      type:       Types.FOREIGN_KEY('Role:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
+      type:       Types.FOREIGN_KEY('Role:id', { onDelete: 'SET NULL', onUpdate: 'SET NULL' }),
       allowNull:  true,
     },
     'roles': {

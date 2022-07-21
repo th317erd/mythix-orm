@@ -383,41 +383,24 @@ class SQLConnectionBase extends ConnectionBase {
     return finalResult;
   }
 
-  prepareSubModelsForOperation(Model, models, _options) {
-    const buildRelatedModels = (modelInstance, field, fieldType, targetModel, fetchedModel) => {
-      let targetModelName = targetModel.getModelName();
-      let {
-        relationsStatus,
-        modelCreationOrder,
-      } = fieldType._getModelCreationInfo(modelInstance, field, targetModel, fetchedModel, this);
-
-      // Build any models that don't already exist
-      let modelsToBuild = new Map();
-      for (let i = 0, il = modelCreationOrder.length; i < il; i++) {
-        let modelNameToCreate = modelCreationOrder[i];
-        let Model             = this.getModel(modelNameToCreate);
-        let modelAttributes   = {};
-
-        if (modelNameToCreate === targetModelName)
-          modelAttributes = modelInstance.getAttributes();
-
-        fieldType._updateValuesToRelated(Model, modelAttributes, relationsStatus, this);
-
-        let builtModel  = new Model(modelAttributes);
-        let status      = relationsStatus[modelNameToCreate];
-
-        status.create = true;
-        status.instance = true;
-        status.value = builtModel;
+  splitModelAndSubModels(Model, primaryModel, _relationMap) {
+    const addModelInstance = (modelName, modelInstance) => {
+      let relatedModels = relationMap.get(modelName);
+      if (!relatedModels) {
+        relatedModels = new Set();
+        relationMap.set(modelName, relatedModels);
       }
+
+      relatedModels.add(modelInstance);
     };
 
-    let options     = Object.assign({}, _options || {}, { startIndex: undefined, endIndex: undefined, batchSize: undefined });
-    let subModelMap = new Map();
-    let modelName   = Model.getModelName();
+    const splitSubModels = (Model, model) => {
+      if (alreadyVisitedMap.get(model))
+        return;
 
-    for (let i = 0, il = models.length; i < il; i++) {
-      let model = models[i];
+      alreadyVisitedMap.set(model, true);
+
+      let modelName = Model.getModelName();
 
       Model.iterateFields(({ field, fieldName }) => {
         let fieldType = field.type;
@@ -439,39 +422,131 @@ class SQLConnectionBase extends ConnectionBase {
           return;
 
         // Ignore field types that point to "this" model (Model)
-        if (TargetModel.getModelName() === modelName)
+        let targetModelName = TargetModel.getModelName();
+        if (targetModelName === modelName)
+          return;
+
+        // Ignore field types that point to the primary model
+        if (targetModelName === primaryModelName)
           return;
 
         let value = model[fieldName];
         if (value == null)
           return;
 
-        if (!(value instanceof TargetModel))
+        if (!(value instanceof TargetModel)) {
           value = new TargetModel(value);
+          model[fieldName] = value;
+        }
 
         if (!value.isDirty())
           return;
 
-        let typeModels = subModelMap.get(TargetModel);
-        if (!typeModels) {
-          typeModels = [];
-          subModelMap.set(TargetModel, typeModels);
+        addModelInstance(targetModelName, value);
+
+        let fieldRelations = ModelUtils.getRelationalModelStatusForField(this, value, field);
+        if (fieldRelations) {
+          let modelNames = Object.keys(fieldRelations);
+
+          for (let i = 0, il = modelNames.length; i < il; i++) {
+            let relatedModelName = modelNames[i];
+            if (relatedModelName === modelName || relatedModelName === primaryModelName || relatedModelName === targetModelName)
+              continue;
+
+            let RelatedModel = this.getModel(relatedModelName);
+            let modelInstance = new RelatedModel();
+
+            addModelInstance(relatedModelName, modelInstance);
+          }
         }
 
-        typeModels.push(value);
+        splitSubModels(TargetModel, value, relationMap);
       });
-    }
+    };
 
-    // Now prepare all models
-    for (let [ Model, models ] of subModelMap) {
-      let preparedModels = this.prepareAllModelsForOperation(Model, models, options);
-      subModelMap.set(Model, preparedModels);
-    }
+    let alreadyVisitedMap = new Map();
+    let relationMap       = _relationMap || new Map();
+    let primaryModelName  = Model.getModelName();
 
-    return subModelMap;
+    splitSubModels(Model, primaryModel);
+
+    return relationMap;
   }
 
-  async bulkModelOperation(Model, _models, _options, callback) {
+  prepareAllModelsAndSubModelsForOperation(Model, models, _options) {
+    let options                 = Object.assign({}, _options || {}, { startIndex: undefined, endIndex: undefined, batchSize: undefined });
+    let primaryModelRelationMap = new Map();
+    let groupedModelMap         = new Map();
+    let primaryModelName        = Model.getModelName();
+
+    const addModelToGroup = (modelName, modelInstance) => {
+      let group = groupedModelMap.get(modelName);
+      if (!group) {
+        group = new Set();
+        groupedModelMap.set(modelName, group);
+      }
+
+      group.add(modelInstance);
+    };
+
+    // Collect all primary models and sub-models
+    for (let i = 0, il = models.length; i < il; i++) {
+      let model = models[i];
+      if (!(model instanceof ModelBase))
+        model = new Model(model);
+
+      let subModels = this.splitModelAndSubModels(Model, model);
+
+      primaryModelRelationMap.set(model, subModels);
+      addModelToGroup(primaryModelName, model);
+
+      for (let [ modelName, models ] of subModels.entries()) {
+        for (let subModel of models.values())
+          addModelToGroup(modelName, subModel);
+      }
+    }
+
+    // Sort group map by model creation order
+    let sortedGroupedModelMap = new Map();
+    let sortedModelNames      = ModelUtils.sortModelNamesByCreationOrder(this, Array.from(groupedModelMap.keys()));
+    for (let i = 0, il = sortedModelNames.length; i < il; i++) {
+      let groupModelName  = sortedModelNames[i];
+      let subModels       = Array.from(groupedModelMap.get(groupModelName).values());
+
+      sortedGroupedModelMap.set(groupModelName, subModels);
+    }
+
+    // Now copy related field values between all instantiated models
+    for (let [ primaryModel, subModelMap ] of primaryModelRelationMap.entries()) {
+      for (let [ targetModelName, targetModels ] of subModelMap.entries()) {
+        let TargetModel = this.getModel(targetModelName);
+
+        for (let targetModel of targetModels.values()) {
+          if (targetModel !== primaryModel) {
+            ModelUtils.setRelationalValues(TargetModel, targetModel, Model, primaryModel);
+            ModelUtils.setRelationalValues(Model, primaryModel, TargetModel, targetModel);
+          }
+
+          for (let [ sourceModelName, sourceModels ] of subModelMap.entries()) {
+            if (sourceModelName === targetModelName)
+              continue;
+
+            let SourceModel = this.getModel(sourceModelName);
+            for (let sourceModel of sourceModels.values()) {
+              if (sourceModel === primaryModel)
+                continue;
+
+              ModelUtils.setRelationalValues(TargetModel, targetModel, SourceModel, sourceModel);
+            }
+          }
+        }
+      }
+    }
+
+    return sortedGroupedModelMap;
+  }
+
+  async bulkModelOperation(Model, _models, _options, callback, afterOperationCallback) {
     let models = _models;
     if (!models)
       return;
@@ -490,9 +565,9 @@ class SQLConnectionBase extends ConnectionBase {
     if (batchSize < 1)
       throw new Error(`${this.constructor.name}::bulkModelOperation: "batchSize" can not be less than 1.`);
 
-    const computeBulkModels = async (Model, preparedModels, options) => {
+    const computeBulkModels = async (Model, models, options) => {
       let offset        = 0;
-      let totalModels   = preparedModels.models.length;
+      let totalModels   = models.length;
       let finalResults  = [];
 
       options.endIndex = 0;
@@ -504,6 +579,7 @@ class SQLConnectionBase extends ConnectionBase {
         if (options.endIndex >= totalModels)
           options.endIndex = totalModels;
 
+        let preparedModels = this.prepareAllModelsForOperation(Model, models, options);
         await callback.call(this, Model, preparedModels, options, queryGenerator);
 
         let batchModels = preparedModels.models;
@@ -521,16 +597,41 @@ class SQLConnectionBase extends ConnectionBase {
       return finalResults;
     };
 
-    let preparedModels = this.prepareAllModelsForOperation(Model, models, options);
-    if (!preparedModels.models || preparedModels.models.length === 0)
-      return [];
+    let primaryModelName  = Model.getModelName();
+    let groupedModelMap   = this.prepareAllModelsAndSubModelsForOperation(Model, models, options);
+    let alreadyStored     = {};
+    let dirtyModels       = new Set();
+    let primaryResult;
 
-    let subModels = this.prepareSubModelsForOperation(Model, preparedModels.models, options);
-    for (let [ Model, subPreparedModels ] of subModels) {
-      await computeBulkModels(Model, subPreparedModels, options);
+    for (let [ modelName, models ] of groupedModelMap) {
+      let GroupModel    = this.getModel(modelName);
+      let resultModels  = await computeBulkModels(GroupModel, models, options);
+
+      alreadyStored[modelName] = true;
+
+      if (modelName === primaryModelName)
+        primaryResult = resultModels;
+
+      for (let storedModel of resultModels) {
+        for (let [ groupModelName, groupModels ] of groupedModelMap) {
+          if (groupModelName === modelName)
+            continue;
+
+          let TargetModel = this.getModel(groupModelName);
+          for (let targetModel of groupModels) {
+            ModelUtils.setRelationalValues(TargetModel, targetModel, GroupModel, storedModel);
+
+            if (alreadyStored[groupModelName] && targetModel.isDirty())
+              dirtyModels.add(targetModel);
+          }
+        }
+      }
     }
 
-    return await computeBulkModels(Model, preparedModels, options);
+    if (dirtyModels.size > 0 && typeof afterOperationCallback === 'function')
+      await afterOperationCallback.call(this, Model, dirtyModels, options, queryGenerator);
+
+    return primaryResult;
   }
 
   async createTable(Model, options) {
@@ -551,11 +652,23 @@ class SQLConnectionBase extends ConnectionBase {
   }
 
   async insert(Model, models, _options) {
-    return await this.bulkModelOperation(Model, models, _options, async (Model, preparedModels, options, queryGenerator) => {
-      let sqlStr          = queryGenerator.generateInsertStatement(Model, preparedModels, options);
-      let ids             = await this.query(sqlStr, { formatResponse: true });
-      // TODO: Assign ids if PK is auto-incrementing
-    });
+    return await this.bulkModelOperation(
+      Model,
+      models,
+      _options,
+      async (Model, preparedModels, options, queryGenerator) => {
+        let sqlStr          = queryGenerator.generateInsertStatement(Model, preparedModels, options);
+        let ids             = await this.query(sqlStr, { formatResponse: true });
+        // TODO: Assign ids if PK is auto-incrementing
+      },
+      async (PrimaryModel, dirtyModels, options, queryGenerator) => {
+        for (let dirtyModel of dirtyModels) {
+          let Model   = dirtyModel.getModel();
+          let sqlStr  = queryGenerator.generateUpdateStatement(Model, dirtyModel, null, options);
+          await this.query(sqlStr, { formatResponse: true });
+        }
+      },
+    );
   }
 
   // eslint-disable-next-line no-unused-vars

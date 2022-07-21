@@ -417,7 +417,7 @@ class Model {
 
   _constructFields() {
     this.iterateFields(({ field, fieldName }) => {
-      if (!field.type.isVirtual())
+      if (field.type.exposeToModel())
         this._constructField(fieldName, field);
 
       field.type.onModelInstantiated(this, field, field.type);

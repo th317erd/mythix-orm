@@ -44,9 +44,16 @@ describe('SQLiteConnection', () => {
       expect(models[0].id).toMatch(UUID_REGEXP);
       expect(models[0].firstName).toMatch('Test');
       expect(models[0].lastName).toMatch('User');
+      expect(models[0].primaryRole).toBeInstanceOf(Role);
+      expect(models[0].primaryRole.id).toMatch(UUID_REGEXP);
+      expect(models[0].primaryRole.name).toEqual('Test');
 
+      expect(await Role.count()).toEqual(1);
+
+      // Reload to ensure that it saved properly
       let primaryRole = await models[0].getPrimaryRole();
       expect(primaryRole).toBeInstanceOf(Role);
+      expect(primaryRole.name).toEqual('Test');
 
       let queryGenerator  = connection.getQueryGenerator();
       let sqlStr          = queryGenerator.generateDeleteStatement(User, User.where.id.EQ(models[0].id));
@@ -55,6 +62,9 @@ describe('SQLiteConnection', () => {
       models = await Utils.collect(connection.select(User.where));
       expect(models).toBeInstanceOf(Array);
       expect(models.length).toEqual(0);
+
+      // Role should still exist
+      expect(await Role.count()).toEqual(1);
     });
 
     it('should be able to delete a specific model', async () => {

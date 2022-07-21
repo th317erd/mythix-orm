@@ -6,6 +6,7 @@
 
 const UUID = require('uuid');
 const { UUID_REGEXP } = require('../../../support/test-helpers');
+const { sortModelNamesByCreationOrder } = require('../../../../src/utils/model-utils');
 
 const {
   createConnection,
@@ -32,6 +33,28 @@ describe('SQLiteConnection', () => {
 
     afterEach(async () => {
       await truncateTables(connection);
+    });
+
+    describe('relational-type-base', () => {
+      describe('sortModelNamesByCreationOrder', () => {
+        it('should be able to properly sort by creation order', () => {
+          let creationOrder = sortModelNamesByCreationOrder(connection, [
+            'RoleThing',
+            'UserThing',
+            'User',
+            'UserRole',
+            'Role',
+          ]);
+
+          expect(creationOrder).toEqual([
+            'Role',
+            'RoleThing',
+            'User',
+            'UserRole',
+            'UserThing',
+          ]);
+        });
+      });
     });
 
     describe('create single model', () => {
