@@ -10,69 +10,50 @@ const ROOT_METHOD   = true;
 // These get injected into the class as
 // create{fieldName}, get{fieldName}, etc...
 const INJECT_TYPE_METHODS = {
-  'create': async function({ field, type }, model, _options) {
-    if (!model)
+  'create': async function({ field, type }, _model, _options) {
+    if (!_model)
       return false;
 
     let options         = (_options === true) ? { update: true } : (_options || {});
-    let targetModel     = type.getTargetModel({ recursive: true, followForeignKeys: true });
-    let targetModelName = targetModel.getModelName();
+    let TargetModel     = type.getTargetModel({ recursive: true, followForeignKeys: true });
     let connection      = this.getConnection();
     let fetchedModel;
 
     // TODO: This probably needs to be an outer join
     let getterMethodName = type.fieldNameToOperationName(field, 'get', NAMED_METHOD);
-    fetchedModel = await this[getterMethodName](targetModel.where.LIMIT(1), options);
+    console.log('Fetch method: ', getterMethodName);
+    fetchedModel = await this[getterMethodName](TargetModel.where.LIMIT(1), options);
 
-    if (fetchedModel && fetchedModel instanceof targetModel) {
+    if (fetchedModel && fetchedModel instanceof TargetModel) {
       if (options.update) {
         fetchedModel.setAttributes(model, true);
         if (fetchedModel.isDirty())
           await fetchedModel.save();
+      } else {
+        throw new Error(`ModelType::${getterMethodName}: Model creation failed because model already exists. Use the "update: true" option to force an update instead.`);
       }
 
       return fetchedModel;
     }
 
-    let {
-      relationsStatus,
-      modelCreationOrder,
-    } = type._getModelCreationInfo(this, field, targetModel, fetchedModel, connection);
+    let model = _model;
+    if (!(model instanceof TargetModel))
+      model = new TargetModel(model);
 
-    // Create and store any models that don't already exist
-    for (let i = 0, il = modelCreationOrder.length; i < il; i++) {
-      let modelNameToCreate = modelCreationOrder[i];
-      let Model             = connection.getModel(modelNameToCreate);
-      let modelAttributes   = {};
+    // Update target model fields to reflect any relational field
+    // values from the parent model (this)
+    ModelUtils.setRelationalValues(TargetModel, model, this.getModel(), this);
 
-      if (modelNameToCreate === targetModelName) {
-        if (typeof model.getAttributes === 'function')
-          modelAttributes = model.getAttributes();
-        else
-          modelAttributes = model;
-      }
+    let result      = await connection.insert(TargetModel, [ model ], options);
+    let storedModel = result[0];
 
-      type._updateValuesToRelated(Model, modelAttributes, relationsStatus, connection);
-
-      let storedModel = await Model.create(modelAttributes, options);
-      let status      = relationsStatus[modelNameToCreate];
-
-      status.create = false;
-      status.value = storedModel;
-    }
-
-    // Now update any remaining relational values of the target model
-    let storedTargetModel = relationsStatus[targetModelName].value;
-    type._updateValuesToRelated(targetModel, storedTargetModel, relationsStatus, connection);
-    if (storedTargetModel.isDirty())
-      await storedTargetModel.save();
-
-    // Now update any remaining relational values on this model
-    type._updateValuesToRelated(this.getModel(), this, relationsStatus, connection);
+    // Now update parent model fields to reflect any relational
+    // field values from the child model that was just stored
+    ModelUtils.setRelationalValues(this.getModel(), this, TargetModel, storedModel);
     if (this.isDirty())
-      await this.save();
+      await connection.update(this.getModel(), [ this ], options);
 
-    return storedTargetModel;
+    return storedModel;
   },
   'get': async function({ field, type }, queryEngine, options) {
     let query = type.prepareQuery(this, field, queryEngine);
@@ -100,7 +81,7 @@ const INJECT_TYPE_METHODS = {
     let [ storedModel ] = await connection.update(model.getModel(), [ model ], options);
 
     // Update this model to reflect the update
-    type.setRelationalValues(this.getModel(), this, storedModel.getModel(), storedModel);
+    ModelUtils.setRelationalValues(this.getModel(), this, storedModel.getModel(), storedModel);
     if (this.isDirty())
       await this.save();
 
@@ -117,7 +98,7 @@ const INJECT_TYPE_METHODS = {
     await connection.destroy(model.getModel(), [ model ], options);
 
     // Update this model to reflect the deletion
-    type.setRelationalValues(this.getModel(), this, model.getModel());
+    ModelUtils.setRelationalValues(this.getModel(), this, model.getModel());
     if (this.isDirty())
       await this.save();
 

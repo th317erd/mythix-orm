@@ -27,15 +27,15 @@ describe('SQLiteQueryGenerator', () => {
     RoleThing = models.RoleThing;
   });
 
-  describe('generateSelectQueryFromTable', () => {
+  describe('generateFromTableOrTableJoin', () => {
     it('can generate FROM and JOIN statements', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryFromTable(User)).toEqual('FROM "users"');
-      expect(queryGenerator.generateSelectQueryFromTable(User, 'LEFT JOIN')).toEqual('LEFT JOIN "users"');
+      expect(queryGenerator.generateFromTableOrTableJoin(User)).toEqual('FROM "users"');
+      expect(queryGenerator.generateFromTableOrTableJoin(User, 'LEFT JOIN')).toEqual('LEFT JOIN "users"');
     });
   });
 
-  describe('generateSelectQueryJoinTables', () => {
+  describe('generateSelectQueryOperatorFromQueryEngineOperator', () => {
     it('can generate condition operators for EQ', () => {
       let queryGenerator = connection.getQueryGenerator();
       expect(queryGenerator.generateSelectQueryOperatorFromQueryEngineOperator('EQ', null)).toEqual('IS');
@@ -262,16 +262,49 @@ describe('SQLiteQueryGenerator', () => {
   });
 
   describe('generateSelectQueryJoinTables', () => {
+    it('can generate a complex join', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let queryString     = queryGenerator.generateSelectQueryJoinTables(
+        User.where
+          .id
+            .EQ(UserThing.where.userID)
+        .AND
+        .UserThing
+          .roleThingID
+            .EQ(RoleThing.where.id)
+        .AND
+        .RoleThing
+          .roleID
+            .EQ(Role.where.id)
+        .AND
+        // This is silly... but it is just for testing :)
+        .RoleThing
+          .id
+            .EQ(Role.where.name)
+        .AND
+        .User
+        .firstName
+          .EQ('Jonny')
+        .AND
+        .lastName
+          .EQ('Bob'),
+      );
+
+      expect(queryString).toEqual('INNER JOIN "user_things" ON "user_things"."userID" = "users"."id" INNER JOIN "role_things" ON "role_things"."id" = "user_things"."roleThingID" INNER JOIN "roles" ON "roles"."id" = "role_things"."roleID" AND "roles"."name" = "role_things"."id"');
+    });
+
     it('can generate table join statements from query', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryJoinTables(
+      let queryString = queryGenerator.generateSelectQueryJoinTables(
         User.where.primaryRoleID.EQ(Role.where.id),
-      )).toEqual('INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id"');
+      );
+
+      expect(queryString).toEqual('INNER JOIN "roles" ON "roles"."id" = "users"."primaryRoleID"');
     });
 
     it('can generate table join statements from query between multiple tables', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryJoinTables(
+      let queryString = queryGenerator.generateSelectQueryJoinTables(
         User.where
           .id
             .EQ(UserThing.where.userID)
@@ -283,12 +316,15 @@ describe('SQLiteQueryGenerator', () => {
         .RoleThing
           .roleID
             .EQ(Role.where.id),
-      )).toEqual('INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id"');
+      );
+
+      expect(queryString).toEqual('INNER JOIN "user_things" ON "user_things"."userID" = "users"."id" INNER JOIN "role_things" ON "role_things"."id" = "user_things"."roleThingID" INNER JOIN "roles" ON "roles"."id" = "role_things"."roleID"');
     });
 
     it('should assume PK if a model is provided', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryJoinTables(User.where.primaryRoleID.EQ(Role))).toEqual('INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id"');
+      let queryString = queryGenerator.generateSelectQueryJoinTables(User.where.primaryRoleID.EQ(Role));
+      expect(queryString).toEqual('INNER JOIN "roles" ON "roles"."id" = "users"."primaryRoleID"');
     });
 
     it('should not generate anything if no tables are being joined', () => {
@@ -298,7 +334,7 @@ describe('SQLiteQueryGenerator', () => {
 
     it('should throw an error if the join point has a condition', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(() => queryGenerator.generateSelectQueryJoinTables(User.where.primaryRoleID.EQ(Role.where.id.EQ('derp')))).toThrow(new Error('SQLiteQueryGenerator::generateSelectJoinOnTableQueryConditions: Invalid operation: Expected a field to join on, but instead received a query.'));
+      expect(() => queryGenerator.generateSelectQueryJoinTables(User.where.primaryRoleID.EQ(Role.where.id.EQ('derp')))).toThrow(new Error('SQLiteQueryGenerator::getJoinTableInfoFromQueryEngine: Invalid operation: Expected a field to join on, but instead received a query.'));
     });
   });
 
@@ -358,7 +394,8 @@ describe('SQLiteQueryGenerator', () => {
                 .EQ('Burp'),
           ),
       );
-      expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID" FROM "users" INNER JOIN "roles" ON "users"."primaryRoleID" = "roles"."id" WHERE ("users"."firstName" = \'Joe\' OR "users"."firstName" = \'Mary\') AND ("users"."lastName" = \'Derp\' OR "users"."lastName" = \'Burp\') ORDER BY "users"."rowid" ASC');
+
+      expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID" FROM "users" INNER JOIN "roles" ON "roles"."id" = "users"."primaryRoleID" WHERE ("users"."firstName" = \'Joe\' OR "users"."firstName" = \'Mary\') AND ("users"."lastName" = \'Derp\' OR "users"."lastName" = \'Burp\') ORDER BY "users"."rowid" ASC');
     });
 
     it('can generate a select statement with an order, limit, and offset', () => {
@@ -447,7 +484,8 @@ describe('SQLiteQueryGenerator', () => {
         .lastName
           .EQ('Bob'),
       );
-      expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","role_things"."id" AS "RoleThing:id","role_things"."roleID" AS "RoleThing:roleID","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID","user_things"."id" AS "UserThing:id","user_things"."roleThingID" AS "UserThing:roleThingID","user_things"."userID" AS "UserThing:userID" FROM "users" INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."rowid" ASC');
+
+      expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","role_things"."id" AS "RoleThing:id","role_things"."roleID" AS "RoleThing:roleID","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID","user_things"."id" AS "UserThing:id","user_things"."roleThingID" AS "UserThing:roleThingID","user_things"."userID" AS "UserThing:userID" FROM "users" INNER JOIN "user_things" ON "user_things"."userID" = "users"."id" INNER JOIN "role_things" ON "role_things"."id" = "user_things"."roleThingID" INNER JOIN "roles" ON "roles"."id" = "role_things"."roleID" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."rowid" ASC');
     });
 
     it('can generate a select statement with a complex join statement and an order, limit, and offset', () => {
@@ -475,7 +513,8 @@ describe('SQLiteQueryGenerator', () => {
         .LIMIT(100)
         .OFFSET(500),
       );
-      expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","role_things"."id" AS "RoleThing:id","role_things"."roleID" AS "RoleThing:roleID","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID","user_things"."id" AS "UserThing:id","user_things"."roleThingID" AS "UserThing:roleThingID","user_things"."userID" AS "UserThing:userID" FROM "users" INNER JOIN "user_things" ON "users"."id" = "user_things"."userID" INNER JOIN "role_things" ON "user_things"."roleThingID" = "role_things"."id" INNER JOIN "roles" ON "role_things"."roleID" = "roles"."id" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 500');
+
+      expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","role_things"."id" AS "RoleThing:id","role_things"."roleID" AS "RoleThing:roleID","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID","user_things"."id" AS "UserThing:id","user_things"."roleThingID" AS "UserThing:roleThingID","user_things"."userID" AS "UserThing:userID" FROM "users" INNER JOIN "user_things" ON "user_things"."userID" = "users"."id" INNER JOIN "role_things" ON "role_things"."id" = "user_things"."roleThingID" INNER JOIN "roles" ON "roles"."id" = "role_things"."roleID" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 500');
     });
   });
 });

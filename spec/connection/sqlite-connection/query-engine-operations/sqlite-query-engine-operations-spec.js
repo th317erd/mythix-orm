@@ -16,6 +16,7 @@ describe('SQLiteConnection', () => {
   describe('QueryEngine operations', () => {
     let connection;
     let User;
+    let Role;
     let Number;
 
     beforeAll(async () => {
@@ -23,6 +24,7 @@ describe('SQLiteConnection', () => {
 
       connection = setup.connection;
       User = setup.User;
+      Role = setup.Role;
       Number = setup.Number;
     });
 
@@ -33,8 +35,8 @@ describe('SQLiteConnection', () => {
     describe('all', () => {
       it('can fetch all models from a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -58,8 +60,8 @@ describe('SQLiteConnection', () => {
     describe('update', () => {
       it('can update models using a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -79,8 +81,8 @@ describe('SQLiteConnection', () => {
 
       it('can update specific models using a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -102,8 +104,8 @@ describe('SQLiteConnection', () => {
     describe('destroy', () => {
       it('can destroy models using a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -119,8 +121,8 @@ describe('SQLiteConnection', () => {
 
       it('can destroy specific models using a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -142,8 +144,8 @@ describe('SQLiteConnection', () => {
     describe('exists', () => {
       it('can check if models exist', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -153,8 +155,8 @@ describe('SQLiteConnection', () => {
 
       it('can check if models exist with a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -164,8 +166,8 @@ describe('SQLiteConnection', () => {
 
       it('will report false when nothing matches query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -177,8 +179,8 @@ describe('SQLiteConnection', () => {
     describe('first', () => {
       it('can fetch first model from a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -190,8 +192,8 @@ describe('SQLiteConnection', () => {
 
       it('can fetch first count models from a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -209,8 +211,8 @@ describe('SQLiteConnection', () => {
     describe('last', () => {
       it('can fetch last model from a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -222,8 +224,8 @@ describe('SQLiteConnection', () => {
 
       it('can fetch last count models from a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -239,8 +241,8 @@ describe('SQLiteConnection', () => {
 
       it('can fetch last count models from a query specifying an order', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -258,8 +260,8 @@ describe('SQLiteConnection', () => {
     describe('count', () => {
       it('can count models from a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -270,8 +272,8 @@ describe('SQLiteConnection', () => {
 
       it('can count specified fields from a query', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: null, primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: null, primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -363,8 +365,8 @@ describe('SQLiteConnection', () => {
     describe('pluck', () => {
       it('can pluck values from models', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);
@@ -378,8 +380,8 @@ describe('SQLiteConnection', () => {
 
       it('can pluck multiple values from models', async () => {
         let insertModels = [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ];
 
         await connection.insert(User, insertModels);

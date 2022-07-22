@@ -99,6 +99,7 @@ module.exports = {
   FLAG_ON_UPDATE,
   FLAG_ON_STORE,
   FLAG_LITERAL,
+  FLAG_REMOTE,
   defaultValueFlags,
   getDefaultValueFlags,
   checkDefaultValueFlags,

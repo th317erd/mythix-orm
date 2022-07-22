@@ -589,26 +589,17 @@ class QueryGeneratorBase {
     return `${escapedTableName}.${escapedColumnName} ${sqlOperator} ${this.escape(field, value)}`;
   }
 
-  generateSelectJoinOnTableQueryCondition(leftQueryPart, rightQueryPart, leftField, rightField, operator, options) {
-    let leftSideEscapedTableName    = this.escapeID(this.getTableNameFromQueryPart(leftQueryPart));
-    let leftSideEscapedColumnName   = this.escapeID(leftField.columnName);
-    let rightSideEscapedTableName   = this.escapeID(this.getTableNameFromQueryPart(rightQueryPart));
-    let rightSideEscapedColumnName  = this.escapeID(rightField.columnName);
-    let sqlOperator                 = this.generateSelectQueryOperatorFromQueryEngineOperator(operator, undefined, true, options);
-
-    return `${leftSideEscapedTableName}.${leftSideEscapedColumnName} ${sqlOperator} ${rightSideEscapedTableName}.${rightSideEscapedColumnName}`;
-  }
-
   // eslint-disable-next-line no-unused-vars
-  generateSelectQueryFromTable(Model, joinType, options) {
+  generateFromTableOrTableJoin(Model, joinType, options) {
     if (!Model)
-      throw new Error(`${this.constructor.name}::generateSelectQueryFromTable: No valid model provided.`);
+      throw new Error(`${this.constructor.name}::generateFromTableOrTableJoin: No valid model provided.`);
 
     let escapedTableName = this.escapeID(Model.getTableName());
     return (joinType) ? `${joinType} ${escapedTableName}` : `FROM ${escapedTableName}`;
   }
 
-  generateSelectJoinOnTableQueryConditions(leftQueryContext, rightSideQueryEngine, joinType, options) {
+  // eslint-disable-next-line no-unused-vars
+  getJoinTableInfoFromQueryContexts(leftQueryContext, rightSideQueryEngine, joinType, options) {
     const findFirstField = (query) => {
       for (let i = 0, il = query.length; i < il; i++) {
         let queryPart = query[i];
@@ -626,11 +617,11 @@ class QueryGeneratorBase {
     let rootModelName = rootModel.getModelName();
     let leftSideModel = leftQueryContext.Model;
     if (!leftSideModel)
-      throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No model found for left-side of join statement.`);
+      throw new Error(`${this.constructor.name}::getJoinTableInfoFromQueryEngine: Invalid operation: No model found for left-side of join statement.`);
 
     let leftSideField = this.connection.getField(leftQueryContext.fieldName, leftQueryContext.modelName);
     if (!leftSideField)
-      throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No left-side field found to match on for table join statement.`);
+      throw new Error(`${this.constructor.name}::getJoinTableInfoFromQueryEngine: Invalid operation: No left-side field found to match on for table join statement.`);
 
     let rightQueryContext = rightSideQueryEngine._getRawQuery();
     let isNot             = leftQueryContext.not;
@@ -638,29 +629,77 @@ class QueryGeneratorBase {
     let firstFieldIndex   = findFirstField(rightQueryContext);
 
     if (firstFieldIndex < 0)
-      throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No right-side field found to match on for table join statement.`);
+      throw new Error(`${this.constructor.name}::getJoinTableInfoFromQueryEngine: Invalid operation: No right-side field found to match on for table join statement.`);
 
     let nextContext = rightQueryContext[firstFieldIndex + 1];
     if (nextContext && nextContext.condition === true)
-      throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: Expected a field to join on, but instead received a query.`);
+      throw new Error(`${this.constructor.name}::getJoinTableInfoFromQueryEngine: Invalid operation: Expected a field to join on, but instead received a query.`);
 
-    let rightFieldContext = rightQueryContext[firstFieldIndex];
-    let rightSideModel    = rightFieldContext.Model;
+    rightQueryContext = rightQueryContext[firstFieldIndex];
+
+    let rightSideModel = rightQueryContext.Model;
     if (!rightSideModel)
-      throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No model found for right-side of join statement.`);
+      throw new Error(`${this.constructor.name}::getJoinTableInfoFromQueryEngine: Invalid operation: No model found for right-side of join statement.`);
 
-    let rightSideField  = this.connection.getField(rightFieldContext.fieldName, rightFieldContext.modelName);
+    let rightSideField  = this.connection.getField(rightQueryContext.fieldName, rightQueryContext.modelName);
     if (!rightSideField)
-      throw new Error(`${this.constructor.name}::generateSelectJoinOnTableQueryConditions: Invalid operation: No right-side field found to match on for table join statement.`);
+      throw new Error(`${this.constructor.name}::getJoinTableInfoFromQueryEngine: Invalid operation: No right-side field found to match on for table join statement.`);
 
-    let swapOrder = rootModelName === leftSideModel.getModelName();
+    let leftSideModelName   = leftSideModel.getModelName();
+    let rightSideModelName  = rightSideModel.getModelName();
+    let modelOrderSwapped   = (rootModelName === rightSideModelName);
+    let joinModel           = (modelOrderSwapped) ? leftSideModel : rightSideModel;
+    let joinModelName       = (modelOrderSwapped) ? leftSideModelName : rightSideModelName;
+
+    return {
+      operator,
+      joinType,
+      modelOrderSwapped,
+      rootModelName,
+
+      joinModel,
+      joinModelName,
+
+      leftSideModel,
+      leftSideModelName,
+      leftQueryContext,
+      leftSideField,
+
+      rightSideModel,
+      rightSideModelName,
+      rightQueryContext,
+      rightSideField,
+    };
+  }
+
+  generateSelectJoinOnTableQueryCondition(leftQueryPart, rightQueryPart, leftField, rightField, operator, options) {
+    let leftSideEscapedTableName    = this.escapeID(this.getTableNameFromQueryPart(leftQueryPart));
+    let leftSideEscapedColumnName   = this.escapeID(leftField.columnName);
+    let rightSideEscapedTableName   = this.escapeID(this.getTableNameFromQueryPart(rightQueryPart));
+    let rightSideEscapedColumnName  = this.escapeID(rightField.columnName);
+    let sqlOperator                 = this.generateSelectQueryOperatorFromQueryEngineOperator(operator, undefined, true, options);
+
+    return `${leftSideEscapedTableName}.${leftSideEscapedColumnName} ${sqlOperator} ${rightSideEscapedTableName}.${rightSideEscapedColumnName}`;
+  }
+
+  generateJoinOnTableQueryConditions(joinInfos, options) {
+    if (Nife.isEmpty(joinInfos))
+      return '';
+
+    let rootInfo = joinInfos[0];
     let sqlParts = [
-      this.generateSelectQueryFromTable((swapOrder) ? rightSideModel : leftSideModel, joinType, options),
+      this.generateFromTableOrTableJoin(rootInfo.joinModel, rootInfo.joinType, options),
       'ON',
-      (swapOrder)
-        ? this.generateSelectJoinOnTableQueryCondition(rightFieldContext, leftQueryContext, rightSideField, leftSideField, operator, options)
-        : this.generateSelectJoinOnTableQueryCondition(leftQueryContext, rightFieldContext, leftSideField, rightSideField, operator, options),
     ];
+
+    for (let i = 0, il = joinInfos.length; i < il; i++) {
+      let joinInfo = joinInfos[i];
+
+      if (i > 0)
+        sqlParts.push((joinInfo.leftQueryContext.and) ? 'AND' : 'OR');
+
+      sqlParts.push(this.generateSelectJoinOnTableQueryCondition(joinInfo.rightQueryContext, joinInfo.leftQueryContext, joinInfo.rightSideField, joinInfo.leftSideField, joinInfo.operator, options));
+    }
 
     return sqlParts.join(' ');
   }
@@ -672,8 +711,18 @@ class QueryGeneratorBase {
   }
 
   generateSelectQueryJoinTables(queryEngine, options) {
-    let sqlParts  = [];
-    let query     = queryEngine._getRawQuery();
+    const addToJoins = (joinInfo) => {
+      let items = joins.get(joinInfo.joinModelName);
+      if (!items) {
+        items = [];
+        joins.set(joinInfo.joinModelName, items);
+      }
+
+      items.push(joinInfo);
+    };
+
+    let query = queryEngine._getRawQuery();
+    let joins = new Map();
 
     for (let i = 0, il = query.length; i < il; i++) {
       let queryPart = query[i];
@@ -686,9 +735,15 @@ class QueryGeneratorBase {
 
       // TODO: Need query engine to be able to specify join type
       let joinType = this.generateSQLJoinTypeFromQueryEngineJoinType('LEFT INNER JOIN', options);
-      let joinOnCondition = this.generateSelectJoinOnTableQueryConditions(queryPart, operatorValue, joinType, options);
+      let joinInfo = this.getJoinTableInfoFromQueryContexts(queryPart, operatorValue, joinType, options);
 
-      sqlParts.push(joinOnCondition);
+      addToJoins(joinInfo);
+    }
+
+    let sqlParts  = [];
+    for (let joinInfos of joins.values()) {
+      let sqlStr = this.generateJoinOnTableQueryConditions(joinInfos, options);
+      sqlParts.push(sqlStr);
     }
 
     return sqlParts.join(' ');
@@ -979,7 +1034,7 @@ class QueryGeneratorBase {
       sqlParts.push(this.generateSelectQueryFieldProjection(queryEngine, options));
     }
 
-    sqlParts.push(this.generateSelectQueryFromTable(rootModel, undefined, options));
+    sqlParts.push(this.generateFromTableOrTableJoin(rootModel, undefined, options));
     sqlParts.push(this.generateSelectQueryJoinTables(queryEngine, options));
     sqlParts.push(this.generateWhereAndOrderLimitOffset(queryEngine, options));
 
@@ -1154,8 +1209,6 @@ class QueryGeneratorBase {
       fieldParts = fieldParts.concat(trailingParts.map((part) => `  ${part.trim()}`));
 
     let finalStatement = `CREATE TABLE ${ifNotExists}${this.escapeID(Model.getTableName())} (${fieldParts.join(',\n')}\n);`;
-    console.log(finalStatement);
-
     return finalStatement;
   }
 

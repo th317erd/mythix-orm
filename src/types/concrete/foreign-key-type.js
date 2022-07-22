@@ -127,6 +127,11 @@ class ForeignKeyType extends Type {
     return this.targetModel;
   }
 
+  getTargetModelName() {
+    let targetModel = this.getTargetModel();
+    return targetModel.getModelName();
+  }
+
   getTargetField() {
     return this.targetField;
   }

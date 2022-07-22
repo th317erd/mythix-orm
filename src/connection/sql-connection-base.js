@@ -603,6 +603,8 @@ class SQLConnectionBase extends ConnectionBase {
     let dirtyModels       = new Set();
     let primaryResult;
 
+    console.log('GROUP: ', groupedModelMap);
+
     for (let [ modelName, models ] of groupedModelMap) {
       let GroupModel    = this.getModel(modelName);
       let resultModels  = await computeBulkModels(GroupModel, models, options);
@@ -617,11 +619,17 @@ class SQLConnectionBase extends ConnectionBase {
           if (groupModelName === modelName)
             continue;
 
+          if (!alreadyStored[groupModelName])
+            continue;
+
           let TargetModel = this.getModel(groupModelName);
+          if (!TargetModel.isForeignKeyTargetModel(modelName))
+            continue;
+
           for (let targetModel of groupModels) {
             ModelUtils.setRelationalValues(TargetModel, targetModel, GroupModel, storedModel);
 
-            if (alreadyStored[groupModelName] && targetModel.isDirty())
+            if (targetModel.isDirty())
               dirtyModels.add(targetModel);
           }
         }
@@ -657,8 +665,9 @@ class SQLConnectionBase extends ConnectionBase {
       models,
       _options,
       async (Model, preparedModels, options, queryGenerator) => {
-        let sqlStr          = queryGenerator.generateInsertStatement(Model, preparedModels, options);
-        let ids             = await this.query(sqlStr, { formatResponse: true });
+        let sqlStr  = queryGenerator.generateInsertStatement(Model, preparedModels, options);
+        console.log('SQL STR: ', sqlStr);
+        let ids     = await this.query(sqlStr, { formatResponse: true });
         // TODO: Assign ids if PK is auto-incrementing
       },
       async (PrimaryModel, dirtyModels, options, queryGenerator) => {
@@ -793,6 +802,7 @@ class SQLConnectionBase extends ConnectionBase {
     while (true) {
       let query         = queryEngine.clone().LIMIT(batchSize).OFFSET(startIndex);
       let sqlStatement  = queryGenerator.generateSelectStatement(query, options);
+      console.log('SQL Statement: ', sqlStatement);
       let result        = await this.query(sqlStatement, { formatResponse: true, logger: options.logger });
 
       if (!result.rows || result.rows.length === 0)

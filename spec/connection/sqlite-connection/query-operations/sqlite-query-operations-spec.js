@@ -31,11 +31,11 @@ describe('SQLiteConnection', () => {
   });
 
   describe('destroy query', () => {
-    fit('should be able to destroy a model', async () => {
+    it('should be able to destroy a model', async () => {
       let models = await connection.insert(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'Test' }) }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
 
@@ -46,14 +46,14 @@ describe('SQLiteConnection', () => {
       expect(models[0].lastName).toMatch('User');
       expect(models[0].primaryRole).toBeInstanceOf(Role);
       expect(models[0].primaryRole.id).toMatch(UUID_REGEXP);
-      expect(models[0].primaryRole.name).toEqual('Test');
+      expect(models[0].primaryRole.name).toEqual('test');
 
       expect(await Role.count()).toEqual(1);
 
       // Reload to ensure that it saved properly
       let primaryRole = await models[0].getPrimaryRole();
       expect(primaryRole).toBeInstanceOf(Role);
-      expect(primaryRole.name).toEqual('Test');
+      expect(primaryRole.name).toEqual('test');
 
       let queryGenerator  = connection.getQueryGenerator();
       let sqlStr          = queryGenerator.generateDeleteStatement(User, User.where.id.EQ(models[0].id));
@@ -71,8 +71,8 @@ describe('SQLiteConnection', () => {
       let models = await connection.insert(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User1', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Test', lastName: 'User2', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User1', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Test', lastName: 'User2', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
 
@@ -103,7 +103,7 @@ describe('SQLiteConnection', () => {
       let models = await connection.insert(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
 
@@ -133,8 +133,8 @@ describe('SQLiteConnection', () => {
       let models = await connection.insert(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User1', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Test', lastName: 'User2', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User1', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Test', lastName: 'User2', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
 
@@ -169,7 +169,7 @@ describe('SQLiteConnection', () => {
       let sqlStr          = queryGenerator.generateInsertStatement(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
       let result          = await connection.query(sqlStr);
@@ -182,8 +182,8 @@ describe('SQLiteConnection', () => {
       let sqlStr          = queryGenerator.generateInsertStatement(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
 
@@ -197,8 +197,8 @@ describe('SQLiteConnection', () => {
       let sqlStr          = queryGenerator.generateInsertStatement(
         User,
         [
-          new User({ firstName: 'Test', lastName: 'User', primaryRoleID: UUID.v4() }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: UUID.v4() }),
+          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
 
@@ -209,17 +209,14 @@ describe('SQLiteConnection', () => {
 
   describe('select query', () => {
     const insertSomeRows = async () => {
-      let queryGenerator  = connection.getQueryGenerator();
-      let sqlStr          = queryGenerator.generateInsertStatement(
+      return await connection.insert(
         User,
         [
-          new User({ id: '4430db4c-8967-41d9-807c-40811fcee60a', firstName: 'Test', lastName: 'User', primaryRoleID: 'edf06e37-fdd3-4e96-b1fc-dcaff256d24a' }),
-          new User({ id: '33144fb7-cffe-454e-8d45-9c585bc89fc6', firstName: 'Mary', lastName: 'Anne', primaryRoleID: '81fe6880-af54-489d-a9dc-facfa98059ab' }),
-          new User({ id: 'c69da6dc-189b-43e9-9b98-c9e0ba1d85eb', firstName: 'First', lastName: null, primaryRoleID: 'f1635dbe-1f74-4000-b6af-e9dd92b0025d' }),
+          new User({ id: '4430db4c-8967-41d9-807c-40811fcee60a', firstName: 'Test', lastName: 'User', primaryRole: new Role({ id: 'edf06e37-fdd3-4e96-b1fc-dcaff256d24a', name: 'test' }) }),
+          new User({ id: '33144fb7-cffe-454e-8d45-9c585bc89fc6', firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ id: '81fe6880-af54-489d-a9dc-facfa98059ab', name: 'derp' }) }),
+          new User({ id: 'c69da6dc-189b-43e9-9b98-c9e0ba1d85eb', firstName: 'First', lastName: null, primaryRole: new Role({ id: 'f1635dbe-1f74-4000-b6af-e9dd92b0025d', name: 'derp2' }) }),
         ],
       );
-
-      return await connection.query(sqlStr);
     };
 
     it('should be able to select rows', async () => {
@@ -228,6 +225,8 @@ describe('SQLiteConnection', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
       let result          = await connection.query(sqlStatement);
+
+      // result = [ [ firstName, id, lastName, primaryRoleID ], ... ]
 
       expect(result).toBeInstanceOf(Array);
       expect(result.length).toEqual(2);
@@ -314,18 +313,18 @@ describe('SQLiteConnection', () => {
       await insertSomeRows();
 
       let queryGenerator  = connection.getQueryGenerator();
-
-      await connection.query(queryGenerator.generateInsertStatement(Role, new Role({
-        id:   '81fe6880-af54-489d-a9dc-facfa98059ab',
-        name: 'derp',
-      })));
-
       let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
       let result          = await connection.query(sqlStatement, { formatResponse: true });
 
       expect(connection.buildModelDataMapFromSelectResults(query, result)).toEqual({
         User: [
+          {
+            id:             'c69da6dc-189b-43e9-9b98-c9e0ba1d85eb',
+            firstName:      'First',
+            lastName:       null,
+            primaryRoleID:  'f1635dbe-1f74-4000-b6af-e9dd92b0025d',
+          },
           {
             id:             '33144fb7-cffe-454e-8d45-9c585bc89fc6',
             firstName:      'Mary',
@@ -335,6 +334,10 @@ describe('SQLiteConnection', () => {
         ],
         Role: [
           {
+            id:   'f1635dbe-1f74-4000-b6af-e9dd92b0025d',
+            name: 'derp2',
+          },
+          {
             id:   '81fe6880-af54-489d-a9dc-facfa98059ab',
             name: 'derp',
           },
@@ -342,24 +345,13 @@ describe('SQLiteConnection', () => {
       });
 
       expect(result.rows).toBeInstanceOf(Array);
-      expect(result.rows.length).toEqual(1);
+      expect(result.rows.length).toEqual(2);
     });
 
     it('should be able to generate models from model map data', async () => {
       await insertSomeRows();
 
       let queryGenerator  = connection.getQueryGenerator();
-
-      await connection.query(queryGenerator.generateInsertStatement(Role, new Role({
-        id:   '81fe6880-af54-489d-a9dc-facfa98059ab',
-        name: 'derp',
-      })));
-
-      await connection.query(queryGenerator.generateInsertStatement(Role, new Role({
-        id:   'f1635dbe-1f74-4000-b6af-e9dd92b0025d',
-        name: 'derp2',
-      })));
-
       let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
       let result          = await connection.query(sqlStatement, { formatResponse: true });

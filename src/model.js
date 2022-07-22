@@ -110,6 +110,8 @@ class Model {
     if (Object.prototype.hasOwnProperty.call(Model, 'mythixModelInitialized') && Model.mythixModelInitialized)
       return Model;
 
+    let foreignModelNames = new Set();
+
     // Initialize model fields
     Model.iterateFields(({ field, fieldName }) => {
       field.fieldName = fieldName;
@@ -117,6 +119,11 @@ class Model {
 
       if (typeof field.type.onModelInitialize === 'function')
         field.type.onModelInitialize.call(field.type, Model, field, field.type, connection);
+
+      if (field.type.isForeignKey()) {
+        let targetModelName = field.type.getTargetModelName();
+        foreignModelNames.add(targetModelName);
+      }
     });
 
     Object.defineProperties(Model, {
@@ -134,9 +141,23 @@ class Model {
         },
         set:          () => {},
       },
+      '_foreignModelNames': {
+        writable:     false,
+        enumberable:  false,
+        configurable: false,
+        value:        Array.from(foreignModelNames.values()),
+      },
     });
 
     return Model;
+  }
+
+  static getForeignKeyTargetModelNames() {
+    return this._foreignModelNames || [];
+  }
+
+  static isForeignKeyTargetModel(modelName) {
+    return (this.getForeignKeyTargetModelNames().indexOf(modelName) >= 0);
   }
 
   static getTablePrefix() {

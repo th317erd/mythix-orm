@@ -13,7 +13,7 @@ const {
   truncateTables,
 } = require('../sqlite-connection-helper');
 
-describe('SQLiteConnection', () => {
+fdescribe('SQLiteConnection', () => {
   describe('1x1 relational operations', () => {
     let connection;
     let User;
@@ -75,26 +75,26 @@ describe('SQLiteConnection', () => {
         expect(primaryRole).toBe(undefined);
 
         expect(user.primaryRoleID).toBe(null);
-        await user.createPrimaryRole({ name: 'admin' });
+        primaryRole = await user.createPrimaryRole({ name: 'admin' });
         expect(user.primaryRoleID).not.toBe(null);
+        expect(primaryRole).toBeInstanceOf(Role);
+        expect(primaryRole.name).toEqual('admin');
 
         primaryRole = await user.getPrimaryRole();
         expect(primaryRole).toBeInstanceOf(Role);
         expect(primaryRole.name).toEqual('admin');
       });
 
-      it('can create a single model through a relational field using a through table', async () => {
+      fit('can create a single model through a relational field using a through table', async () => {
         let user = await User.create({ firstName: 'Space', lastName: 'Pants' });
         expect(user).toBeInstanceOf(User);
         expect(user.id).toMatch(UUID_REGEXP);
 
-        // let role      = await Role.create({ name: 'admin' });
-        // let roleThing = await RoleThing.create({ roleID: role.id });
-        // let userThing = await UserThing.create({ userID: user.id, roleThingID: roleThing.id });
-
         expect(await UserThing.count()).toEqual(0);
         expect(await RoleThing.count()).toEqual(0);
 
+        // WIP: Trying to figure out why this select query is malformed
+        // the "getUserThingRole" internal method is generating a bad query
         let storedRole = await user.createUserThingRole({ name: 'admin' });
         expect(storedRole).toBeInstanceOf(Role);
 

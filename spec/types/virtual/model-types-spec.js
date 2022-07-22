@@ -3,10 +3,11 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach */
+/* global describe, it, expect, beforeEach, spyOn */
 
 const UUID = require('uuid');
 const { Types, ConnectionBase } = require('../../../src');
+const ModelUtils = require('../../../src/utils/model-utils');
 
 describe('ModelType', () => {
   it('can construct from class', () => {
@@ -19,9 +20,20 @@ describe('ModelType', () => {
     expect(type.toString()).toEqual('');
   });
 
-  it('will throw error on attempt to cast without a type instance', () => {
+  it('will throw error on attempt to cast without being able to fetch target model', () => {
     let type = Types.Model('Role:userID');
-    expect(() => type.castToType({})).toThrow(new TypeError('ModelType::castToType: Type instance is required to cast.'));
+
+    spyOn(type, 'getTargetModel').and.callFake(() => null);
+    expect(() => type.castToType({ value: 20 })).toThrow(new TypeError('ModelType::castToType: Failed when attempting to fetch the required model.'));
+  });
+
+  it('will throw error on attempt to cast without a proper value type', () => {
+    let type = Types.Model('Role:userID');
+
+    class FakeModel {}
+    spyOn(type, 'getTargetModel').and.callFake(() => FakeModel);
+
+    expect(() => type.castToType({ value: 20 })).toThrow(new TypeError('ModelType::castToType: Unable to cast provided value. Value must be a model instance, or a raw object.'));
   });
 });
 
@@ -36,9 +48,20 @@ describe('ModelsType', () => {
     expect(type.toString()).toEqual('');
   });
 
-  it('will throw error on attempt to cast without a type instance', () => {
+  it('will throw error on attempt to cast without being able to fetch target model', () => {
     let type = Types.Models('Role:userID');
-    expect(() => type.castToType({})).toThrow(new TypeError('ModelsType::castToType: Type instance is required to cast.'));
+
+    spyOn(type, 'getTargetModel').and.callFake(() => null);
+    expect(() => type.castToType({ value: 20 })).toThrow(new TypeError('ModelsType::castToType: Failed when attempting to fetch the required model.'));
+  });
+
+  it('will throw error on attempt to cast without a proper value type', () => {
+    let type = Types.Models('Role:userID');
+
+    class FakeModel {}
+    spyOn(type, 'getTargetModel').and.callFake(() => FakeModel);
+
+    expect(() => type.castToType({ value: 20 })).toThrow(new TypeError('ModelsType::castToType: Unable to cast provided value at index 0. Value must be a model instance, or a raw object.'));
   });
 });
 
@@ -66,7 +89,7 @@ describe('Model relations', () => {
       let user  = new User();
       let role  = new Role({ id: UUID.v4(), name: 'test' });
 
-      user.getField('primaryRole').type.setRelationalValues(User, user, Role, role);
+      ModelUtils.setRelationalValues(User, user, Role, role);
 
       expect(user.primaryRoleID).toEqual(role.id);
     });
@@ -74,7 +97,7 @@ describe('Model relations', () => {
     it('can set relational values on a model instance when related model is null', () => {
       let user  = new User({ primaryRoleID: UUID.v4() });
 
-      user.getField('primaryRole').type.setRelationalValues(User, user, Role);
+      ModelUtils.setRelationalValues(User, user, Role);
 
       expect(user.primaryRoleID).toBe(null);
     });

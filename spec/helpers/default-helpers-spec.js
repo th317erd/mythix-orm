@@ -11,6 +11,7 @@ const {
   FLAG_ON_UPDATE,
   FLAG_ON_STORE,
   FLAG_LITERAL,
+  FLAG_REMOTE,
   defaultValueFlags,
   AUTO_INCREMENT,
   DATETIME_NOW,
@@ -50,7 +51,7 @@ describe('DefaultHelpers', () => {
 
   describe('AUTO_INCREMENT', () => {
     it('should have the correct flags set', () => {
-      expect(AUTO_INCREMENT.mythixFlags).toEqual(FLAG_LITERAL);
+      expect(AUTO_INCREMENT.mythixFlags).toEqual(FLAG_LITERAL | FLAG_REMOTE);
     });
 
     it('should call connection to get value', () => {
@@ -69,7 +70,7 @@ describe('DefaultHelpers', () => {
 
   describe('DATETIME_NOW', () => {
     it('should have the correct flags set', () => {
-      expect(DATETIME_NOW.mythixFlags).toEqual(FLAG_LITERAL);
+      expect(DATETIME_NOW.mythixFlags).toEqual(FLAG_LITERAL | FLAG_REMOTE);
     });
 
     it('should call connection to get value', () => {
@@ -88,7 +89,7 @@ describe('DefaultHelpers', () => {
 
   describe('DATE_NOW', () => {
     it('should have the correct flags set', () => {
-      expect(DATE_NOW.mythixFlags).toEqual(FLAG_LITERAL);
+      expect(DATE_NOW.mythixFlags).toEqual(FLAG_LITERAL | FLAG_REMOTE);
     });
 
     it('should call connection to get value', () => {
