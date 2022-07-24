@@ -276,8 +276,11 @@ class ConnectionBase {
             if (relatedModelName === modelName || relatedModelName === primaryModelName || relatedModelName === targetModelName)
               continue;
 
-            let RelatedModel = this.getModel(relatedModelName);
-            let modelInstance = new RelatedModel();
+            let relationStatus = fieldRelations[relatedModelName];
+            let RelatedModel = relationStatus.Model;
+            let modelInstance = (relationStatus.instance) ? relationStatus.instance : new RelatedModel();
+            if (!(modelInstance instanceof RelatedModel))
+              modelInstance = new RelatedModel(modelInstance);
 
             addModelInstance(relatedModelName, modelInstance);
           }
@@ -427,7 +430,7 @@ class ConnectionBase {
     let dirtyModels       = new Set();
     let primaryResult;
 
-    console.log('GROUP: ', groupedModelMap);
+    // console.log('GROUP: ', groupedModelMap);
 
     for (let [ modelName, models ] of groupedModelMap) {
       let GroupModel    = this.getModel(modelName);

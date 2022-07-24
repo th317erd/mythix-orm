@@ -46,7 +46,13 @@ describe('UUIDV1Type', () => {
     let type = Types.UUIDV1();
     expect(() => type.castToType({ value: '1234' })).toThrow(new TypeError('UUIDV1Type::castToType: Provided value "1234" is not a valid UUID.'));
 
-    let uuid = Types.UUIDV1.Default.UUIDV1();
+    let uuid = Types.UUIDV1.Default.UUIDV1({
+      node:     [ 0x01, 0x23, 0x45, 0x67, 0x89, 0xab ],
+      clockseq: 0x1234,
+      msecs:    new Date('2011-11-01').getTime(),
+      nsecs:    5678,
+    })();
+
     expect(uuid).toMatch(UUID_REGEXP);
     expect(type.castToType({ value: uuid })).toEqual(uuid);
 

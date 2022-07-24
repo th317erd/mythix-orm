@@ -161,8 +161,24 @@ function getRelationalModelStatusForField(connection, modelInstance, originField
     else if (status.instance)
       relationModelMap[modelName] = Object.assign(relationModelMap[modelName], status);
 
-    let key = `${source.modelName}:${source.fieldName}->${target.modelName}:${target.fieldName}`;
-    relationModelMap[modelName].fields.set(key, { source, target });
+    if (modelName !== target.modelName)
+      return;
+
+    if (!target.fieldType.isRelational()) {
+      let SourceModel     = source.fieldType.getTargetModel({ recursive: true, followForeignKeys: true });
+      let sourceField     = source.fieldType.getTargetField();
+      let sourceModelName = SourceModel.getModelName();
+
+      if (target.modelName === sourceModelName && target.fieldName === sourceField.fieldName)
+        return;
+
+      relationModelMap[modelName].fields.set(`${target.modelName}:${target.fieldName}`, `${sourceModelName}:${sourceField.fieldName}`);
+
+      return;
+    }
+
+    let TargetModel = target.fieldType.getTargetModel({ recursive: false, followForeignKeys: false });
+    relationModelMap[modelName].fields.set(`${target.modelName}:${target.fieldName}`, TargetModel.getModelName());
   };
 
   const findAvailableRelationalModel = (modelName, field) => {
@@ -180,31 +196,26 @@ function getRelationalModelStatusForField(connection, modelInstance, originField
 
   const addRelationalStatus = (source, target) => {
     if (source.fieldType.isRelational() && source.fieldType.isManyRelation()) {
-      // we must create
+      // we need to create
       addModelStatus(source.Model, source.modelName, source, target, { create: true });
       addModelStatus(target.Model, target.modelName, source, target, { create: true });
       return;
-    } else {
-      let model = findAvailableRelationalModel(source.modelName, source.field);
-      if (!hasValidPrimaryKey(model))
-        addModelStatus(source.Model, source.modelName, source, target, { create: true });
-      else
-        addModelStatus(source.Model, source.modelName, source, target, { create: false, instance: model });
-
-      model = findAvailableRelationalModel(target.modelName, target.field);
-      if (!hasValidPrimaryKey(model))
-        addModelStatus(target.Model, target.modelName, source, target, { create: true });
-      else
-        addModelStatus(target.Model, target.modelName, source, target, { create: false, instance: model });
     }
+
+    let model = findAvailableRelationalModel(source.modelName, source.field);
+    if (!hasValidPrimaryKey(model))
+      addModelStatus(source.Model, source.modelName, source, target, { create: true, instance: model });
+    else
+      addModelStatus(source.Model, source.modelName, source, target, { create: false, instance: model });
+
+    model = findAvailableRelationalModel(target.modelName, target.field);
+    if (!hasValidPrimaryKey(model))
+      addModelStatus(target.Model, target.modelName, source, target, { create: true, instance: model });
+    else
+      addModelStatus(target.Model, target.modelName, source, target, { create: false, instance: model });
   };
 
   originField.type.walkSourceRelation(({ source, target }) => {
-    let { field: sourceField, fieldType: sourceFieldType } = source;
-    let { field: targetField, fieldType: targetFieldType } = target;
-
-    console.log(`RELATION: ${sourceField.Model.getModelName()}.${sourceField.fieldName} -> ${targetField.Model.getModelName()}.${targetField.fieldName}`);
-
     addRelationalStatus(source, target);
   }, connection);
 

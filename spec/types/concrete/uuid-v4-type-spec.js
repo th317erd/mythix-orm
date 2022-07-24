@@ -46,7 +46,7 @@ describe('UUIDV4Type', () => {
     let type = Types.UUIDV4();
     expect(() => type.castToType({ value: '1234' })).toThrow(new TypeError('UUIDV4Type::castToType: Provided value "1234" is not a valid UUID.'));
 
-    let uuid = Types.UUIDV4.Default.UUIDV4();
+    let uuid = Types.UUIDV4.Default.UUIDV4()();
     expect(uuid).toMatch(UUID_REGEXP);
     expect(type.castToType({ value: uuid })).toEqual(uuid);
 
