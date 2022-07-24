@@ -42,15 +42,23 @@ class ForeignKeyType extends Type {
   }
 
   castToType(args) {
-    let { value, typeInstance } = args;
-    if (!typeInstance && value == null)
+    let { value } = args;
+    if (value == null)
       return value;
 
-    let targetField = typeInstance.getTargetField();
+    let targetField = this.getTargetField();
     if (!targetField)
-      return value;
+      throw new TypeError('ForeignKeyType::castToType: Target field not defined.');
 
     return targetField.type.castToType(args);
+  }
+
+  isValidValue(value) {
+    let targetField = this.getTargetField();
+    if (!targetField)
+      throw new TypeError('ForeignKeyType::isValidValue: Target field not defined.');
+
+    return targetField.type.isValidValue(value);
   }
 
   parseOptionsAndCheckForErrors(SourceModel, sourceField, type, connection) {

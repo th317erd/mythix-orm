@@ -1,5 +1,6 @@
 'use strict';
 
+const Nife                = require('nife');
 const Type                = require('../type');
 const { AUTO_INCREMENT }  = require('../helpers/default-helpers');
 
@@ -19,6 +20,10 @@ class BigIntType extends Type {
       return value;
 
     return BigInt(value);
+  }
+
+  isValidValue(value) {
+    return (Nife.instanceOf(value, 'number', 'bigint') && isFinite(value));
   }
 
   toConnectionType(connection) {

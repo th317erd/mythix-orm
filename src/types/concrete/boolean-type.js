@@ -1,6 +1,7 @@
 'use strict';
 
-const Type = require('../type');
+const Nife  = require('nife');
+const Type  = require('../type');
 
 class BooleanType extends Type {
   castToType({ value }) {
@@ -14,6 +15,10 @@ class BooleanType extends Type {
       return false;
 
     return !!value;
+  }
+
+  isValidValue(value) {
+    return (value === true || value === false);
   }
 
   toConnectionType(connection) {

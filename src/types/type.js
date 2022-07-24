@@ -135,6 +135,11 @@ class Type {
     return checkDefaultValueFlags(field.defaultValue, [ 'remote' ]);
   }
 
+  // eslint-disable-next-line no-unused-vars
+  isValidValue(value) {
+    return true;
+  }
+
   onModelInitialize(...args) {
     return this.constructor.onModelInitialize.call(this.constructor, ...args);
   }

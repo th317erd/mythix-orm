@@ -1,5 +1,6 @@
 'use strict';
 
+const Nife                = require('nife');
 const Type                = require('../type');
 const { AUTO_INCREMENT }  = require('../helpers/default-helpers');
 
@@ -17,6 +18,10 @@ class IntegerType extends Type {
       throw new TypeError(`IntegerType::castToType: Value provided ("${value}") can not be cast into an integer.`);
 
     return Math.round(number);
+  }
+
+  isValidValue(value) {
+    return (Nife.instanceOf(value, 'number') && isFinite(value));
   }
 
   toConnectionType(connection) {

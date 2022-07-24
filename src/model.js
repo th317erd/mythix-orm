@@ -282,6 +282,38 @@ class Model {
     return hasRemote;
   }
 
+  static getPrimaryKeyField() {
+    if (this._primaryKeyField)
+      return this._primaryKeyField;
+
+    let primaryKeyField;
+    this.iterateFields(({ field, stop }) => {
+      if (field.type.isVirtual())
+        return;
+
+      if (field.primaryKey) {
+        primaryKeyField = field;
+        return stop();
+      }
+    });
+
+    Object.defineProperties(this, {
+      '_primaryKeyField': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        primaryKeyField,
+      },
+    });
+
+    return primaryKeyField;
+  }
+
+  static getPrimaryKeyFieldName() {
+    let primaryKeyField = this.getPrimaryKeyField();
+    return primaryKeyField.fieldName;
+  }
+
   static primaryKeyHasRemoteValue() {
     let pkField = this.getPrimaryKeyField();
     if (!pkField)
@@ -313,38 +345,6 @@ class Model {
 
   static hasField(fieldName) {
     return !!this.getField(fieldName);
-  }
-
-  static getPrimaryKeyField() {
-    if (this._primaryKeyField)
-      return this._primaryKeyField;
-
-    let primaryKeyField;
-    this.iterateFields(({ field, stop }) => {
-      if (field.type.isVirtual())
-        return;
-
-      if (field.primaryKey) {
-        primaryKeyField = field;
-        return stop();
-      }
-    });
-
-    Object.defineProperties(this, {
-      '_primaryKeyField': {
-        writable:     true,
-        enumberable:  false,
-        configurable: true,
-        value:        primaryKeyField,
-      },
-    });
-
-    return primaryKeyField;
-  }
-
-  static getPrimaryKeyFieldName() {
-    let primaryKeyField = this.getPrimaryKeyField();
-    return primaryKeyField.fieldName;
   }
 
   static getConcreteFieldCount() {
@@ -503,7 +503,7 @@ class Model {
     // If the attribute given by "data" is a function
     // then we always want to call it
     if (typeof defaultValue === 'function')
-      defaultValue = defaultValue.call(this, { field, fieldName, fieldValue, data });
+      defaultValue = defaultValue({ field, fieldName, fieldValue, data, _fetchDefaultValue: true });
 
     // If data provided no value, then fallback
     // to trying "defaultValue" key from field schema
@@ -524,7 +524,7 @@ class Model {
       };
 
       if (shouldRunDefaultValueOnInitialize())
-        defaultValue = defaultValue({ field, fieldName, fieldValue, data, modelInstance: this });
+        defaultValue = defaultValue({ field, fieldName, fieldValue, data, modelInstance: this, _fetchDefaultValue: true });
       else
         defaultValue = undefined;
     }
@@ -661,6 +661,17 @@ class Model {
 
       this[fieldName] = fieldValue;
     });
+  }
+
+  hasValidPrimaryKey() {
+    let pkField = this.getPrimaryKeyField();
+    if (!pkField)
+      return false;
+
+    let pkFieldName = pkField.fieldName;
+    let pkValue     = this[pkFieldName];
+
+    return pkField.type.isValidValue(pkValue);
   }
 
   async save(_options) {

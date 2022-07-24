@@ -1,5 +1,6 @@
 'use strict';
 
+const Nife          = require('nife');
 const moment        = require('moment');
 const Type          = require('../type');
 const { DATE_NOW }  = require('../helpers/default-helpers');
@@ -20,6 +21,10 @@ class DateType extends Type {
       throw new TypeError(`DateType::castToType: Value provided ("${value}") can not be cast into a date.`);
 
     return dateTime.startOf('day').toDate();
+  }
+
+  isValidValue(value) {
+    return moment(value).isValid();
   }
 
   toConnectionType(connection) {

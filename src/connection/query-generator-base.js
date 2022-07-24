@@ -19,8 +19,8 @@ class QueryGeneratorBase {
     });
   }
 
-  getOptionsCache(options, keyPath, defaultValue) {
-    return Nife.get(options, `_cache.${keyPath}`, (typeof defaultValue === 'function') ? defaultValue() : defaultValue);
+  getOptionsCache(options, keyPath, initialValue) {
+    return Nife.get(options, `_cache.${keyPath}`, (typeof initialValue === 'function') ? initialValue() : initialValue);
   }
 
   setOptionsCache(options, keyPath, value) {
@@ -1057,10 +1057,10 @@ class QueryGeneratorBase {
 
     if (typeof defaultValue === 'function') {
       if (options.remoteOnly !== true) {
-        defaultValue = defaultValue({ field, fieldName, connection: this.connection });
+        defaultValue = defaultValue({ field, fieldName, connection: this.connection, _fetchDefaultValue: true, _static: true });
         defaultValue = (escapeValue) ? this.escape(field, defaultValue) : defaultValue;
       } else if ((field.defaultValue.mythixFlags || 0) & FLAG_LITERAL) {
-        defaultValue = defaultValue({ field, fieldName, connection: this.connection });
+        defaultValue = defaultValue({ field, fieldName, connection: this.connection, _fetchDefaultValue: true, _static: true });
       } else {
         return;
       }

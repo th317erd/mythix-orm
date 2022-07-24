@@ -1,6 +1,7 @@
 'use strict';
 
-const Type = require('../type');
+const Nife  = require('nife');
+const Type  = require('../type');
 
 const DEFAULT_STRING_LENGTH = 256;
 
@@ -16,6 +17,10 @@ class StringType extends Type {
       return value;
 
     return ('' + value);
+  }
+
+  isValidValue(value) {
+    return Nife.instanceOf(value, 'string');
   }
 
   toConnectionType(connection) {

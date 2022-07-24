@@ -3,6 +3,7 @@
 const Nife                = require('nife');
 const RelationalTypeBase  = require('./relational-type-base');
 const ModelUtils          = require('../../utils/model-utils');
+const Util                = require('util');
 
 const NAMED_METHOD  = false;
 const ROOT_METHOD   = true;
@@ -35,6 +36,9 @@ const INJECT_TYPE_METHODS = {
 
       return fetchedModel;
     }
+
+    let relations = ModelUtils.getRelationalModelStatusForField(connection, this, field);
+    console.log(Util.inspect(relations, { depth: 4, colors: true }));
 
     let model = _model;
     if (!(model instanceof TargetModel))

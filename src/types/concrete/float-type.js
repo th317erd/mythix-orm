@@ -1,6 +1,7 @@
 'use strict';
 
-const Type = require('../type');
+const Nife  = require('nife');
+const Type  = require('../type');
 
 class FloatType extends Type {
   constructor(length, precision) {
@@ -19,6 +20,10 @@ class FloatType extends Type {
       throw new TypeError(`FloatType::castToType: Value provided ("${value}") can not be cast into an floating point number.`);
 
     return number;
+  }
+
+  isValidValue(value) {
+    return (Nife.instanceOf(value, 'number') && isFinite(value));
   }
 
   toConnectionType(connection) {

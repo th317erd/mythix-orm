@@ -4,18 +4,18 @@ const UUID                  = require('uuid');
 const Type                  = require('../type');
 const { defaultValueFlags } = require('../helpers/default-helpers');
 
-class UUIDV1Type extends Type {
+class UUIDV3Type extends Type {
   static Default = {
-    UUIDV1: function(options) {
+    UUIDV3: function(options) {
       return defaultValueFlags(function(context) {
         if (!options)
-          throw new Error('UUIDV1Type::Default::UUIDV1: "options" argument is required. Did you forget to call the default provider? The correct usage pattern is: "defaultValue: Types.UUIDV1.Default.UUIDV1(Object|Function)".');
+          throw new Error('UUIDV3Type::Default::UUIDV3: "options" argument is required. Did you forget to call the default provider? The correct usage pattern is: "defaultValue: Types.UUIDV3.Default.UUIDV3(Object|Function)".');
 
         let opts = options;
         if (typeof opts === 'function')
           opts = opts.call(this, context);
 
-        return UUID.v1(opts, opts.buffer, opts.offset);
+        return UUID.v3(opts.name, opts.namespace, opts.buffer, opts.offset);
       });
     },
   };
@@ -25,7 +25,7 @@ class UUIDV1Type extends Type {
       return value;
 
     if (!this.isValidValue(value))
-      throw new TypeError(`UUIDV1Type::castToType: Provided value "${value}" is not a valid UUID.`);
+      throw new TypeError(`UUIDV3Type::castToType: Provided value "${value}" is not a valid UUID.`);
 
     return value;
   }
@@ -51,6 +51,6 @@ class UUIDV1Type extends Type {
 }
 
 module.exports = {
-  UUIDV1: Type.wrapConstructor(UUIDV1Type),
-  UUIDV1Type,
+  UUIDV3: Type.wrapConstructor(UUIDV3Type),
+  UUIDV3Type,
 };

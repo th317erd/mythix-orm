@@ -68,6 +68,7 @@ class RelationalTypeBase extends Type {
         fieldName:  field.fieldName,
         fieldType:  field.type,
         modelName:  field.Model.getModelName(),
+        Model:      field.Model,
         connection,
       };
     };
@@ -316,6 +317,9 @@ class RelationalTypeBase extends Type {
     let relations           = type.getJoinableRelations(connection);
     let query               = ResultingModel.where;
 
+    // console.log('Relations: ', relations);
+    // console.log(`Root model -> ${ResultingModel.getModelName()}`);
+
     for (let i = 0, il = relations.length; i < il; i++) {
       let relation = relations[i];
       let {
@@ -325,13 +329,20 @@ class RelationalTypeBase extends Type {
         targetFieldName,
       } = relation;
 
-      let targetModel = connection.getModel(targetModelName);
-      query.AND[sourceModelName][sourceFieldName].EQ(targetModel.where[targetFieldName]);
+      let sourceModel = connection.getModel(sourceModelName);
+      query.AND[targetModelName][targetFieldName].EQ(sourceModel.where[sourceFieldName]);
 
-      if (targetModelName === originModelName)
-        query = query.AND[targetModelName][targetModelName].EQ(modelInstance[targetFieldName]);
-      else if (sourceModelName === originModelName)
+      // console.log(`  + .AND.${targetModelName}.${targetFieldName}.EQ(${sourceModelName}.${sourceFieldName})`);
+
+      // eslint-disable-next-line curly
+      if (targetModelName === originModelName) {
+        query = query.AND[targetModelName][targetFieldName].EQ(modelInstance[targetFieldName]);
+        // console.log(`  + .AND.${targetModelName}.${targetFieldName}.EQ(modelInstance.${targetFieldName})`);
+      // eslint-disable-next-line curly
+      } else if (sourceModelName === originModelName) {
         query = query.AND[sourceModelName][sourceFieldName].EQ(modelInstance[sourceFieldName]);
+        // console.log(`  + .AND.${sourceModelName}.${sourceFieldName}.EQ(modelInstance.${sourceFieldName})`);
+      }
     }
 
     if (queryEngine)
