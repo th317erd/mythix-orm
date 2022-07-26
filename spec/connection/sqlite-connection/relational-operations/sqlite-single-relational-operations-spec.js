@@ -57,7 +57,7 @@ describe('SQLiteConnection', () => {
       });
     });
 
-    fdescribe('create single model', () => {
+    describe('create single model', () => {
       it('can create a single model through a relational field', async () => {
         let userModels = [
           new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),

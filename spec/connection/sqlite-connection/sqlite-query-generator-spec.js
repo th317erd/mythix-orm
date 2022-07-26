@@ -105,7 +105,7 @@ describe('SQLiteQueryGenerator', () => {
       expect(result.models[0]).toBeInstanceOf(User);
       expect(result.models[1]).toBeInstanceOf(User);
       expect(result.dirtyFields).toBeInstanceOf(Array);
-      expect(result.dirtyFields.length).toEqual(2);
+      expect(result.dirtyFields.length).toEqual(3);
 
       let dirtyFields = result.dirtyFields.sort((a, b) => {
         if (a.fieldName === b.fieldName)
@@ -114,7 +114,7 @@ describe('SQLiteQueryGenerator', () => {
         return (a.fieldName < b.fieldName) ? -1 : 1;
       });
 
-      expect(dirtyFields.map((field) => field.fieldName)).toEqual([ 'firstName', 'lastName' ]);
+      expect(dirtyFields.map((field) => field.fieldName)).toEqual([ 'firstName', 'id', 'lastName' ]);
     });
   });
 });
