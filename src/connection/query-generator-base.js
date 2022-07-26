@@ -1272,7 +1272,7 @@ class QueryGeneratorBase {
     let options                 = _options || {};
     let preparedModels          = this.connection.prepareAllModelsForOperation(Model, _models, options);
     let { models, dirtyFields } = preparedModels;
-    if (Nife.isEmpty(models))
+    if (Nife.isEmpty(models) || Nife.isEmpty(dirtyFields))
       return '';
 
     let subOptions  = Object.assign(Object.create(options), {

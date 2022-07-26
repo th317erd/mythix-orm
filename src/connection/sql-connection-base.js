@@ -269,7 +269,7 @@ class SQLConnectionBase extends ConnectionBase {
     return modelData;
   }
 
-  buildModelsFromModelDataMap(queryEngine, modelDataMap) {
+  buildModelsFromModelDataMap(queryEngine, modelDataMap, callback) {
     if (Nife.isEmpty(modelDataMap))
       return [];
 
@@ -283,8 +283,12 @@ class SQLConnectionBase extends ConnectionBase {
     if (Nife.isEmpty(rootModelData))
       return [];
 
+    let callbackIsValid = (typeof callback === 'function');
     let rootModels = rootModelData.map((data) => {
       let model = new RootModel(data);
+
+      if (callbackIsValid)
+        model = callback(RootModel, model);
 
       if (model._ && data._) {
         let relationships = data._;
@@ -304,7 +308,12 @@ class SQLConnectionBase extends ConnectionBase {
 
           model._[relationName] = relationshipModels.concat(modelIndexes.map((modelIndex) => {
             let modelData = models[modelIndex];
-            return new Model(modelData);
+            let thisModel = new Model(modelData);
+
+            if (callbackIsValid)
+              thisModel = callback(Model, thisModel);
+
+            return thisModel;
           }));
         }
       }
@@ -343,7 +352,23 @@ class SQLConnectionBase extends ConnectionBase {
         let sqlStr  = queryGenerator.generateInsertStatement(Model, preparedModels, options);
         // console.log('SQL STR: ', sqlStr);
         let ids     = await this.query(sqlStr, { formatResponse: true });
-        // TODO: Assign ids if PK is auto-incrementing
+
+        // Assign remote ids to models that were stored
+        let pkField = Model.getPrimaryKeyField();
+        if (pkField && pkField.type.isRemote()) {
+          let models      = preparedModels.models;
+          let pkFieldName = pkField.fieldName;
+
+          for (let i = 0, il = models.length; i < il; i++) {
+            let model = models[i];
+            let id    = ids[i];
+
+            model[pkFieldName] = id;
+            model._persisted = true;
+          }
+        } else {
+          this.setPersisted(preparedModels, true);
+        }
       },
       async (PrimaryModel, dirtyModels, options, queryGenerator) => {
         for (let dirtyModel of dirtyModels) {
@@ -381,6 +406,8 @@ class SQLConnectionBase extends ConnectionBase {
 
         let sqlStr = queryGenerator.generateUpdateStatement(Model, model, query, options);
         await this.query(sqlStr, { formatResponse: true });
+
+        model._persisted = true;
       }
     });
   }
@@ -489,10 +516,14 @@ class SQLConnectionBase extends ConnectionBase {
         yield result;
       } else {
         let modelDataMap  = this.buildModelDataMapFromSelectResults(queryEngine, result);
-        let models        = this.buildModelsFromModelDataMap(queryEngine, modelDataMap);
+        let models        = this.buildModelsFromModelDataMap(queryEngine, modelDataMap, (_, model) => {
+          model._persisted = true;
+          return model;
+        });
 
         for (let i = 0, il = models.length; i < il; i++) {
           let model = models[i];
+
           yield model;
         }
       }

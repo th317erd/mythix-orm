@@ -385,7 +385,7 @@ class Model {
 
   constructor(data) {
     Object.defineProperties(this, {
-      '_isModelInstance': {
+      '_mythixModelInstance': {
         writable:     false,
         enumberable:  false,
         configurable: false,
@@ -402,6 +402,12 @@ class Model {
         enumberable:  false,
         configurable: true,
         value:        {},
+      },
+      '_persisted': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        false,
       },
       'changes': {
         enumberable:  false,
@@ -460,22 +466,21 @@ class Model {
     });
   }
 
-  _initializeModelData(data) {
-    let dirtyFieldData = this._dirtyFieldData;
+  _initializeModelData(_data) {
+    let dirtyFieldData  = this._dirtyFieldData;
+    let data            = _data || {};
 
     // First initialize field values from data
-    if (data) {
-      this.iterateFields(({ field, fieldName }) => {
-        if (!field.type.exposeToModel())
-          return;
+    this.iterateFields(({ field, fieldName }) => {
+      if (!field.type.exposeToModel())
+        return;
 
-        let fieldValue  = (data) ? data[fieldName] : undefined;
-        if (fieldValue === undefined)
-          return;
+      let fieldValue = data[fieldName];
+      if (fieldValue === undefined)
+        return;
 
-        dirtyFieldData[fieldName] = fieldValue;
-      });
-    }
+      dirtyFieldData[fieldName] = fieldValue;
+    });
 
     // Next initialize default values
     this.iterateFields(({ field, fieldName }) => {
@@ -565,6 +570,10 @@ class Model {
     }
 
     this.setDataValue(fieldName, value);
+  }
+
+  isPersisted() {
+    return this._persisted;
   }
 
   isDirty(fieldName) {
@@ -694,8 +703,17 @@ class Model {
     return await this.where.last(limit, options);
   }
 
+  toString() {
+    return JSON.stringify(this.toJSON(), undefined, 2);
+  }
+
   toJSON() {
     return this.getAttributes();
+  }
+
+  [Symbol.for('nodejs.util.inspect.custom')](depth, inspectOptions, inspect) {
+    // TODO: support arguments
+    return this.toString();
   }
 }
 

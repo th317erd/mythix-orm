@@ -137,7 +137,7 @@ function getRelationalModelStatusForField(connection, modelInstance, originField
   let primaryModelName = modelInstance.getModelName();
   let relationModelMap = {
     [primaryModelName]: {
-      create:     false,
+      create:     !modelInstance.isPersisted(),
       instance:   modelInstance,
       modelName:  primaryModelName,
       Model:      modelInstance.getModel(),
@@ -222,9 +222,192 @@ function getRelationalModelStatusForField(connection, modelInstance, originField
   return relationModelMap;
 }
 
-function constructModelsForCreationFromOriginField(connection, modelInstance, originField) {
-  // WIP working on this and the above function
-  // to get relational model creations to work
+function constructModelsForCreationFromOriginField(connection, modelInstance, originField, attributes) {
+  if (!originField)
+    return;
+
+  if (!originField.type.isRelational())
+    return;
+
+  const getRelationalModel = (relationalMap, modelName) => {
+    let status = relationalMap[modelName];
+    return (status) ? status.instance : null;
+  };
+
+  let TargetModel       = originField.type.getTargetModel({ recursive: true, followForeignKeys: true });
+  let targetModelName   = TargetModel.getModelName();
+  let relationalMap     = getRelationalModelStatusForField(connection, modelInstance, originField);
+  let sortedModelNames  = sortModelNamesByCreationOrder(connection, Array.from(Object.keys(relationalMap)));
+
+  for (let i = 0, il = sortedModelNames.length; i < il; i++) {
+    let modelName         = sortedModelNames[i];
+    let relationStatus    = relationalMap[modelName];
+    let RelatedModel      = relationStatus.Model;
+    let thisModelInstance = relationStatus.instance;
+
+    if (!(thisModelInstance instanceof RelatedModel)) {
+      let modelAttributes = relationStatus.instance;
+      if (modelName === targetModelName)
+        modelAttributes = attributes;
+
+      thisModelInstance = new RelatedModel(modelAttributes);
+    }
+
+    setRelationalValues(TargetModel, thisModelInstance, modelInstance.getModel(), modelInstance);
+    relationStatus.instance = thisModelInstance;
+
+    for (let [ targetFQField, sourceFQField ] of relationStatus.fields.entries()) {
+      let targetDef = parseQualifiedName(targetFQField);
+      if (Nife.isEmpty(targetDef.fieldNames))
+        continue;
+
+      let sourceDef             = parseQualifiedName(sourceFQField);
+      let relatedModelInstance  = (modelName === sourceDef.modelName) ? thisModelInstance : getRelationalModel(relationalMap, sourceDef.modelName);
+      if (!relatedModelInstance)
+        continue;
+
+      thisModelInstance[targetDef.fieldNames[0]] = relatedModelInstance[sourceDef.fieldNames[0]];
+    }
+  }
+
+  return { relationalMap, sortedModelNames };
+}
+
+async function createAndSaveAllRelatedModels(connection, modelInstance, originField, allModelAttributes, options) {
+  if (!modelInstance)
+    return;
+
+  if (!modelInstance.isPersisted())
+    throw new Error('ModelUtils::createAndSaveAllRelatedModels: Parent model must be persisted before you attempt to save related child models.');
+
+  // Find related models that need to be created
+  let TargetModel     = originField.type.getTargetModel({ recursive: true, followForeignKeys: true });
+  let targetModelName = TargetModel.getModelName();
+  let parentModelName = modelInstance.getModelName();
+  let storedModelMap  = new Map();
+  let parentModelSet  = new Set();
+  let relatedInfos    = [];
+
+  parentModelSet.add(modelInstance);
+  storedModelMap.set(parentModelName, parentModelSet);
+
+  for (let i = 0, il = allModelAttributes.length; i < il; i++) {
+    let modelAttributes = allModelAttributes[i];
+    if (!modelAttributes)
+      continue;
+
+    let result = constructModelsForCreationFromOriginField(connection, modelInstance, originField, modelAttributes);
+    relatedInfos.push(result);
+  }
+
+  // Create a map of all model instances by type
+  // so that we can bulk insert models
+  let fullModelMap        = new Map();
+  let relationalModelMap  = new Map();
+
+  for (let i = 0, il = relatedInfos.length; i < il; i++) {
+    let info = relatedInfos[i];
+    let { relationalMap, sortedModelNames } = info;
+
+    for (let j = 0, jl = sortedModelNames.length; j < jl; j++) {
+      let modelName = sortedModelNames[j];
+      let modelSet  = fullModelMap.get(modelName);
+      if (!modelSet) {
+        modelSet = new Set();
+        fullModelMap.set(modelName, modelSet);
+      }
+
+      let thisStatus        = relationalMap[modelName];
+      let thisModelInstance = thisStatus.instance;
+
+      if (!thisModelInstance.isPersisted()) {
+        modelSet.add(thisModelInstance);
+      } else {
+        let storedSet = storedModelMap.get(modelName);
+        if (!storedSet) {
+          storedSet = new Set();
+          storedModelMap.set(modelName, storedSet);
+        }
+
+        storedSet.add(thisModelInstance);
+      }
+
+      relationalModelMap.set(thisModelInstance, info);
+    }
+  }
+
+  const updateRelatedModelAttributes = (SetModel, modelName, models) => {
+    // Iterate all models and update their
+    // related model attributes
+    for (let j = 0, jl = models.length; j < jl; j++) {
+      let model         = models[j];
+      let relationInfo  = relationalModelMap.get(model);
+      let { relationalMap, sortedModelNames } = relationInfo;
+
+      // Assign related attributes from stored models
+      for (let k = 0, kl = sortedModelNames.length; k < kl; k++) {
+        let relatedModelName = sortedModelNames[k];
+
+        // Model can't be related to itself
+        if (relatedModelName === modelName)
+          continue;
+
+        // Is this model related to the set model?
+        if (!SetModel.isForeignKeyTargetModel(relatedModelName))
+          continue;
+
+        let relationStatus      = relationalMap[relatedModelName];
+        let SourceModel         = relationStatus.Model;
+        let sourceModelInstance = relationStatus.instance;
+
+        setRelationalValues(SetModel, model, SourceModel, sourceModelInstance);
+      }
+    }
+  };
+
+  // Create each model and all related models
+  let index = 0;
+  for (let [ modelName, _models ] of fullModelMap) {
+    let SetModel  = connection.getModel(modelName);
+    let models    = Array.from(_models.values());
+
+    if (index > 0) {
+      // Now assign related attributes from all other
+      // related models before we save
+      updateRelatedModelAttributes(SetModel, modelName, models);
+    }
+
+    index++;
+
+    if (models.length === 0)
+      continue;
+
+    // Create models
+    let storedModels  = await connection.insert(SetModel, models, options);
+    let storedSet     = storedModelMap.get(modelName);
+    if (!storedSet) {
+      storedSet = new Set();
+      storedModelMap.set(modelName, storedSet);
+    }
+
+    for (let j = 0, jl = storedModels.length; j < jl; j++) {
+      let storedModel = storedModels[j];
+      storedSet.add(storedModel);
+    }
+  }
+
+  // Create each model and all related models
+  for (let [ modelName, models ] of fullModelMap) {
+    let SetModel = connection.getModel(modelName);
+
+    // Now assign related attributes from all other
+    // related models before we save
+    updateRelatedModelAttributes(SetModel, modelName, models);
+  }
+
+  // Finally return created models
+  let finalModels = Array.from(storedModelMap.get(targetModelName).values());
+  return finalModels;
 }
 
 function setRelationalValues(Model, modelInstance, RelatedModel, relatedModelInstance) {
@@ -276,9 +459,10 @@ function setRelationalValues(Model, modelInstance, RelatedModel, relatedModelIns
 }
 
 module.exports = {
+  constructModelsForCreationFromOriginField,
+  createAndSaveAllRelatedModels,
   fieldToFullyQualifiedName,
   getRelationalModelStatusForField,
-  constructModelsForCreationFromOriginField,
   injectModelMethod,
   isUUID,
   parseQualifiedName,

@@ -50,7 +50,7 @@ class FieldScope extends QueryEngineBase {
         throw new Error(`${this.constructor.name}::_fetchOperatorValue: Invalid operation: You asked me to match against a model class, but model has no primary key, so I do not know what to match against.`);
 
       return value.where[pkFieldName];
-    } else if (value._isModelInstance) {
+    } else if (value._mythixModelInstance) {
       // If a model instance was supplied
       // then get the model's PK value
       let pkFieldName = value.getPrimaryKeyFieldName();

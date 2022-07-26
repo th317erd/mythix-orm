@@ -9,13 +9,10 @@ const NAMED_METHOD  = false;
 const ROOT_METHOD   = true;
 
 const INJECT_TYPE_METHODS = {
-  'add': async function({ field, type }) {
+  'addTo': async function({ field, type }) {
 
   },
-  'create': async function({ field, type }) {
-
-  },
-  'get': async function({ field, type }) {
+  'get': async function({ field, type }, queryEngine) {
 
   },
   'set': async function({ field, type }) {
@@ -24,13 +21,13 @@ const INJECT_TYPE_METHODS = {
   'update': async function({ field, type }) {
 
   },
-  'remove': async function({ field, type }) {
+  'removeFrom': async function({ field, type }) {
 
   },
   'destroy': async function({ field, type }) {
 
   },
-  'exists': async function({ field, type }) {
+  'has': async function({ field, type }) {
 
   },
 };
@@ -70,7 +67,7 @@ class ModelsType extends RelationalTypeBase {
   fieldNameToOperationName(field, operation, rootMethod) {
     let fieldName = field.pluralName;
     if (!fieldName)
-      fieldName = Inflection.pluralize(field.fieldName);
+      fieldName = Nife.capitalize(Inflection.pluralize(field.fieldName));
 
     if (rootMethod)
       return `__${operation}${fieldName}`;

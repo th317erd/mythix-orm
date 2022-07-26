@@ -3,7 +3,6 @@
 const Nife                = require('nife');
 const RelationalTypeBase  = require('./relational-type-base');
 const ModelUtils          = require('../../utils/model-utils');
-const Util                = require('util');
 
 const NAMED_METHOD  = false;
 const ROOT_METHOD   = true;
@@ -11,53 +10,35 @@ const ROOT_METHOD   = true;
 // These get injected into the class as
 // create{fieldName}, get{fieldName}, etc...
 const INJECT_TYPE_METHODS = {
-  'create': async function({ field, type }, _model, _options) {
-    if (!_model)
+  'create': async function({ field, type }, model, options) {
+    if (!model)
       return false;
 
-    let options         = (_options === true) ? { update: true } : (_options || {});
     let TargetModel     = type.getTargetModel({ recursive: true, followForeignKeys: true });
     let connection      = this.getConnection();
     let fetchedModel;
 
     // TODO: This probably needs to be an outer join
     let getterMethodName = type.fieldNameToOperationName(field, 'get', NAMED_METHOD);
-    console.log('Fetch method: ', getterMethodName);
     fetchedModel = await this[getterMethodName](TargetModel.where.LIMIT(1), options);
 
     if (fetchedModel && fetchedModel instanceof TargetModel) {
-      if (options.update) {
-        fetchedModel.setAttributes(model, true);
-        if (fetchedModel.isDirty())
-          await fetchedModel.save();
-      } else {
-        throw new Error(`ModelType::${getterMethodName}: Model creation failed because model already exists. Use the "update: true" option to force an update instead.`);
-      }
+      fetchedModel.setAttributes(model, true);
+      if (fetchedModel.isDirty())
+        await fetchedModel.save();
 
       return fetchedModel;
     }
 
-    let relations = ModelUtils.getRelationalModelStatusForField(connection, this, field);
-    console.log(Util.inspect(relations, { depth: 4, colors: true }));
+    let storedModels  = await ModelUtils.createAndSaveAllRelatedModels(connection, this, field, [ model ], options);
+    let resultModel   = storedModels[0];
 
-    let model = _model;
-    if (!(model instanceof TargetModel))
-      model = new TargetModel(model);
-
-    // Update target model fields to reflect any relational field
-    // values from the parent model (this)
-    ModelUtils.setRelationalValues(TargetModel, model, this.getModel(), this);
-
-    let result      = await connection.insert(TargetModel, [ model ], options);
-    let storedModel = result[0];
-
-    // Now update parent model fields to reflect any relational
-    // field values from the child model that was just stored
-    ModelUtils.setRelationalValues(this.getModel(), this, TargetModel, storedModel);
+    // Update this model to reflect the update
+    ModelUtils.setRelationalValues(this.getModel(), this, resultModel.getModel(), resultModel);
     if (this.isDirty())
-      await connection.update(this.getModel(), [ this ], options);
+      await this.save();
 
-    return storedModel;
+    return resultModel;
   },
   'get': async function({ field, type }, queryEngine, options) {
     let query = type.prepareQuery(this, field, queryEngine);

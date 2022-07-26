@@ -469,6 +469,23 @@ class ConnectionBase {
     return primaryResult;
   }
 
+  setPersisted(_models, value) {
+    let models = _models;
+    if (models.mythixPreparedModels)
+      models = models.models;
+
+    if (Nife.isEmpty(models))
+      return;
+
+    for (let i = 0, il = models.length; i < il; i++) {
+      let model = models[i];
+      if (!model || !model._mythixModelInstance)
+        continue;
+
+      model._persisted = value;
+    }
+  }
+
   async start() {
     throw new Error(`${this.constructor.name}::start: Child class is required to implement "start".`);
   }

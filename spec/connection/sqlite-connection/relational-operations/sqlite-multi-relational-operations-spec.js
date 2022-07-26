@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, beforeAll, afterEach, beforeAll */
+/* global describe, it, beforeAll, afterEach, beforeAll, expect */
 
 const {
   createConnection,
@@ -27,34 +27,20 @@ describe('SQLiteConnection', () => {
       await truncateTables(connection);
     });
 
-    it('', () => {});
+    describe('create multi model', () => {
+      it('can create a single model through a multi-relational field', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
 
-    // describe('create single model', () => {
-    //   it('can create a single model through a relational field', async () => {
-    //     let userModels = [
-    //       new User({ firstName: 'Test', lastName: 'User', primaryRoleID: null }),
-    //       new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
-    //     ];
+        await connection.insert(User, userModels);
 
-    //     await connection.insert(User, userModels);
+        let user = await User.where.first();
+        expect(await Role.count()).toBe(0);
 
-    //     let user = await User.where.first();
-    //     let primaryRole = await user.getPrimaryRole();
-    //     expect(primaryRole).toBe(undefined);
-
-    //     user = await User.where.last();
-    //     primaryRole = await user.getPrimaryRole();
-    //     expect(primaryRole).toBe(undefined);
-
-    //     expect(user.primaryRoleID).toBe(null);
-    //     await user.createPrimaryRole({ name: 'admin' });
-    //     expect(user.primaryRoleID).not.toBe(null);
-
-    //     primaryRole = await user.getPrimaryRole();
-    //     expect(primaryRole).toBeInstanceOf(Role);
-    //     expect(primaryRole.name).toEqual('admin');
-    //   });
-    // });
+        await user.addToRoles({ name: 'admin' });
+      });
+    });
 
     // describe('get single model', () => {
     //   it('can fetch a single model through a relational field', async () => {
