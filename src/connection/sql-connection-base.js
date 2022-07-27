@@ -180,6 +180,20 @@ class SQLConnectionBase extends ConnectionBase {
       return obj;
     }, {});
 
+    // Remap row
+    let modelNames = Object.keys(modelInfo).sort((a, b) => {
+      if (a === rootModelName)
+        return -1;
+
+      if (b === rootModelName)
+        return 1;
+
+      if (a === b)
+        return 0;
+
+      return (a < b) ? -1 : 1;
+    });
+
     for (let i = 0, il = rows.length; i < il; i++) {
       let row   = rows[i];
       let data  = {};
@@ -200,23 +214,9 @@ class SQLConnectionBase extends ConnectionBase {
         dataContext[field.fieldName] = remoteValue;
       }
 
-      // Remap row
-      let modelNames = Object.keys(data).sort((a, b) => {
-        if (a === rootModelName)
-          return -1;
-
-        if (b === rootModelName)
-          return 1;
-
-        if (a === b)
-          return 0;
-
-        return (a < b) ? -1 : 1;
-      });
-
-      let rootModelData;
-      for (let i = 0, il = modelNames.length; i < il; i++) {
-        let modelName     = modelNames[i];
+      let rootModel;
+      for (let j = 0, jl = modelNames.length; j < jl; j++) {
+        let modelName     = modelNames[j];
         let info          = modelInfo[modelName];
         let models        = modelData[modelName];
         let model         = data[modelName];
@@ -244,11 +244,11 @@ class SQLConnectionBase extends ConnectionBase {
           continue;
         }
 
-        if (i === 0) {
-          rootModelData = model;
+        if (j === 0) {
+          rootModel = model;
         } else {
-          if (!rootModelData._) {
-            Object.defineProperties(rootModelData, {
+          if (!rootModel._) {
+            Object.defineProperties(rootModel, {
               '_': {
                 writable:     true,
                 enumberable:  false,
@@ -258,10 +258,10 @@ class SQLConnectionBase extends ConnectionBase {
             });
           }
 
-          if (!rootModelData._[modelName])
-            rootModelData._[modelName] = [];
+          if (!rootModel._[modelName])
+            rootModel._[modelName] = [];
 
-          rootModelData._[modelName].push(index);
+          rootModel._[modelName].push(index);
         }
       }
     }
@@ -290,23 +290,17 @@ class SQLConnectionBase extends ConnectionBase {
       if (callbackIsValid)
         model = callback(RootModel, model);
 
-      if (model._ && data._) {
+      if (data._) {
         let relationships = data._;
         let modelNames    = Object.keys(relationships);
 
         for (let i = 0, il = modelNames.length; i < il; i++) {
           let modelName           = modelNames[i];
           let Model               = this.getModel(modelName);
-          let pluralModelName     = Model.getPluralName();
-          let relationName        = Nife.uncapitalize(pluralModelName);
-          let relationshipModels  = model._[relationName];
           let modelIndexes        = relationships[modelName];
           let models              = modelDataMap[modelName];
 
-          if (!relationshipModels)
-            relationshipModels = model._[relationName] = [];
-
-          model._[relationName] = relationshipModels.concat(modelIndexes.map((modelIndex) => {
+          ModelUtils.assignRelatedModels(model, modelIndexes.map((modelIndex) => {
             let modelData = models[modelIndex];
             let thisModel = new Model(modelData);
 
@@ -347,7 +341,7 @@ class SQLConnectionBase extends ConnectionBase {
     return await this.bulkModelOperation(
       Model,
       models,
-      _options,
+      Object.assign({}, _options || {}, { skipPersisted: true }),
       async (Model, preparedModels, options, queryGenerator) => {
         let sqlStr  = queryGenerator.generateInsertStatement(Model, preparedModels, options);
         // console.log('SQL STR: ', sqlStr);
@@ -523,6 +517,8 @@ class SQLConnectionBase extends ConnectionBase {
 
         for (let i = 0, il = models.length; i < il; i++) {
           let model = models[i];
+
+          model.__order = i;
 
           yield model;
         }

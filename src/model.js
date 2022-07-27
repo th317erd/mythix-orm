@@ -409,6 +409,12 @@ class Model {
         configurable: true,
         value:        false,
       },
+      '__order': {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        0,
+      },
       'changes': {
         enumberable:  false,
         configurable: true,
@@ -704,7 +710,7 @@ class Model {
   }
 
   toString() {
-    return JSON.stringify(this.toJSON(), undefined, 2);
+    return `${this.getModelName()} ${JSON.stringify(this.toJSON(), undefined, 2)}`;
   }
 
   toJSON() {

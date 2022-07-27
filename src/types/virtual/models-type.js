@@ -9,25 +9,47 @@ const NAMED_METHOD  = false;
 const ROOT_METHOD   = true;
 
 const INJECT_TYPE_METHODS = {
-  'addTo': async function({ field, type }) {
+  'addTo': async function({ field, type }, _models, options) {
+    if (Nife.isEmpty(_models))
+      return [];
+
+    let models = Nife.toArray(_models);
+    return this.getConnection().transaction(async (connection) => {
+      let currentModels = this[field.fieldName];
+      if (Nife.isEmpty(currentModels))
+        currentModels = [];
+
+      let storedModels  = await ModelUtils.createAndSaveAllRelatedModels(connection, this, field, models, options);
+      let allModels     = currentModels.concat(storedModels);
+
+      this[field.fieldName] = allModels;
+
+      return allModels;
+    });
+  },
+  'get': async function*({ field, type }, queryEngine, options) {
+    let query                       = type.prepareQuery(this, field, queryEngine);
+    let results                     = query.all(options);
+    let primaryModelRelationalArray = [];
+
+    this[field.fieldName] = primaryModelRelationalArray;
+
+    for await (let item of results) {
+      primaryModelRelationalArray.push(item);
+
+      yield item;
+    }
+  },
+  'set': async function({ field, type }, models) {
 
   },
-  'get': async function({ field, type }, queryEngine) {
+  'removeFrom': async function({ field, type }, models) {
 
   },
-  'set': async function({ field, type }) {
+  'destroy': async function({ field, type }, queryEngine) {
 
   },
-  'update': async function({ field, type }) {
-
-  },
-  'removeFrom': async function({ field, type }) {
-
-  },
-  'destroy': async function({ field, type }) {
-
-  },
-  'has': async function({ field, type }) {
+  'has': async function({ field, type }, queryEngine) {
 
   },
 };

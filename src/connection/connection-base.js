@@ -153,6 +153,7 @@ class ConnectionBase {
 
     let options           = _options || {};
     let finalizedModels   = [];
+    let dirtyModels       = [];
     let dirtyFieldNames   = {};
     let dirtyFields       = [];
     let hasAllFieldNames  = false;
@@ -170,8 +171,15 @@ class ConnectionBase {
     // and find all the dirty fields
     for (let i = startIndex; i < endIndex; i++) {
       let model = models[i];
-      if (!(model instanceof ModelBase))
+
+      if (!(model instanceof ModelBase)) {
         model = new Model(model);
+      } else if (model.isPersisted() && options.skipPersisted) {
+        if (model.isDirty())
+          dirtyModels.push(model);
+
+        continue;
+      }
 
       if (!hasAllFieldNames) {
         Object.assign(dirtyFieldNames, model.changes);
@@ -193,7 +201,7 @@ class ConnectionBase {
       dirtyFields.push(field);
     }
 
-    let finalResult = { models: finalizedModels, dirtyFields };
+    let finalResult = { models: finalizedModels, dirtyFields, dirtyModels };
     Object.defineProperties(finalResult, {
       'mythixPreparedModels': {
         writable:     true,
@@ -342,8 +350,6 @@ class ConnectionBase {
     }
 
     // Now copy related field values between all instantiated models
-
-    // TODO: Make more efficient by first checking if models are related
     for (let [ primaryModel, subModelMap ] of primaryModelRelationMap.entries()) {
       for (let [ targetModelName, targetModels ] of subModelMap.entries()) {
         let TargetModel = this.getModel(targetModelName);
@@ -356,6 +362,9 @@ class ConnectionBase {
 
           for (let [ sourceModelName, sourceModels ] of subModelMap.entries()) {
             if (sourceModelName === targetModelName)
+              continue;
+
+            if (!TargetModel.isForeignKeyTargetModel(sourceModelName))
               continue;
 
             let SourceModel = this.getModel(sourceModelName);
@@ -378,13 +387,22 @@ class ConnectionBase {
     if (!models)
       return;
 
+    let inputIsArray = false;
     if (!Array.isArray(models)) {
-      if (!models.mythixPreparedModels)
-        models = [ models ].filter(Boolean);
+      if (!models.mythixPreparedModels) {
+        if (models instanceof Map || models instanceof Set)
+          inputIsArray = true;
+
+        models = Nife.toArray(models).filter(Boolean);
+      } else {
+        inputIsArray = true;
+      }
+    } else {
+      inputIsArray = true;
     }
 
     if (Nife.isEmpty(models))
-      return;
+      return (inputIsArray) ? [] : undefined;
 
     let queryGenerator  = this.getQueryGenerator();
     let options         = Object.assign({}, _options || {});
@@ -392,10 +410,12 @@ class ConnectionBase {
     if (batchSize < 1)
       throw new Error(`${this.constructor.name}::bulkModelOperation: "batchSize" can not be less than 1.`);
 
-    const computeBulkModels = async (Model, models, options) => {
-      let offset        = 0;
+    const computeBulkModels = async (Model, _models, options) => {
+      let models        = Nife.toArray(_models);
       let totalModels   = models.length;
+      let offset        = 0;
       let finalResults  = [];
+      let dirtyModels   = [];
 
       options.endIndex = 0;
 
@@ -409,6 +429,9 @@ class ConnectionBase {
         let preparedModels = this.prepareAllModelsForOperation(Model, models, options);
         await callback.call(this, Model, preparedModels, options, queryGenerator);
 
+        if (options.skipPersisted)
+          dirtyModels = dirtyModels.concat(preparedModels.dirtyModels);
+
         let batchModels = preparedModels.models;
         if (batchModels) {
           for (let i = 0, il = batchModels.length; i < il; i++) {
@@ -421,27 +444,34 @@ class ConnectionBase {
         offset += batchSize;
       }
 
-      return finalResults;
+      return { results: finalResults, dirtyModels };
     };
 
     let primaryModelName  = Model.getModelName();
     let groupedModelMap   = this.prepareAllModelsAndSubModelsForOperation(Model, models, options);
     let alreadyStored     = {};
-    let dirtyModels       = new Set();
+    let allDirtyModels    = new Set();
     let primaryResult;
 
     // console.log('GROUP: ', groupedModelMap);
 
     for (let [ modelName, models ] of groupedModelMap) {
-      let GroupModel    = this.getModel(modelName);
-      let resultModels  = await computeBulkModels(GroupModel, models, options);
+      let GroupModel                = this.getModel(modelName);
+      let { results, dirtyModels }  = await computeBulkModels(GroupModel, models, options);
+
+      // If prepareAllModelsForOperation found persisted
+      // models that were dirty, then add them here
+      if (dirtyModels && dirtyModels.length > 0) {
+        for (let i = 0, il = dirtyModels.length; i < il; i++)
+          allDirtyModels.add(dirtyModels[i]);
+      }
 
       alreadyStored[modelName] = true;
 
       if (modelName === primaryModelName)
-        primaryResult = resultModels;
+        primaryResult = results;
 
-      for (let storedModel of resultModels) {
+      for (let storedModel of results) {
         for (let [ groupModelName, groupModels ] of groupedModelMap) {
           if (groupModelName === modelName)
             continue;
@@ -457,16 +487,16 @@ class ConnectionBase {
             ModelUtils.setRelationalValues(TargetModel, targetModel, GroupModel, storedModel);
 
             if (targetModel.isDirty())
-              dirtyModels.add(targetModel);
+              allDirtyModels.add(targetModel);
           }
         }
       }
     }
 
-    if (dirtyModels.size > 0 && typeof afterOperationCallback === 'function')
-      await afterOperationCallback.call(this, Model, dirtyModels, options, queryGenerator);
+    if (allDirtyModels.size > 0 && typeof afterOperationCallback === 'function')
+      await afterOperationCallback.call(this, Model, allDirtyModels, options, queryGenerator);
 
-    return primaryResult;
+    return (inputIsArray) ? primaryResult : primaryResult[0];
   }
 
   setPersisted(_models, value) {

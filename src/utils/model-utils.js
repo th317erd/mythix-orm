@@ -250,7 +250,11 @@ function constructModelsForCreationFromOriginField(connection, modelInstance, or
       if (modelName === targetModelName)
         modelAttributes = attributes;
 
-      thisModelInstance = new RelatedModel(modelAttributes);
+      // Is this a persisted model?
+      if (modelAttributes instanceof RelatedModel && modelAttributes.isPersisted())
+        thisModelInstance = modelAttributes;
+      else
+        thisModelInstance = new RelatedModel(modelAttributes);
     }
 
     setRelationalValues(TargetModel, thisModelInstance, modelInstance.getModel(), modelInstance);
@@ -304,6 +308,8 @@ async function createAndSaveAllRelatedModels(connection, modelInstance, originFi
   // so that we can bulk insert models
   let fullModelMap        = new Map();
   let relationalModelMap  = new Map();
+  let persistedModelMap   = new Map();
+  let index               = 0;
 
   for (let i = 0, il = relatedInfos.length; i < il; i++) {
     let info = relatedInfos[i];
@@ -321,6 +327,7 @@ async function createAndSaveAllRelatedModels(connection, modelInstance, originFi
       let thisModelInstance = thisStatus.instance;
 
       if (!thisModelInstance.isPersisted()) {
+        thisModelInstance.__order = index;
         modelSet.add(thisModelInstance);
       } else {
         let storedSet = storedModelMap.get(modelName);
@@ -329,18 +336,28 @@ async function createAndSaveAllRelatedModels(connection, modelInstance, originFi
           storedModelMap.set(modelName, storedSet);
         }
 
+        thisModelInstance.__order = index;
         storedSet.add(thisModelInstance);
+
+        let persistedSet = persistedModelMap.get(modelName);
+        if (!persistedSet) {
+          persistedSet = new Set();
+          persistedModelMap.set(modelName, persistedSet);
+        }
+
+        persistedSet.add(thisModelInstance);
       }
+
+      index++;
 
       relationalModelMap.set(thisModelInstance, info);
     }
   }
 
-  const updateRelatedModelAttributes = (SetModel, modelName, models) => {
+  const updateRelatedModelAttributes = (SetModel, modelName, models, assignRelated) => {
     // Iterate all models and update their
     // related model attributes
-    for (let j = 0, jl = models.length; j < jl; j++) {
-      let model         = models[j];
+    for (let model of models) {
       let relationInfo  = relationalModelMap.get(model);
       let { relationalMap, sortedModelNames } = relationInfo;
 
@@ -352,13 +369,17 @@ async function createAndSaveAllRelatedModels(connection, modelInstance, originFi
         if (relatedModelName === modelName)
           continue;
 
-        // Is this model related to the set model?
-        if (!SetModel.isForeignKeyTargetModel(relatedModelName))
-          continue;
-
         let relationStatus      = relationalMap[relatedModelName];
         let SourceModel         = relationStatus.Model;
         let sourceModelInstance = relationStatus.instance;
+
+        if (assignRelated)
+          assignRelatedModels(model, [ sourceModelInstance ]);
+
+        // Is this model related to the set model?
+        // If not, simply continue
+        if (!SetModel.isForeignKeyTargetModel(relatedModelName))
+          continue;
 
         setRelationalValues(SetModel, model, SourceModel, sourceModelInstance);
       }
@@ -366,10 +387,9 @@ async function createAndSaveAllRelatedModels(connection, modelInstance, originFi
   };
 
   // Create each model and all related models
-  let index = 0;
-  for (let [ modelName, _models ] of fullModelMap) {
-    let SetModel  = connection.getModel(modelName);
-    let models    = Array.from(_models.values());
+  index = 0;
+  for (let [ modelName, models ] of fullModelMap) {
+    let SetModel = connection.getModel(modelName);
 
     if (index > 0) {
       // Now assign related attributes from all other
@@ -379,7 +399,7 @@ async function createAndSaveAllRelatedModels(connection, modelInstance, originFi
 
     index++;
 
-    if (models.length === 0)
+    if (models.size === 0)
       continue;
 
     // Create models
@@ -396,17 +416,40 @@ async function createAndSaveAllRelatedModels(connection, modelInstance, originFi
     }
   }
 
-  // Create each model and all related models
+  // Now update all related fields for all stored models
   for (let [ modelName, models ] of fullModelMap) {
     let SetModel = connection.getModel(modelName);
 
     // Now assign related attributes from all other
     // related models before we save
-    updateRelatedModelAttributes(SetModel, modelName, models);
+    updateRelatedModelAttributes(SetModel, modelName, models, true);
+  }
+
+  // Now update all related fields for all pre-persisted models
+  // Models that were already persisted before the operation
+  // are split apart and treated separately
+  for (let [ modelName, models ] of persistedModelMap) {
+    let SetModel = connection.getModel(modelName);
+
+    // Now assign related attributes from all other
+    // related models before we save
+    updateRelatedModelAttributes(SetModel, modelName, models, true);
   }
 
   // Finally return created models
-  let finalModels = Array.from(storedModelMap.get(targetModelName).values());
+  // Sorting final results by provided model
+  // order is important, since we split out any
+  // pre-persisted models and treat them separately
+  let finalModels = Array.from(storedModelMap.get(targetModelName).values()).sort((a, b) => {
+    let x = a.__order;
+    let y = b.__order;
+
+    if (x === y)
+      return 0;
+
+    return (x < y) ? -1 : 1;
+  });
+
   return finalModels;
 }
 
@@ -458,7 +501,36 @@ function setRelationalValues(Model, modelInstance, RelatedModel, relatedModelIns
   return modelInstance;
 }
 
+function assignRelatedModels(model, _relatedModels) {
+  if (!model || !_relatedModels)
+    return;
+
+  let relatedModels = Nife.toArray(_relatedModels);
+  for (let i = 0, il = relatedModels.length; i < il; i++) {
+    let relatedModel  = relatedModels[i];
+    let pluralName    = relatedModel.getPluralName();
+    let pkFieldName   = relatedModel.getPrimaryKeyFieldName();
+    let pkValue       = (pkFieldName) ? relatedModel[pkFieldName] : null;
+    let relatedScope  = model._[pluralName];
+
+    if (!relatedScope)
+      relatedScope = model._[pluralName] = [];
+
+    relatedScope.push(relatedModel);
+
+    if (Nife.isNotEmpty(pkValue)) {
+      Object.defineProperty(relatedScope, pkValue, {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        relatedModel,
+      });
+    }
+  }
+}
+
 module.exports = {
+  assignRelatedModels,
   constructModelsForCreationFromOriginField,
   createAndSaveAllRelatedModels,
   fieldToFullyQualifiedName,

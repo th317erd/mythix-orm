@@ -14,80 +14,84 @@ const INJECT_TYPE_METHODS = {
     if (!model)
       return false;
 
-    let TargetModel     = type.getTargetModel({ recursive: true, followForeignKeys: true });
-    let connection      = this.getConnection();
-    let fetchedModel;
+    let TargetModel = type.getTargetModel({ recursive: true, followForeignKeys: true });
 
-    // TODO: This probably needs to be an outer join
-    let getterMethodName = type.fieldNameToOperationName(field, 'get', NAMED_METHOD);
-    fetchedModel = await this[getterMethodName](TargetModel.where.LIMIT(1), options);
+    return this.getConnection().transaction(async (connection) => {
+      let fetchedModel;
 
-    if (fetchedModel && fetchedModel instanceof TargetModel) {
-      fetchedModel.setAttributes(model, true);
-      if (fetchedModel.isDirty())
-        await fetchedModel.save();
+      // TODO: This probably needs to be an outer join
+      let getterMethodName = type.fieldNameToOperationName(field, 'get', NAMED_METHOD);
+      fetchedModel = await this[getterMethodName](TargetModel.where.LIMIT(1), options);
 
-      return fetchedModel;
-    }
+      if (fetchedModel && fetchedModel instanceof TargetModel) {
+        fetchedModel.setAttributes(model, true);
+        if (fetchedModel.isDirty())
+          await fetchedModel.save();
 
-    let storedModels  = await ModelUtils.createAndSaveAllRelatedModels(connection, this, field, [ model ], options);
-    let resultModel   = storedModels[0];
+        return fetchedModel;
+      }
 
-    // Update this model to reflect the update
-    ModelUtils.setRelationalValues(this.getModel(), this, resultModel.getModel(), resultModel);
-    if (this.isDirty())
-      await this.save();
+      let storedModels  = await ModelUtils.createAndSaveAllRelatedModels(connection, this, field, [ model ], options);
+      let resultModel   = storedModels[0];
 
-    return resultModel;
+      // Update this model to reflect the update
+      ModelUtils.setRelationalValues(this.getModel(), this, resultModel.getModel(), resultModel);
+      if (this.isDirty())
+        await this.save();
+
+      return resultModel;
+    });
   },
   'get': async function({ field, type }, queryEngine, options) {
     let query = type.prepareQuery(this, field, queryEngine);
     return await query.first(null, options);
   },
   'update': async function({ fullMethodName, field, type }, attributes, _options) {
-    let options = _options || {};
-    let query   = type.prepareQuery(this, field);
-    let model   = await query.first(null, options);
+    return this.getConnection().transaction(async (connection) => {
+      let options = _options || {};
+      let query   = type.prepareQuery(this, field);
+      let model   = await query.first(null, options);
 
-    if (!model) {
-      if (options.force === true) {
-        let creatorMethodName = type.fieldNameToOperationName(field, 'create', NAMED_METHOD);
-        return await this[creatorMethodName](attributes, options);
+      if (!model) {
+        if (options.force === true) {
+          let creatorMethodName = type.fieldNameToOperationName(field, 'create', NAMED_METHOD);
+          return await this[creatorMethodName](attributes, options);
+        }
+
+        throw new Error(`${field.Model.getModelName}::${fullMethodName}: Model not found to update. You can pass "{ force: true }" to the options to force a creation instead.`);
       }
 
-      throw new Error(`${field.Model.getModelName}::${fullMethodName}: Model not found to update. You can pass "{ force: true }" to the options to force a creation instead.`);
-    }
+      model.setAttributes(attributes, true);
+      if (!model.isDirty())
+        return model;
 
-    model.setAttributes(attributes, true);
-    if (!model.isDirty())
-      return model;
+      let [ storedModel ] = await connection.update(model.getModel(), [ model ], options);
 
-    let connection      = this.getConnection();
-    let [ storedModel ] = await connection.update(model.getModel(), [ model ], options);
+      // Update this model to reflect the update
+      ModelUtils.setRelationalValues(this.getModel(), this, storedModel.getModel(), storedModel);
+      if (this.isDirty())
+        await this.save();
 
-    // Update this model to reflect the update
-    ModelUtils.setRelationalValues(this.getModel(), this, storedModel.getModel(), storedModel);
-    if (this.isDirty())
-      await this.save();
-
-    return storedModel;
+      return storedModel;
+    });
   },
   'destroy': async function({ field, type }, options) {
-    let query = type.prepareQuery(this, field);
-    let model = await query.first(options);
+    return this.getConnection().transaction(async (connection) => {
+      let query = type.prepareQuery(this, field);
+      let model = await query.first(options);
 
-    if (!model)
-      return false;
+      if (!model)
+        return false;
 
-    let connection = this.getConnection();
-    await connection.destroy(model.getModel(), [ model ], options);
+      await connection.destroy(model.getModel(), [ model ], options);
 
-    // Update this model to reflect the deletion
-    ModelUtils.setRelationalValues(this.getModel(), this, model.getModel());
-    if (this.isDirty())
-      await this.save();
+      // Update this model to reflect the deletion
+      ModelUtils.setRelationalValues(this.getModel(), this, model.getModel());
+      if (this.isDirty())
+        await this.save();
 
-    return true;
+      return true;
+    });
   },
   'exists': async function({ field, type }, options) {
     let query = type.prepareQuery(this, field);

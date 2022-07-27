@@ -69,6 +69,17 @@ class QueryEngine extends QueryEngineBase {
     return this.toString(connection, options);
   }
 
+  MERGE(queryEngine) {
+    let sourceQuery = queryEngine._getRawQuery();
+
+    for (let i = 0, il = sourceQuery.length; i < il; i++) {
+      let queryPart = sourceQuery[i];
+      this._addToQuery(Object.assign({}, queryPart));
+    }
+
+    return this;
+  }
+
   all(options) {
     let connection = this.getConnection();
     return connection.select(this, options);

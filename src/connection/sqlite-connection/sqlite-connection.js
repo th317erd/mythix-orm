@@ -164,6 +164,8 @@ class SQLiteConnection extends SQLConnectionBase {
   }
 
   formatSelectResponse(sqlStatement, result) {
+    // TODO: See if sqlite can return selected column names
+    // instead of parsing field projection
     let queryGenerator      = this.getQueryGenerator();
     let projectionFieldMap  = queryGenerator.parseFieldProjectionToFieldMap(sqlStatement);
     let columns             = Array.from(projectionFieldMap.keys());

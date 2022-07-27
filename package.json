@@ -33,7 +33,7 @@
   "dependencies": {
     "inflection": "^1.13.2",
     "moment": "^2.29.3",
-    "nife": "^1.8.0",
+    "nife": "^1.10.0",
     "sqlstring": "^2.3.3",
     "uuid": "^8.3.2",
     "xid-js": "^1.0.1"

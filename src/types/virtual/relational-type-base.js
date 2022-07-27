@@ -346,7 +346,7 @@ class RelationalTypeBase extends Type {
     }
 
     if (queryEngine)
-      query = query.AND(queryEngine);
+      query = query.AND.MERGE(queryEngine);
 
     return query;
   }
