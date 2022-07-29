@@ -116,7 +116,7 @@ class SQLiteConnection extends SQLConnectionBase {
 
   async transaction(callback, _options) {
     let options       = _options || {};
-    let inheritedThis = Object.create(this);
+    let inheritedThis = Object.create(options.transaction || this);
     let savePointName;
 
     if (inheritedThis.inTransaction !== true) {

@@ -533,8 +533,11 @@ class QueryGeneratorBase {
     return queryRoot.slice(index);
   }
 
-  generateSelectQueryCondition(queryPart, field, operator, _value, options) {
-    let value = _value;
+  generateSelectQueryCondition(queryPart, _value, options) {
+    let value     = _value;
+    let field     = queryPart.Field;
+    let isNot     = queryPart.not;
+    let operator  = (isNot) ? queryPart.inverseOperator : queryPart.operator;
 
     // If the value is an array, then handle the
     // special "IN" case for an array
@@ -557,11 +560,11 @@ class QueryGeneratorBase {
       // condition enclosed in parenthesis
       if (specialValues.length > 0) {
         let subParts = specialValues.map((specialValue) => {
-          return this.generateSelectQueryCondition(queryPart, field, operator, specialValue, options);
+          return this.generateSelectQueryCondition(queryPart, specialValue, options);
         });
 
         if (arrayValues.length > 0)
-          subParts.push(this.generateSelectQueryCondition(queryPart, field, operator, arrayValues, options));
+          subParts.push(this.generateSelectQueryCondition(queryPart, arrayValues, options));
 
         return `(${subParts.join(' OR ')})`;
       }
@@ -764,7 +767,7 @@ class QueryGeneratorBase {
         if (queryPart.condition !== true)
           continue;
 
-        result = this.generateSelectQueryCondition(queryPart, queryPart.Field, queryOperator, queryValue, options);
+        result = this.generateSelectQueryCondition(queryPart, queryValue, options);
       } else if (Object.prototype.hasOwnProperty.call(queryPart, 'logical')) {
         if (queryOperator === 'NOT')
           continue;

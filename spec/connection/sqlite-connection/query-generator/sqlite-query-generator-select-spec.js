@@ -137,112 +137,112 @@ describe('SQLiteQueryGenerator', () => {
 
   describe('generateSelectQueryCondition', () => {
     it('can generate a query condition (EQ)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: false, operator: 'EQ', inverseOperator: 'NEQ' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', null)).toEqual('"users"."id" IS NULL');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', true)).toEqual('"users"."id" IS TRUE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', false)).toEqual('"users"."id" IS FALSE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', 'derp')).toEqual('"users"."id" = \'derp\'');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', 1)).toEqual('"users"."id" = 1');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', BigInt(1))).toEqual('"users"."id" = 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, null)).toEqual('"users"."id" IS NULL');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, true)).toEqual('"users"."id" IS TRUE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, false)).toEqual('"users"."id" IS FALSE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 'derp')).toEqual('"users"."id" = \'derp\'');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 1)).toEqual('"users"."id" = 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, BigInt(1))).toEqual('"users"."id" = 1');
     });
 
     it('can generate a query condition for array of items (EQ)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: false, operator: 'EQ', inverseOperator: 'NEQ' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ 'stuff', 'derp' ])).toEqual('"users"."id" IN (\'stuff\',\'derp\')');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ 'stuff', {} ])).toEqual('"users"."id" IN (\'stuff\')');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ 'stuff', 1 ])).toEqual('"users"."id" IN (\'stuff\',1)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ 'stuff', BigInt(1) ])).toEqual('"users"."id" IN (\'stuff\',1)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ 'stuff', 1, undefined ])).toEqual('"users"."id" IN (\'stuff\',1)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ 'stuff', 1, null ])).toEqual('("users"."id" IS NULL OR "users"."id" IN (\'stuff\',1))');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ true, false, null ])).toEqual('("users"."id" IS TRUE OR "users"."id" IS FALSE OR "users"."id" IS NULL)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [])).toEqual('');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'EQ', [ undefined, {} ])).toEqual('');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 'derp' ])).toEqual('"users"."id" IN (\'stuff\',\'derp\')');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', {} ])).toEqual('"users"."id" IN (\'stuff\')');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 1 ])).toEqual('"users"."id" IN (\'stuff\',1)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', BigInt(1) ])).toEqual('"users"."id" IN (\'stuff\',1)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 1, undefined ])).toEqual('"users"."id" IN (\'stuff\',1)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 1, null ])).toEqual('("users"."id" IS NULL OR "users"."id" IN (\'stuff\',1))');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ true, false, null ])).toEqual('("users"."id" IS TRUE OR "users"."id" IS FALSE OR "users"."id" IS NULL)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [])).toEqual('');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ undefined, {} ])).toEqual('');
     });
 
     it('can generate a query condition (NEQ)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: true, operator: 'EQ', inverseOperator: 'NEQ' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', null)).toEqual('"users"."id" IS NOT NULL');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', true)).toEqual('"users"."id" IS NOT TRUE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', false)).toEqual('"users"."id" IS NOT FALSE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', 'derp')).toEqual('"users"."id" != \'derp\'');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', 1)).toEqual('"users"."id" != 1');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', BigInt(1))).toEqual('"users"."id" != 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, null)).toEqual('"users"."id" IS NOT NULL');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, true)).toEqual('"users"."id" IS NOT TRUE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, false)).toEqual('"users"."id" IS NOT FALSE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 'derp')).toEqual('"users"."id" != \'derp\'');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 1)).toEqual('"users"."id" != 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, BigInt(1))).toEqual('"users"."id" != 1');
     });
 
     it('can generate a query condition for array of items (NEQ)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: true, operator: 'EQ', inverseOperator: 'NEQ' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ 'stuff', 'derp' ])).toEqual('"users"."id" NOT IN (\'stuff\',\'derp\')');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ 'stuff', {} ])).toEqual('"users"."id" NOT IN (\'stuff\')');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ 'stuff', 1 ])).toEqual('"users"."id" NOT IN (\'stuff\',1)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ 'stuff', BigInt(1) ])).toEqual('"users"."id" NOT IN (\'stuff\',1)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ 'stuff', 1, undefined ])).toEqual('"users"."id" NOT IN (\'stuff\',1)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ 'stuff', 1, null ])).toEqual('("users"."id" IS NOT NULL OR "users"."id" NOT IN (\'stuff\',1))');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ true, false, null ])).toEqual('("users"."id" IS NOT TRUE OR "users"."id" IS NOT FALSE OR "users"."id" IS NOT NULL)');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [])).toEqual('');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'NEQ', [ undefined, {} ])).toEqual('');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 'derp' ])).toEqual('"users"."id" NOT IN (\'stuff\',\'derp\')');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', {} ])).toEqual('"users"."id" NOT IN (\'stuff\')');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 1 ])).toEqual('"users"."id" NOT IN (\'stuff\',1)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', BigInt(1) ])).toEqual('"users"."id" NOT IN (\'stuff\',1)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 1, undefined ])).toEqual('"users"."id" NOT IN (\'stuff\',1)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ 'stuff', 1, null ])).toEqual('("users"."id" IS NOT NULL OR "users"."id" NOT IN (\'stuff\',1))');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ true, false, null ])).toEqual('("users"."id" IS NOT TRUE OR "users"."id" IS NOT FALSE OR "users"."id" IS NOT NULL)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [])).toEqual('');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, [ undefined, {} ])).toEqual('');
     });
 
     it('can generate a query condition (GT)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: false, operator: 'GT', inverseOperator: 'LTE' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GT', null)).toEqual('"users"."id" > NULL');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GT', true)).toEqual('"users"."id" > TRUE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GT', false)).toEqual('"users"."id" > FALSE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GT', 'derp')).toEqual('"users"."id" > \'derp\'');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GT', 1)).toEqual('"users"."id" > 1');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GT', BigInt(1))).toEqual('"users"."id" > 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, null)).toEqual('"users"."id" > NULL');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, true)).toEqual('"users"."id" > TRUE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, false)).toEqual('"users"."id" > FALSE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 'derp')).toEqual('"users"."id" > \'derp\'');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 1)).toEqual('"users"."id" > 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, BigInt(1))).toEqual('"users"."id" > 1');
     });
 
     it('can generate a query condition (GTE)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: false, operator: 'GTE', inverseOperator: 'LT' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GTE', null)).toEqual('"users"."id" >= NULL');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GTE', true)).toEqual('"users"."id" >= TRUE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GTE', false)).toEqual('"users"."id" >= FALSE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GTE', 'derp')).toEqual('"users"."id" >= \'derp\'');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GTE', 1)).toEqual('"users"."id" >= 1');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'GTE', BigInt(1))).toEqual('"users"."id" >= 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, null)).toEqual('"users"."id" >= NULL');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, true)).toEqual('"users"."id" >= TRUE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, false)).toEqual('"users"."id" >= FALSE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 'derp')).toEqual('"users"."id" >= \'derp\'');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 1)).toEqual('"users"."id" >= 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, BigInt(1))).toEqual('"users"."id" >= 1');
     });
 
     it('can generate a query condition (LT)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: false, operator: 'LT', inverseOperator: 'GTE' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LT', null)).toEqual('"users"."id" < NULL');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LT', true)).toEqual('"users"."id" < TRUE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LT', false)).toEqual('"users"."id" < FALSE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LT', 'derp')).toEqual('"users"."id" < \'derp\'');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LT', 1)).toEqual('"users"."id" < 1');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LT', BigInt(1))).toEqual('"users"."id" < 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, null)).toEqual('"users"."id" < NULL');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, true)).toEqual('"users"."id" < TRUE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, false)).toEqual('"users"."id" < FALSE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 'derp')).toEqual('"users"."id" < \'derp\'');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 1)).toEqual('"users"."id" < 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, BigInt(1))).toEqual('"users"."id" < 1');
     });
 
     it('can generate a query condition (LTE)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: false, operator: 'LTE', inverseOperator: 'GT' };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', null)).toEqual('"users"."id" <= NULL');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', true)).toEqual('"users"."id" <= TRUE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', false)).toEqual('"users"."id" <= FALSE');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', 'derp')).toEqual('"users"."id" <= \'derp\'');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', 1)).toEqual('"users"."id" <= 1');
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, 'LTE', BigInt(1))).toEqual('"users"."id" <= 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, null)).toEqual('"users"."id" <= NULL');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, true)).toEqual('"users"."id" <= TRUE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, false)).toEqual('"users"."id" <= FALSE');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 'derp')).toEqual('"users"."id" <= \'derp\'');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, 1)).toEqual('"users"."id" <= 1');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, BigInt(1))).toEqual('"users"."id" <= 1');
     });
 
     it('can generate a query condition (using literals)', () => {
-      const queryPart = { Model: User };
+      const queryPart = { Model: User, Field: User.fields.id, not: false, operator: new SQLLiteral('EXISTS IN') };
 
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.generateSelectQueryCondition(queryPart, User.fields.id, new SQLLiteral('EXISTS IN'), new SQLLiteral('(1,2,3,4)'))).toEqual('"users"."id" EXISTS IN (1,2,3,4)');
+      expect(queryGenerator.generateSelectQueryCondition(queryPart, new SQLLiteral('(1,2,3,4)'))).toEqual('"users"."id" EXISTS IN (1,2,3,4)');
     });
   });
 

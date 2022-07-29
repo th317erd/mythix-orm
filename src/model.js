@@ -110,7 +110,7 @@ class Model {
     if (Object.prototype.hasOwnProperty.call(Model, 'mythixModelInitialized') && Model.mythixModelInitialized)
       return Model;
 
-    let foreignModelNames = new Set();
+    let foreignFields = new Map();
 
     // Initialize model fields
     Model.iterateFields(({ field, fieldName }) => {
@@ -122,7 +122,15 @@ class Model {
 
       if (field.type.isForeignKey()) {
         let targetModelName = field.type.getTargetModelName();
-        foreignModelNames.add(targetModelName);
+        let targetFieldName = field.type.getTargetFieldName();
+        let relationSet     = foreignFields.get(targetModelName);
+
+        if (!relationSet) {
+          relationSet = [];
+          foreignFields.set(targetModelName, relationSet);
+        }
+
+        relationSet.push({ targetFieldName: targetFieldName, sourceFieldName: fieldName });
       }
     });
 
@@ -141,23 +149,37 @@ class Model {
         },
         set:          () => {},
       },
-      '_foreignModelNames': {
+      '_foreignFields': {
         writable:     false,
         enumberable:  false,
         configurable: false,
-        value:        Array.from(foreignModelNames.values()),
+        value:        foreignFields,
       },
     });
 
     return Model;
   }
 
-  static getForeignKeyTargetModelNames() {
-    return this._foreignModelNames || [];
+  static getForeignKeysTargetModelNames() {
+    if (!this._foreignFields)
+      return [];
+
+    return Array.from(this._foreignFields.keys());
+  }
+
+  static getForeignKeysTargetFieldNames(modelName) {
+    if (!this._foreignFields)
+      return [];
+
+    let fieldNames = this._foreignFields.get(modelName);
+    return (fieldNames || []);
   }
 
   static isForeignKeyTargetModel(modelName) {
-    return (this.getForeignKeyTargetModelNames().indexOf(modelName) >= 0);
+    if (!this._foreignFields)
+      return false;
+
+    return this._foreignFields.has(modelName);
   }
 
   static getTablePrefix() {

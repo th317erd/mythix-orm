@@ -513,8 +513,16 @@ function assignRelatedModels(model, _relatedModels) {
     let pkValue       = (pkFieldName) ? relatedModel[pkFieldName] : null;
     let relatedScope  = model._[pluralName];
 
-    if (!relatedScope)
+    if (!relatedScope) {
       relatedScope = model._[pluralName] = [];
+
+      Object.defineProperty(relatedScope, 'Model', {
+        writable:     true,
+        enumberable:  false,
+        configurable: true,
+        value:        relatedModel.getModel(),
+      });
+    }
 
     relatedScope.push(relatedModel);
 
@@ -529,6 +537,62 @@ function assignRelatedModels(model, _relatedModels) {
   }
 }
 
+function getPrimaryKeysForModels(Model, _models, _options) {
+  let pkFieldName = Model.getPrimaryKeyFieldName();
+  if (!pkFieldName)
+    return [];
+
+  let models      = Nife.toArray(_models).filter(Boolean);
+  let primaryIDs  = models.map((model) => model[pkFieldName]).filter((id) => (id != null));
+
+  let options = _options || {};
+  if (!options.includeRelations)
+    return primaryIDs;
+
+  let primaryModelName      = Model.getModelName();
+  let idMap                 = { [primaryModelName]: primaryIDs };
+  let providedRelationNames = (Array.isArray(options.includeRelations)) ? (options.includeRelations.filter(Boolean)) : null;
+
+  for (let i = 0, il = models.length; i < il; i++) {
+    let model = models[i];
+    if (!model || !model._)
+      continue;
+
+    let relationScope = model._;
+    let relationNames = (providedRelationNames) ? providedRelationNames : Object.keys(relationScope);
+    for (let j = 0, jl = relationNames.length; j < jl; j++) {
+      let relationName  = relationNames[j];
+      let relatedModels = relationScope[relationName];
+      if (!relatedModels || !relatedModels.Model)
+        continue;
+
+      let relationModelName   = relatedModels.Model.getModelName();
+      let relationPKFieldName = relatedModels.Model.getPrimaryKeyFieldName();
+      if (!relationPKFieldName)
+        continue;
+
+      let idScope = idMap[relationModelName];
+      if (!idScope)
+        idScope = idMap[relationModelName] = [];
+
+      for (let k = 0, kl = relatedModels.length; k < kl; k++) {
+        let relatedModel  = relatedModels[k];
+        let id            = relatedModel[relationPKFieldName];
+
+        if (!id)
+          continue;
+
+        if (idScope.indexOf(id) >= 0)
+          continue;
+
+        idScope.push(id);
+      }
+    }
+  }
+
+  return idMap;
+}
+
 module.exports = {
   assignRelatedModels,
   constructModelsForCreationFromOriginField,
@@ -541,4 +605,5 @@ module.exports = {
   sanitizeFieldString,
   setRelationalValues,
   sortModelNamesByCreationOrder,
+  getPrimaryKeysForModels,
 };

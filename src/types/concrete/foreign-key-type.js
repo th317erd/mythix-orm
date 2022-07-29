@@ -144,6 +144,14 @@ class ForeignKeyType extends Type {
     return this.targetField;
   }
 
+  getTargetFieldName() {
+    let targetField = this.getTargetField();
+    if (!targetField)
+      return;
+
+    return targetField.fieldName;
+  }
+
   toConnectionType(...args) {
     let targetField = this.getTargetField();
     if (!targetField)

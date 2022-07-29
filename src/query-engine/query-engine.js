@@ -104,12 +104,12 @@ class QueryEngine extends QueryEngineBase {
   }
 
   async update(attributes, options) {
-    let connection  = this.getConnection();
+    let connection = this.getConnection();
     return await connection.updateAll(this, attributes, options);
   }
 
   async destroy(options) {
-    let connection  = this.getConnection();
+    let connection = this.getConnection();
     return await connection.destroyAll(this, options);
   }
 

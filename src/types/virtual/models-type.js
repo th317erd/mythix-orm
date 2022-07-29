@@ -8,11 +8,19 @@ const ModelUtils          = require('../../utils/model-utils');
 const NAMED_METHOD  = false;
 const ROOT_METHOD   = true;
 
+// These get injected into the class as
+// addTo{fieldName}, get{fieldName}, etc...
 const INJECT_TYPE_METHODS = {
-  'addTo': async function({ field, type }, _models, options) {
+  'addTo': async function({ field }, _models, options) {
     if (Nife.isEmpty(_models))
       return [];
 
+    // TODO: Needs to manage unique constraints
+    // for through tables. Even though the model
+    // might be persisted, the through table record
+    // might still be created, which might blow up
+    // if a constraint fails because the records
+    // already exist
     let models = Nife.toArray(_models);
     return this.getConnection().transaction(async (connection) => {
       let currentModels = this[field.fieldName];
@@ -25,7 +33,7 @@ const INJECT_TYPE_METHODS = {
       this[field.fieldName] = allModels;
 
       return allModels;
-    });
+    }, options);
   },
   'get': async function*({ field, type }, queryEngine, options) {
     let query                       = type.prepareQuery(this, field, queryEngine);
@@ -40,8 +48,76 @@ const INJECT_TYPE_METHODS = {
       yield item;
     }
   },
-  'set': async function({ field, type }, models) {
+  'set': async function({ field, type }, models, options) {
+    let TargetModel = type.getTargetModel({ recursive: true, followForeignKeys: true });
 
+    return this.getConnection().transaction(async (connection) => {
+      // Reset relation so we don't end up with
+      // current persisted model instances
+      this[field.fieldName] = [];
+
+
+      // First, create models in set
+      let addToMethodName   = type.fieldNameToOperationName(field, 'addTo', NAMED_METHOD);
+      let createdModels     = await this[addToMethodName](models, Object.assign({}, options || {}, { transaction: connection }));
+
+      // Next, destroy all relations not matching created set
+      let thisMethodName    = type.fieldNameToOperationName(field, 'set', NAMED_METHOD);
+      let parentModelName   = this.getModelName();
+      let idMap             = ModelUtils.getPrimaryKeysForModels(TargetModel, createdModels, { includeRelations: true });
+      let relationMap       = ModelUtils.getRelationalModelStatusForField(connection, this, field);
+      let sortedModelNames  = Nife.subtractFromArray(ModelUtils.sortModelNamesByCreationOrder(connection, Object.keys(relationMap)), [ parentModelName ]);
+      let destroyModelNames = sortedModelNames.slice(1).reverse();
+
+      if (destroyModelNames.length === 0) {
+        // No through table, this is a one-to-many relation.
+        // We can only destroy if the TargetModel has a foreign key
+        // to the parent model.
+      } else {
+        for (let i = 0, il = destroyModelNames.length; i < il; i++) {
+          let modelName = destroyModelNames[i];
+          let ids       = idMap[modelName];
+
+          // If we have no ids for this model, then
+          // there is nothing we can destroy
+          if (Nife.isEmpty(ids))
+            continue;
+
+          let ThisModel             = connection.getModel(modelName);
+          let thisModelPKFieldName  = ThisModel.getPrimaryKeyFieldName();
+          if (!thisModelPKFieldName) {
+            // Not sure how this would happen... since we obviously
+            // have a list of ids already... but let's be safe anyway
+            continue;
+          }
+
+          // We can only destroy models that have a foreign key
+          // to the parent model.
+          let foreignFieldNames = ThisModel.getForeignKeysTargetFieldNames(parentModelName);
+          if (Nife.isEmpty(foreignFieldNames))
+            continue;
+
+          // Create query to destroy related models
+          let query = ThisModel.where[thisModelPKFieldName].NOT.EQ(ids);
+          for (let j = 0, jl = foreignFieldNames.length; j < jl; j++) {
+            let { targetFieldName, sourceFieldName } = foreignFieldNames[j];
+            let parentModelValue = this[targetFieldName];
+
+            // If this value is empty then something is wrong...
+            // so fail early to prevent unwanted data loss
+            if (parentModelValue == null)
+              throw new Error(`${parentModelName}::${thisMethodName}: Field "${parentModelName}.${targetFieldName}" can not be empty for this operation.`);
+
+            query = query.AND[sourceFieldName].NOT.EQ(parentModelValue);
+          }
+
+          // Now destroy relations to update set
+          await query.destroy(options);
+        }
+      }
+
+      return createdModels;
+    }, options);
   },
   'removeFrom': async function({ field, type }, models) {
 
