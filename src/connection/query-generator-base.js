@@ -60,7 +60,10 @@ class QueryGeneratorBase {
 
   // eslint-disable-next-line no-unused-vars
   getEscapedProjectionName(field, options) {
-    return `${this.getEscapedColumnName(field, options)} AS ${this.getEscapedFieldName(field, options)}`;
+    if (options && options.noProjectionAliases)
+      return this.getEscapedColumnName(field, options);
+    else
+      return `${this.getEscapedColumnName(field, options)} AS ${this.getEscapedFieldName(field, options)}`;
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -1371,16 +1374,35 @@ class QueryGeneratorBase {
   generateDeleteStatement(Model, _queryEngine, _options) {
     let queryEngine = _queryEngine;
     let options     = _options;
-    let where;
 
-    if (!QueryEngine.isQuery(options))
-      options = _queryEngine;
-
-    if (queryEngine)
-      where = this.generateWhereAndOrderLimitOffset(queryEngine, options);
+    if (queryEngine) {
+      if (!QueryEngine.isQuery(queryEngine)) {
+        let models = Nife.toArray(queryEngine);
+        queryEngine = ModelUtils.buildQueryFromModelsAttributes(Model, models);
+        if (!queryEngine)
+          throw new Error(`${this.constructor.name}::generateDeleteStatement: Data provided for "${Model.getModelName()}" model is insufficient to complete operation.`);
+      }
+    }
 
     let escapedTableName = this.escapeID(Model.getTableName());
-    return `DELETE FROM ${escapedTableName}${(where) ? ` ${where}` : ''}`;
+    if (queryEngine) {
+      let pkField = Model.getPrimaryKeyField();
+      let where   = this.generateWhereAndOrderLimitOffset(queryEngine, options);
+
+      if (where && pkField) {
+        if (pkField)
+          queryEngine = queryEngine.PROJECT(`${Model.getModelName()}:${pkField.fieldName}`);
+
+        let innerSelect       = this.generateSelectStatement(queryEngine, Object.assign({}, options || {}, { noProjectionAliases: true }));
+        let escapedColumnName = this.getEscapedColumnName(pkField);
+
+        return `DELETE FROM ${escapedTableName} WHERE ${escapedColumnName} IN (${innerSelect})`;
+      } else {
+        return `DELETE FROM ${escapedTableName}${(where) ? ` ${where}` : ''}`;
+      }
+    } else {
+      return `DELETE FROM ${escapedTableName}`;
+    }
   }
 }
 

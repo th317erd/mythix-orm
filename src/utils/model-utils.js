@@ -614,7 +614,10 @@ function buildQueryFromModelsAttributes(Model, _models) {
 
   for (let i = 0, il = models.length; i < il; i++) {
     let model = models[i];
+    if (!model)
+      continue;
 
+    let subQuery = Model.where;
     for (let j = 0, jl = concreteFieldNames.length; j < jl; j++) {
       let fieldName = concreteFieldNames[j];
       let value = model[fieldName];
@@ -622,8 +625,10 @@ function buildQueryFromModelsAttributes(Model, _models) {
         continue;
 
       isValidQuery = true;
-      query = query.AND[fieldName].EQ(value);
+      subQuery = subQuery.AND[fieldName].EQ(value);
     }
+
+    query = query.AND(subQuery);
   }
 
   if (!isValidQuery)

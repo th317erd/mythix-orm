@@ -265,6 +265,7 @@ describe('SQLiteConnection', () => {
         await connection.insert(User, userModels);
 
         expect(await Role.count()).toEqual(0);
+        expect(await UserRole.count()).toEqual(0);
 
         let user = await User.where.first();
         let roles = await user.addToRoles([
@@ -289,35 +290,189 @@ describe('SQLiteConnection', () => {
       });
     });
 
-    // describe('destroy single model', () => {
-    //   it('can destroy a single model through a relational field', async () => {
-    //     let roleModels = [
-    //       new Role({ name: 'member', id: UUID.v4() }),
-    //       new Role({ name: 'admin', id: UUID.v4() }),
-    //     ];
+    describe('destroy multi-relational models', () => {
+      it('can destroy models from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
 
-    //     let userModels = [
-    //       new User({ firstName: 'Test', lastName: 'User', primaryRoleID: roleModels[0].id }),
-    //       new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: roleModels[0].id }),
-    //     ];
+        await connection.insert(User, userModels);
 
-    //     await connection.insert(Role, roleModels);
-    //     await connection.insert(User, userModels);
+        expect(await Role.count()).toEqual(0);
+        expect(await UserRole.count()).toEqual(0);
 
-    //     expect(await Role.where.count()).toEqual(2);
+        // Insert some roles to ensure they
+        // aren't deleted erroneously
+        await connection.insert(Role, [
+          { name: 'safe1' },
+          { name: 'safe2' },
+        ]);
 
-    //     let user = await User.where.first();
-    //     let result = await user.destroyPrimaryRole();
-    //     expect(result).toEqual(true);
+        let user = await User.where.first();
+        await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test' },
+        ]);
 
-    //     expect(await Role.where.count()).toEqual(1);
-    //     expect(await User.where.count()).toEqual(2);
+        expect(await Role.count()).toEqual(4);
+        expect(await UserRole.count()).toEqual(2);
 
-    //     user = await User.where.first();
-    //     expect(user).toBeInstanceOf(User);
-    //     expect(user.id).toEqual(userModels[0].id);
-    //     expect(user.primaryRoleID).toEqual(null);
-    //   });
-    // });
+        await user.destroyRoles();
+
+        expect(await Role.count()).toEqual(2);
+        expect(await UserRole.count()).toEqual(0);
+
+        let allRoles = await Utils.collect(Role.where.ORDER('name').all());
+        expect(allRoles).toBeInstanceOf(Array);
+        expect(allRoles.length).toEqual(2);
+        expect(allRoles[0].name).toEqual('safe1');
+        expect(allRoles[1].name).toEqual('safe2');
+      });
+
+      it('can destroy specific models from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
+
+        await connection.insert(User, userModels);
+
+        expect(await Role.count()).toEqual(0);
+        expect(await UserRole.count()).toEqual(0);
+
+        // Insert some roles to ensure they
+        // aren't deleted erroneously
+        await connection.insert(Role, [
+          { name: 'safe1' },
+          { name: 'safe2' },
+        ]);
+
+        let user = await User.where.first();
+        await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test' },
+        ]);
+
+        expect(await Role.count()).toEqual(4);
+        expect(await UserRole.count()).toEqual(2);
+
+        await user.destroyRoles({ name: 'admin' });
+
+        expect(await Role.count()).toEqual(3);
+        expect(await UserRole.count()).toEqual(1);
+
+        let allRoles = await Utils.collect(Role.where.ORDER('name').all());
+        expect(allRoles).toBeInstanceOf(Array);
+        expect(allRoles.length).toEqual(3);
+        expect(allRoles[0].name).toEqual('safe1');
+        expect(allRoles[1].name).toEqual('safe2');
+        expect(allRoles[2].name).toEqual('test');
+      });
+
+      it('can destroy specific models with a query from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
+
+        await connection.insert(User, userModels);
+
+        expect(await Role.count()).toEqual(0);
+        expect(await UserRole.count()).toEqual(0);
+
+        // Insert some roles to ensure they
+        // aren't deleted erroneously
+        await connection.insert(Role, [
+          { name: 'safe1' },
+          { name: 'safe2' },
+        ]);
+
+        let user = await User.where.first();
+        await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test' },
+        ]);
+
+        expect(await Role.count()).toEqual(4);
+        expect(await UserRole.count()).toEqual(2);
+
+        await user.destroyRoles(Role.where.name.EQ('admin'));
+
+        expect(await Role.count()).toEqual(3);
+        expect(await UserRole.count()).toEqual(1);
+
+        let allRoles = await Utils.collect(Role.where.ORDER('name').all());
+        expect(allRoles).toBeInstanceOf(Array);
+        expect(allRoles.length).toEqual(3);
+        expect(allRoles[0].name).toEqual('safe1');
+        expect(allRoles[1].name).toEqual('safe2');
+        expect(allRoles[2].name).toEqual('test');
+      });
+    });
+
+    describe('count multi-relational models', () => {
+      it('can count models from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
+
+        await connection.insert(User, userModels);
+
+        expect(await Role.count()).toEqual(0);
+        expect(await UserRole.count()).toEqual(0);
+
+        // Insert some roles to ensure they
+        // aren't deleted erroneously
+        await connection.insert(Role, [
+          { name: 'safe1' },
+          { name: 'safe2' },
+        ]);
+
+        let user = await User.where.first();
+        await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test' },
+        ]);
+
+        expect(await Role.count()).toEqual(4);
+        expect(await UserRole.count()).toEqual(2);
+
+        let count = await user.countRoles();
+        expect(count).toEqual(2);
+      });
+    });
+
+    describe('has multi-relational models', () => {
+      it('can check for existence of models from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
+
+        await connection.insert(User, userModels);
+
+        expect(await Role.count()).toEqual(0);
+        expect(await UserRole.count()).toEqual(0);
+
+        // Insert some roles to ensure they
+        // aren't deleted erroneously
+        await connection.insert(Role, [
+          { name: 'safe1' },
+          { name: 'safe2' },
+        ]);
+
+        let user = await User.where.first();
+
+        expect(await user.hasRoles()).toEqual(false);
+
+        await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test' },
+        ]);
+
+        expect(await Role.count()).toEqual(4);
+        expect(await UserRole.count()).toEqual(2);
+
+        expect(await user.hasRoles()).toEqual(true);
+      });
+    });
+
   });
 });

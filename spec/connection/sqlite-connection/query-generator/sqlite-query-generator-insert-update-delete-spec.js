@@ -246,21 +246,21 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let result          = queryGenerator.generateDeleteStatement(User, User.where.id.EQ('test'));
 
-      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" = \'test\'');
+      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" IN (SELECT "users"."id" FROM "users" WHERE "users"."id" = \'test\' ORDER BY "users"."rowid" ASC)');
     });
 
     it('should generate a delete statement with an order, limit, and offset', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let result          = queryGenerator.generateDeleteStatement(User, User.where.ORDER('firstName').LIMIT(50).OFFSET(10));
 
-      expect(result).toEqual('DELETE FROM "users" ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10');
+      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" IN (SELECT "users"."id" FROM "users" ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10)');
     });
 
     it('should generate a delete statement with a where clause, and an order, limit, and offset', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let result          = queryGenerator.generateDeleteStatement(User, User.where.firstName.EQ('Bob').ORDER('firstName').LIMIT(50).OFFSET(10));
 
-      expect(result).toEqual('DELETE FROM "users" WHERE "users"."firstName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10');
+      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" IN (SELECT "users"."id" FROM "users" WHERE "users"."firstName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10)');
     });
   });
 });

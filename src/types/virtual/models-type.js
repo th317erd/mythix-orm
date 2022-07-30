@@ -4,6 +4,7 @@ const Nife                = require('nife');
 const Inflection          = require('inflection');
 const RelationalTypeBase  = require('./relational-type-base');
 const Utils               = require('../../utils');
+const { QueryEngine } = require('../../query-engine');
 
 const NAMED_METHOD  = false;
 const ROOT_METHOD   = true;
@@ -212,11 +213,19 @@ const INJECT_TYPE_METHODS = {
       return storedModels.length;
     });
   },
-  'destroy': async function({ field, type }, queryEngine) {
-
+  'destroy': function({ field, type }, queryEngine, options) {
+    let query = type.prepareQuery(this, field, queryEngine);
+    return query.destroy(options);
   },
-  'has': async function({ field, type }, queryEngine) {
+  'count': function({ field, type }, queryEngine, options) {
+    let query = type.prepareQuery(this, field, queryEngine);
+    return query.count(null, options);
+  },
+  'has': async function({ field, type }, queryEngine, options) {
+    let countMethodName = type.fieldNameToOperationName(field, 'count', NAMED_METHOD);
+    let count           = await this[countMethodName](queryEngine, options);
 
+    return (count > 0);
   },
 };
 

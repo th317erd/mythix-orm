@@ -426,12 +426,13 @@ class SQLConnectionBase extends ConnectionBase {
     let options         = _options;
     let queryGenerator  = this.getQueryGenerator();
 
-    if (QueryEngine.isQuery(models) || (models == null || Array.isArray(models) && Nife.isEmpty(models))) {
+    if (QueryEngine.isQuery(models) || Nife.isEmpty(models)) {
       let query = models;
       if (!query)
         query = Model.where.unscoped();
 
       let sqlStr = queryGenerator.generateDeleteStatement(Model, query);
+      //console.log(sqlStr);
       return await this.query(sqlStr);
     } else if (!options) {
       options = {};
@@ -474,6 +475,8 @@ class SQLConnectionBase extends ConnectionBase {
     let options         = _options || {};
     let queryGenerator  = this.getQueryGenerator();
     let sqlStr          = queryGenerator.generateDeleteStatement(rootModel, queryEngine, options);
+
+    // console.log('DESTROY SQL: ', sqlStr);
 
     return await this.query(sqlStr, { formatResponse: true, logger: options.logger });
   }

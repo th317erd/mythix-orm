@@ -1,8 +1,9 @@
 'use strict';
 
-const Nife        = require('nife');
-const Type        = require('../type');
-const ModelUtils  = require('../../utils/model-utils');
+const Nife            = require('nife');
+const Type            = require('../type');
+const ModelUtils      = require('../../utils/model-utils');
+const { QueryEngine } = require('../../query-engine');
 
 const MAX_RECURSE_DEPTH = 20;
 
@@ -308,7 +309,8 @@ class RelationalTypeBase extends Type {
     return this.removeDuplicatesFromRelations(relations);
   }
 
-  prepareQuery(modelInstance, field, queryEngine) {
+  prepareQuery(modelInstance, field, _queryEngine) {
+    let queryEngine         = _queryEngine;
     let connection          = modelInstance.getConnection();
     let type                = field.type;
     let OriginModel         = field.Model;
@@ -345,33 +347,16 @@ class RelationalTypeBase extends Type {
       }
     }
 
-    if (queryEngine)
+    if (queryEngine && !QueryEngine.isQuery(queryEngine)) {
+      queryEngine = ModelUtils.buildQueryFromModelsAttributes(ResultingModel, queryEngine);
+      if (!queryEngine)
+        throw new Error(`${this.constructor.name}::prepareQuery: Data provided is insufficient to complete operation.`);
+    }
+
+    if (QueryEngine.isQuery(queryEngine))
       query = query.AND.MERGE(queryEngine);
 
     return query;
-  }
-
-  // Update a single model's attributes to
-  // any relational field value that points
-  // to this model
-  _updateValuesToRelated(Model, modelAttributes, relationsStatus, connection) {
-    let thisModelName = Model.getModelName();
-    let modelNames    = Object.keys(relationsStatus);
-
-    for (let i = 0, il = modelNames.length; i < il; i++) {
-      let modelName = modelNames[i];
-      if (thisModelName === modelName)
-        continue;
-
-      let status = relationsStatus[modelName];
-      if (status.create)
-        continue;
-
-      let RelatedModel          = connection.getModel(modelName);
-      let relatedModelInstance  = status.value;
-
-      this.setRelationalValues(Model, modelAttributes, RelatedModel, relatedModelInstance);
-    }
   }
 
   toString() {

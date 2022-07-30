@@ -85,7 +85,7 @@ class SQLiteConnection extends SQLConnectionBase {
 
     try {
       let statement   = this.db.prepare(sql);
-      let methodName  = ((/\s*SELECT\s+/i).test(sql)) ? 'all' : 'run';
+      let methodName  = ((/^\s*SELECT\s+/i).test(sql)) ? 'all' : 'run';
       let parameters  = (Nife.isNotEmpty(options.parameters)) ? [].concat(parameters) : [];
 
       if (options.logger)
