@@ -4,7 +4,6 @@ const Nife                = require('nife');
 const Inflection          = require('inflection');
 const RelationalTypeBase  = require('./relational-type-base');
 const Utils               = require('../../utils');
-const { QueryEngine } = require('../../query-engine');
 
 const NAMED_METHOD  = false;
 const ROOT_METHOD   = true;
