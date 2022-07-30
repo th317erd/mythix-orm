@@ -508,7 +508,7 @@ function assignRelatedModels(model, _relatedModels) {
   let relatedModels = Nife.toArray(_relatedModels);
   for (let i = 0, il = relatedModels.length; i < il; i++) {
     let relatedModel  = relatedModels[i];
-    let pluralName    = relatedModel.getPluralName();
+    let pluralName    = relatedModel.getPluralModelName();
     let pkFieldName   = relatedModel.getPrimaryKeyFieldName();
     let pkValue       = (pkFieldName) ? relatedModel[pkFieldName] : null;
     let relatedScope  = model._[pluralName];
@@ -593,11 +593,52 @@ function getPrimaryKeysForModels(Model, _models, _options) {
   return idMap;
 }
 
+function buildQueryFromModelsAttributes(Model, _models) {
+  let models = Nife.toArray(_models);
+  if (Nife.isEmpty(models))
+    return;
+
+  let isValidQuery        = false;
+  let query               = Model.where;
+  let concreteFieldNames  = [];
+
+  Model.iterateFields(({ fieldName, field }) => {
+    if (field.type.isVirtual())
+      return;
+
+    concreteFieldNames.push(fieldName);
+  });
+
+  if (concreteFieldNames.length === 0)
+    return;
+
+  for (let i = 0, il = models.length; i < il; i++) {
+    let model = models[i];
+
+    for (let j = 0, jl = concreteFieldNames.length; j < jl; j++) {
+      let fieldName = concreteFieldNames[j];
+      let value = model[fieldName];
+      if (value == null)
+        continue;
+
+      isValidQuery = true;
+      query = query.AND[fieldName].EQ(value);
+    }
+  }
+
+  if (!isValidQuery)
+    return;
+
+  return query;
+}
+
 module.exports = {
   assignRelatedModels,
+  buildQueryFromModelsAttributes,
   constructModelsForCreationFromOriginField,
   createAndSaveAllRelatedModels,
   fieldToFullyQualifiedName,
+  getPrimaryKeysForModels,
   getRelationalModelStatusForField,
   injectModelMethod,
   isUUID,
@@ -605,5 +646,4 @@ module.exports = {
   sanitizeFieldString,
   setRelationalValues,
   sortModelNamesByCreationOrder,
-  getPrimaryKeysForModels,
 };

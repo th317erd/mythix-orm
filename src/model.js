@@ -175,6 +175,17 @@ class Model {
     return (fieldNames || []);
   }
 
+  static getForeignKeysTargetField(modelName, fieldName) {
+    if (!this._foreignFields)
+      return false;
+
+    let fields = this._foreignFields.get(modelName);
+    if (!fields)
+      return;
+
+    return fields.find((field) => (field.targetFieldName === fieldName));
+  }
+
   static isForeignKeyTargetModel(modelName) {
     if (!this._foreignFields)
       return false;
@@ -187,7 +198,7 @@ class Model {
   }
 
   static getTableName() {
-    let tableName = Nife.camelCaseToSnakeCase(this.getPluralName());
+    let tableName = Nife.camelCaseToSnakeCase(this.getPluralModelName());
     return `${this.getTablePrefix() || ''}${tableName}`;
   }
 
@@ -203,7 +214,7 @@ class Model {
     return this.getModelName();
   }
 
-  static getPluralName() {
+  static getPluralModelName() {
     return Inflection.pluralize(this.getSingularName());
   }
 

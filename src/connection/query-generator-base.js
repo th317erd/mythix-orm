@@ -756,6 +756,7 @@ class QueryGeneratorBase {
     let query     = queryEngine._getRawQuery();
     let sqlParts  = [];
     let hasValue  = false;
+    let lastLogicalOperator;
 
     for (let i = 0, il = query.length; i < il; i++) {
       let queryPart     = query[i];
@@ -776,9 +777,9 @@ class QueryGeneratorBase {
         // until we have a left-hand value
         if (sqlParts.length > 0) {
           if (queryOperator === 'OR')
-            sqlParts.push('OR');
+            lastLogicalOperator = 'OR';
           else if (queryOperator === 'AND')
-            sqlParts.push('AND');
+            lastLogicalOperator = 'AND';
         }
 
         // If we have a value for the logical operator
@@ -791,6 +792,11 @@ class QueryGeneratorBase {
       }
 
       if (result) {
+        if (lastLogicalOperator) {
+          sqlParts.push(lastLogicalOperator);
+          lastLogicalOperator = null;
+        }
+
         sqlParts.push(result);
         hasValue = true;
       }

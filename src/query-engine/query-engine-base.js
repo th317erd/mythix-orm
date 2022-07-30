@@ -121,8 +121,13 @@ class QueryEngineBase extends ProxyClass {
     let newContext  = this._inheritContext(context, 'model', { Model, modelName }, extra);
     let newScope    = new ModelScopeClass(newContext);
 
-    this._addToQuery({ operator: 'MODEL' }, newContext);
+    // We shouldn't add this scope if this is
+    // already the current model of the scope
+    if (context.Model !== Model)
+      this._addToQuery({ operator: 'MODEL' }, newContext);
 
+    // But we always need to return the scope
+    // for the proxy to work properly
     return newScope;
   }
 
@@ -134,8 +139,13 @@ class QueryEngineBase extends ProxyClass {
     let newContext  = this._inheritContext(context, 'field', { Field, fieldName });
     let newScope    = new FieldScopeClass(newContext);
 
-    this._addToQuery({ operator: 'FIELD', fieldName }, newContext);
+    // We shouldn't add this scope if this is
+    // already the current field of the scope
+    if (context.Field !== Field)
+      this._addToQuery({ operator: 'FIELD', fieldName }, newContext);
 
+    // But we always need to return the scope
+    // for the proxy to work properly
     return newScope;
   }
 

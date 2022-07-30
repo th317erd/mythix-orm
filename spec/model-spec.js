@@ -204,10 +204,10 @@ describe('Model', () => {
     });
   });
 
-  describe('getPluralName', () => {
+  describe('getPluralModelName', () => {
     instanceAndStaticTests(User, (target, type) => {
       it(`should be able to get the models name (${type})`, () => {
-        expect(target.getPluralName()).toEqual('Users');
+        expect(target.getPluralModelName()).toEqual('Users');
       });
     });
   });

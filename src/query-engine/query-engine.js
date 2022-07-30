@@ -71,10 +71,37 @@ class QueryEngine extends QueryEngineBase {
 
   MERGE(queryEngine) {
     let sourceQuery = queryEngine._getRawQuery();
+    let currentModel = this._getRawQueryContext().Model;
 
     for (let i = 0, il = sourceQuery.length; i < il; i++) {
-      let queryPart = sourceQuery[i];
-      this._addToQuery(Object.assign({}, queryPart));
+      let queryPart     = sourceQuery[i];
+      let mergeContext  = Utils.flattenObjectProperties(queryPart, [
+        // Skip the following keys
+        // as they are provided by the
+        // parent queryEngine
+        'connection',
+        'contextID',
+        'fieldContext',
+        'isQueryContext',
+        'modelContext',
+        'partIndex',
+        'partParentQuery',
+        'queryEngineScope',
+        'queryRoot',
+        'rootContext',
+        'rootModel',
+        'rootModelName',
+      ]);
+
+      // Skip unneeded duplicate model entries
+      if (mergeContext.operator === 'MODEL') {
+        if (mergeContext.Model === currentModel)
+          continue;
+
+        currentModel = mergeContext.Model;
+      }
+
+      this._addToQuery(mergeContext);
     }
 
     return this;

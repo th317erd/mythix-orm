@@ -60,12 +60,12 @@ class ModelScope extends QueryEngineBase {
   });
 
   AND = ProxyClass.autoCall(function(value) {
-    this._addToQuery({ logical: true, operator: 'AND', and: true, or: false, value });
+    this._addToQuery({ logical: true, operator: 'AND', and: true, or: false, not: false, value });
     return this._fetchScope('model');
   });
 
   OR = ProxyClass.autoCall(function(value) {
-    this._addToQuery({ logical: true, operator: 'OR', and: false, or: true, value });
+    this._addToQuery({ logical: true, operator: 'OR', and: false, or: true, not: false, value });
     return this._fetchScope('model');
   });
 

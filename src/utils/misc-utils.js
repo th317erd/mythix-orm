@@ -42,8 +42,30 @@ async function collect(iterator) {
   return items;
 }
 
+function flattenObjectProperties(obj, skipKeys) {
+  const isKeySkipped = (key) => {
+    if (Array.isArray(skipKeys))
+      return (skipKeys.indexOf(key) >= 0);
+
+    return Object.prototype.hasOwnProperty.call(skipKeys, key);
+  };
+
+  let flattedObject = {};
+
+  // eslint-disable-next-line guard-for-in
+  for (let key in obj) {
+    if (skipKeys && isKeySkipped(key))
+      continue;
+
+    flattedObject[key] = obj[key];
+  }
+
+  return flattedObject;
+}
+
 module.exports = {
-  iterateStaticProps,
-  copyStaticProps,
   collect,
+  copyStaticProps,
+  flattenObjectProperties,
+  iterateStaticProps,
 };

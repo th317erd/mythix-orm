@@ -32,7 +32,7 @@ describe('SQLiteConnection', () => {
     });
 
     describe('create multi-relational models', () => {
-      it('can create a single model through a multi-relational field', async () => {
+      it('can create a single model for a multi-relational set', async () => {
         let userModels = [
           new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
         ];
@@ -68,7 +68,7 @@ describe('SQLiteConnection', () => {
         expect(user.roles).toBe(roles);
       });
 
-      it('can create multiple models through a multi-relational field', async () => {
+      it('can create multiple models for a multi-relational set', async () => {
         let userModels = [
           new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
         ];
@@ -114,7 +114,7 @@ describe('SQLiteConnection', () => {
     });
 
     describe('get multi-relational models', () => {
-      it('can fetch multiple models through a relational field', async () => {
+      it('can fetch multiple models from a relational set', async () => {
         let userModels = [
           new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
         ];
@@ -156,8 +156,8 @@ describe('SQLiteConnection', () => {
       });
     });
 
-    fdescribe('set multi-relational models', () => {
-      it('can set models on a multi-relational field', async () => {
+    describe('set multi-relational models', () => {
+      it('can set models on a multi-relational set', async () => {
         let userModels = [
           new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
         ];
@@ -197,6 +197,95 @@ describe('SQLiteConnection', () => {
         expect(roles.length).toEqual(2);
         expect(roles[0].name).toEqual('new1');
         expect(roles[1].name).toEqual('new2');
+      });
+    });
+
+    describe('removeFrom multi-relational models', () => {
+      it('can remove persisted models from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
+
+        await connection.insert(User, userModels);
+
+        expect(await Role.count()).toEqual(0);
+
+        let user = await User.where.first();
+        let roles = await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test2' },
+        ]);
+
+        expect(await Role.count()).toEqual(2);
+        expect(await UserRole.count()).toEqual(2);
+
+        let removedCount = await user.removeFromRoles(roles);
+        expect(removedCount).toEqual(2);
+
+        expect(await Role.count()).toEqual(2);
+        expect(await UserRole.count()).toEqual(0);
+      });
+
+      it('can remove only specific persisted models from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
+
+        await connection.insert(User, userModels);
+
+        expect(await Role.count()).toEqual(0);
+
+        let user = await User.where.first();
+        let roles = await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test2' },
+        ]);
+
+        expect(await Role.count()).toEqual(2);
+        expect(await UserRole.count()).toEqual(2);
+
+        let removedCount = await user.removeFromRoles([ roles[0] ]);
+        expect(removedCount).toEqual(1);
+
+        expect(await Role.count()).toEqual(2);
+        expect(await UserRole.count()).toEqual(1);
+
+        let updatedRoles = await Utils.collect(user.getRoles(Role.where.ORDER('Role:name')));
+        expect(updatedRoles).toBeInstanceOf(Array);
+        expect(updatedRoles.length).toEqual(1);
+        expect(updatedRoles[0].id).toEqual(roles[1].id);
+        expect(updatedRoles[0].name).toEqual('test2');
+      });
+
+      it('can remove only specific non-persisted models from a multi-relational set', async () => {
+        let userModels = [
+          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+        ];
+
+        await connection.insert(User, userModels);
+
+        expect(await Role.count()).toEqual(0);
+
+        let user = await User.where.first();
+        let roles = await user.addToRoles([
+          { name: 'admin' },
+          { name: 'test2' },
+        ]);
+
+        expect(await Role.count()).toEqual(2);
+        expect(await UserRole.count()).toEqual(2);
+
+        let removedCount = await user.removeFromRoles({ name: 'admin' });
+        expect(removedCount).toEqual(1);
+
+        expect(await Role.count()).toEqual(2);
+        expect(await UserRole.count()).toEqual(1);
+
+        let updatedRoles = await Utils.collect(user.getRoles(Role.where.ORDER('Role:name')));
+        expect(updatedRoles).toBeInstanceOf(Array);
+        expect(updatedRoles.length).toEqual(1);
+        expect(updatedRoles[0].id).toEqual(roles[1].id);
+        expect(updatedRoles[0].name).toEqual('test2');
       });
     });
 
