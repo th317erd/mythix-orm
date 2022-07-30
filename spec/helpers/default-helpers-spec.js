@@ -16,7 +16,7 @@ const {
   AUTO_INCREMENT,
   DATETIME_NOW,
   DATE_NOW,
-} = require('../../src/types/helpers/default-helpers');
+} = require('../../lib/types/helpers/default-helpers');
 
 describe('DefaultHelpers', () => {
   it('can set initialize flag on a default method', () => {

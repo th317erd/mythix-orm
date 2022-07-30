@@ -6,8 +6,8 @@
 /* global describe, it, expect, beforeEach, spyOn */
 
 const UUID = require('uuid');
-const { Types, ConnectionBase } = require('../../../src');
-const ModelUtils = require('../../../src/utils/model-utils');
+const { Types, ConnectionBase } = require('../../../lib');
+const ModelUtils = require('../../../lib/utils/model-utils');
 
 describe('ModelType', () => {
   it('can construct from class', () => {

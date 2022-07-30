@@ -45,7 +45,7 @@
     ],
     "exclude": [
       "spec/**",
-      "src/proxy-class/proxy-class.js"
+      "lib/proxy-class/proxy-class.js"
     ]
   }
 }

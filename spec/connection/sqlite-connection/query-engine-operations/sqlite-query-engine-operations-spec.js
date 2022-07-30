@@ -5,7 +5,7 @@
 /* global describe, it, expect, beforeAll, afterEach, beforeAll */
 
 const UUID = require('uuid');
-const Utils = require('../../../../src/utils');
+const Utils = require('../../../../lib/utils');
 
 const {
   createConnection,

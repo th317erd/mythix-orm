@@ -6,7 +6,7 @@
 /* global describe, it, expect, spyOn */
 
 const Nife = require('nife');
-const { Model, Types } = require('../src');
+const { Model, Types } = require('../lib');
 
 class User extends Model {
   static fields = {

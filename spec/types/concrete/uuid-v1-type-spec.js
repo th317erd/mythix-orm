@@ -4,7 +4,7 @@
 
 /* global describe, it, expect */
 
-const { Types }       = require('../../../src');
+const { Types }       = require('../../../lib');
 const { UUID_REGEXP } = require('../../support/test-helpers');
 
 describe('UUIDV1Type', () => {

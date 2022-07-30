@@ -6,7 +6,7 @@
 
 /* global describe, it, expect */
 
-const ProxyClass = require('../../src/proxy-class');
+const ProxyClass = require('../../lib/proxy-class');
 
 describe('ProxyClass', () => {
   it('can overload getter', () => {

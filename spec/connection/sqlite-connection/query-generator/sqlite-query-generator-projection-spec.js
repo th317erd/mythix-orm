@@ -5,9 +5,9 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { SQLiteConnection } = require('../../../../src/connection/sqlite-connection');
-const { SQLLiteral } = require('../../../../src/connection/sql-literals');
-const ModelBase = require('../../../../src/model');
+const { SQLiteConnection } = require('../../../../lib/connection/sqlite-connection');
+const { SQLLiteral } = require('../../../../lib/connection/sql-literals');
+const ModelBase = require('../../../../lib/model');
 
 describe('SQLiteQueryGenerator', () => {
   let connection;

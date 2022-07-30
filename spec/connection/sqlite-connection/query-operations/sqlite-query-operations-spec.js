@@ -6,7 +6,7 @@
 
 const UUID = require('uuid');
 const { UUID_REGEXP } = require('../../../support/test-helpers');
-const Utils = require('../../../../src/utils');
+const Utils = require('../../../../lib/utils');
 
 const {
   createConnection,

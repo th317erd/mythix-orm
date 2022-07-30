@@ -9,7 +9,7 @@ const {
   truncateTables,
 } = require('../sqlite-connection-helper');
 
-const Utils = require('../../../../src/utils');
+const Utils = require('../../../../lib/utils');
 
 describe('SQLiteConnection', () => {
   describe('one to many, or many to many relational operations', () => {

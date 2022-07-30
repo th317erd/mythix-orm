@@ -4,7 +4,7 @@
 
 /* global describe, it, expect */
 
-const { Types } = require('../../../src');
+const { Types } = require('../../../lib');
 
 describe('IntegerType', () => {
   describe('toConnectionType', () => {

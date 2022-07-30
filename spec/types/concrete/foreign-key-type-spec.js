@@ -4,9 +4,9 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
-const Model = require('../../../src/model');
-const { Types } = require('../../../src');
+const { SQLiteConnection } = require('../../../lib/connection/sqlite-connection');
+const Model = require('../../../lib/model');
+const { Types } = require('../../../lib');
 
 describe('ForeignKeyType', () => {
   let connection;

@@ -5,7 +5,7 @@
 /* global describe, it, expect */
 
 const UUID            = require('uuid');
-const { Utils }       = require('../../src');
+const { Utils }       = require('../../lib');
 const { UUID_REGEXP } = require('../support/test-helpers');
 
 describe('Utils::model', () => {

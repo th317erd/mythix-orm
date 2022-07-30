@@ -1,6 +1,6 @@
 'use strict';
 
-const { Types } = require('../../../src');
+const { Types } = require('../../../lib');
 const User      = require('./user-model');
 
 class ExtendedUser extends User {

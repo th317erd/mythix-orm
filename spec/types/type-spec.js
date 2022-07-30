@@ -4,7 +4,7 @@
 
 /* global describe, it, expect, spyOn */
 
-const { Types } = require('../../src');
+const { Types } = require('../../lib');
 const {
   User,
 } = require('../support/models');

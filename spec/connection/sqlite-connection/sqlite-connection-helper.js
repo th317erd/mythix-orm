@@ -1,6 +1,6 @@
 'use strict';
 
-const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
+const { SQLiteConnection } = require('../../../lib/connection/sqlite-connection');
 
 async function createConnection() {
   const createTable = async (connection, Model, options) => {

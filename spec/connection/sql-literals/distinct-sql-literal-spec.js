@@ -4,8 +4,8 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
-const { DistinctSQLLiteral, SQLLiteral } = require('../../../src/connection/sql-literals');
+const { SQLiteConnection } = require('../../../lib/connection/sqlite-connection');
+const { DistinctSQLLiteral, SQLLiteral } = require('../../../lib/connection/sql-literals');
 
 describe('DistinctSQLLiteral', () => {
   let connection;

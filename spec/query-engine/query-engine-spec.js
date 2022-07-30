@@ -5,7 +5,7 @@
 /* global describe, it, expect, beforeAll */
 
 const Nife = require('nife');
-const { ConnectionBase, QueryEngine } = require('../../src');
+const { ConnectionBase, QueryEngine } = require('../../lib');
 const matchesSnapshot = require('../support/snapshots');
 
 describe('QueryEngine', () => {

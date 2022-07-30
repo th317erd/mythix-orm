@@ -4,8 +4,8 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
-const { MinSQLLiteral, SQLLiteral } = require('../../../src/connection/sql-literals');
+const { SQLiteConnection } = require('../../../lib/connection/sqlite-connection');
+const { MinSQLLiteral, SQLLiteral } = require('../../../lib/connection/sql-literals');
 
 describe('MinSQLLiteral', () => {
   let connection;

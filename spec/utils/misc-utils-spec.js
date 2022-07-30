@@ -4,7 +4,7 @@
 
 /* global describe, it, expect */
 
-const { Utils } = require('../../src');
+const { Utils } = require('../../lib');
 
 describe('Utils::misc', () => {
   describe('iterateStaticProps', () => {

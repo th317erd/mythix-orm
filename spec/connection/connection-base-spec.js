@@ -4,7 +4,7 @@
 
 /* global describe, it, expect, beforeEach, fail */
 
-const { ConnectionBase } = require('../../src');
+const { ConnectionBase } = require('../../lib');
 const {
   Role,
   User,

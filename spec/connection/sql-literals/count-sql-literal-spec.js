@@ -4,8 +4,8 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { SQLiteConnection } = require('../../../src/connection/sqlite-connection');
-const { CountSQLLiteral, SQLLiteral } = require('../../../src/connection/sql-literals');
+const { SQLiteConnection } = require('../../../lib/connection/sqlite-connection');
+const { CountSQLLiteral, SQLLiteral } = require('../../../lib/connection/sql-literals');
 
 describe('CountSQLLiteral', () => {
   let connection;

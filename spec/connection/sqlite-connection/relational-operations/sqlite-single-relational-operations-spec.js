@@ -6,7 +6,7 @@
 
 const UUID = require('uuid');
 const { UUID_REGEXP } = require('../../../support/test-helpers');
-const { sortModelNamesByCreationOrder } = require('../../../../src/utils/model-utils');
+const { sortModelNamesByCreationOrder } = require('../../../../lib/utils/model-utils');
 
 const {
   createConnection,

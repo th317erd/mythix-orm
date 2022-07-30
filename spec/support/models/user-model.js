@@ -1,6 +1,6 @@
 'use strict';
 
-const { Model, Types } = require('../../../src');
+const { Model, Types } = require('../../../lib');
 
 class User extends Model {
   static fields = {
