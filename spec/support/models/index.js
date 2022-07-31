@@ -8,6 +8,7 @@ const ScopedUser    = require('./scoped-user-model');
 const User          = require('./user-model');
 const UserRole      = require('./user-role-model');
 const UserThing     = require('./user-thing-model');
+const Time          = require('./time-model');
 
 module.exports = {
   ExtendedUser,
@@ -18,4 +19,5 @@ module.exports = {
   User,
   UserRole,
   UserThing,
+  Time,
 };

@@ -6,7 +6,11 @@
 
 const moment          = require('moment');
 const UUID            = require('uuid');
-const { UUID_REGEXP } = require('../../../support/test-helpers');
+const {
+  UUID_REGEXP,
+  XID_REGEXP,
+  ISO8601_DATE_REGEXP,
+} = require('../../../support/test-helpers');
 
 const {
   sortModelNamesByCreationOrder,
@@ -25,6 +29,7 @@ describe('SQLiteConnection', () => {
     let UserThing;
     let RoleThing;
     let ExtendedUser;
+    let Time;
 
     beforeAll(async () => {
       try {
@@ -36,6 +41,7 @@ describe('SQLiteConnection', () => {
         UserThing = setup.UserThing;
         RoleThing = setup.RoleThing;
         ExtendedUser = setup.ExtendedUser;
+        Time = setup.Time;
       } catch (error) {
         console.error('Error in "beforeAll": ', error);
       }
@@ -95,6 +101,25 @@ describe('SQLiteConnection', () => {
         // Reload stored model to ensure results
         user = await ExtendedUser.where.id.EQ(updatedUser.id).first();
         expect(user.updatedAt.valueOf()).toEqual(updatedUser.updatedAt.valueOf());
+      });
+
+      it('can use remote and local time', async () => {
+        let timeModels = [ new Time() ];
+
+        await connection.insert(Time, timeModels);
+
+        let time = await Time.where.first();
+        expect(time.id).toMatch(XID_REGEXP);
+        expect(time.datetime).toBeInstanceOf(moment);
+        expect(time.datetime.isValid()).toEqual(true);
+        expect(time.datetimeLocal).toBeInstanceOf(moment);
+        expect(time.datetimeLocal.isValid()).toEqual(true);
+        expect(time.date).toBeInstanceOf(moment);
+        expect(time.date.isValid()).toEqual(true);
+        expect(time.date.toISOString()).toMatch(ISO8601_DATE_REGEXP);
+        expect(time.dateLocal).toBeInstanceOf(moment);
+        expect(time.dateLocal.isValid()).toEqual(true);
+        expect(time.dateLocal.toISOString()).toMatch(ISO8601_DATE_REGEXP);
       });
     });
 
