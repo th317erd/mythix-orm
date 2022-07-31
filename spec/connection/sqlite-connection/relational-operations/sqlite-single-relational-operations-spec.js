@@ -68,7 +68,7 @@ describe('SQLiteConnection', () => {
     });
 
     describe('timestamps', () => {
-      fit('will update timestamps as expected', async () => {
+      it('will update timestamps as expected', async () => {
         let userModels = [
           new ExtendedUser({
             email:      'test@example.com',
@@ -80,15 +80,21 @@ describe('SQLiteConnection', () => {
         await connection.insert(ExtendedUser, userModels);
 
         let user = await ExtendedUser.where.first();
+        expect(user.id).toEqual(1);
         expect(user.createdAt).toBeInstanceOf(moment);
         expect(user.createdAt.isValid()).toEqual(true);
         expect(user.updatedAt).toBeInstanceOf(moment);
         expect(user.updatedAt.isValid()).toEqual(true);
 
-        user.lastName = 'Joe';
-        let updatedUser = await connection.update(ExtendedUser, user, { logger: console });
+        let previousUpdatedAt = user.updatedAt;
 
-        expect(user.updatedAt.valueOf() < updatedUser.updatedAt.valueOf()).toEqual(true);
+        user.lastName = 'Joe';
+        let updatedUser = await connection.update(ExtendedUser, user);
+        expect(previousUpdatedAt.valueOf() < updatedUser.updatedAt.valueOf()).toEqual(true);
+
+        // Reload stored model to ensure results
+        user = await ExtendedUser.where.id.EQ(updatedUser.id).first();
+        expect(user.updatedAt.valueOf()).toEqual(updatedUser.updatedAt.valueOf());
       });
     });
 

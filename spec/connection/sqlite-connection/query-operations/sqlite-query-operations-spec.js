@@ -172,9 +172,13 @@ describe('SQLiteConnection', () => {
           new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
         ],
       );
-      let result          = await connection.query(sqlStr);
-      expect(result).toEqual({ changes: 1, lastInsertRowid: 1 });
-      expect(connection.formatInsertResponse(sqlStr, result)).toEqual([ 1 ]);
+
+      let result = await connection.query(sqlStr);
+      expect(result.rows).toBeInstanceOf(Array);
+      expect(result.rows.length).toEqual(1);
+      expect(result.rows[0][0]).toMatch(UUID_REGEXP);
+      expect(result.columns).toBeInstanceOf(Array);
+      expect(result.columns).toEqual([ 'id' ]);
     });
 
     it('should be able to insert multiple models', async () => {
@@ -187,23 +191,14 @@ describe('SQLiteConnection', () => {
         ],
       );
 
+
       let result = await connection.query(sqlStr);
-      expect(result).toEqual({ changes: 2, lastInsertRowid: 2 });
-      expect(connection.formatInsertResponse(sqlStr, result)).toEqual([ 1, 2 ]);
-    });
-
-    it('should be able to request that response be formatted', async () => {
-      let queryGenerator  = connection.getQueryGenerator();
-      let sqlStr          = queryGenerator.generateInsertStatement(
-        User,
-        [
-          new User({ firstName: 'Test', lastName: 'User', primaryRole: new Role({ name: 'test' }) }),
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRole: new Role({ name: 'test' }) }),
-        ],
-      );
-
-      let result = await connection.query(sqlStr, { formatResponse: true });
-      expect(result).toEqual([ 1, 2 ]);
+      expect(result.rows).toBeInstanceOf(Array);
+      expect(result.rows.length).toEqual(2);
+      expect(result.rows[0][0]).toMatch(UUID_REGEXP);
+      expect(result.rows[1][0]).toMatch(UUID_REGEXP);
+      expect(result.columns).toBeInstanceOf(Array);
+      expect(result.columns).toEqual([ 'id' ]);
     });
   });
 
@@ -228,68 +223,22 @@ describe('SQLiteConnection', () => {
 
       // result = [ [ firstName, id, lastName, primaryRoleID ], ... ]
 
-      expect(result).toBeInstanceOf(Array);
-      expect(result.length).toEqual(2);
-      expect(result[0]).toBeInstanceOf(Array);
-      expect(result[0].length).toEqual(4);
-      expect(result[1]).toBeInstanceOf(Array);
-      expect(result[1].length).toEqual(4);
-      expect(result[0][0]).toEqual('First');
-      expect(result[0][1]).toMatch(/[a-f0-9-]{36}/);
-      expect(result[0][2]).toBe(null);
-      expect(result[0][3]).toMatch(/[a-f0-9-]{36}/);
-      expect(result[1][0]).toEqual('Mary');
-      expect(result[1][1]).toMatch(/[a-f0-9-]{36}/);
-      expect(result[1][2]).toEqual('Anne');
-      expect(result[1][3]).toMatch(/[a-f0-9-]{36}/);
-    });
-
-    it('should map selected rows to model map', async () => {
-      await insertSomeRows();
-
-      let queryGenerator  = connection.getQueryGenerator();
-      let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
-      let columns         = [
-        {
-          name:     'User:firstName',
-          column:     'firstName',
-          table:    'users',
-          database: 'main',
-          type:     'VARCHAR(64)',
-        },
-        {
-          name:     'User:id',
-          column:   'id',
-          table:    'users',
-          database: 'main',
-          type:     'VARCHAR(36)',
-        },
-        {
-          name:     'User:lastName',
-          column:   'lastName',
-          table:    'users',
-          database: 'main',
-          type:     'VARCHAR(64)',
-        },
-        {
-          name:     'User:primaryRoleID',
-          column:   'primaryRoleID',
-          table:    'users',
-          database: 'main',
-          type:     'VARCHAR(36)',
-        },
-      ];
-      let result          = connection.formatSelectResponse(sqlStatement, columns, await connection.query(sqlStatement));
-
-      expect(result.columns).toEqual([
-        'User:firstName',
-        'User:id',
-        'User:lastName',
-        'User:primaryRoleID',
-      ]);
-
       expect(result.rows).toBeInstanceOf(Array);
       expect(result.rows.length).toEqual(2);
+      expect(result.rows[0]).toBeInstanceOf(Array);
+      expect(result.rows[0].length).toEqual(4);
+      expect(result.rows[1]).toBeInstanceOf(Array);
+      expect(result.rows[1].length).toEqual(4);
+      expect(result.rows[0][0]).toEqual('First');
+      expect(result.rows[0][1]).toMatch(/[a-f0-9-]{36}/);
+      expect(result.rows[0][2]).toBe(null);
+      expect(result.rows[0][3]).toMatch(/[a-f0-9-]{36}/);
+      expect(result.rows[1][0]).toEqual('Mary');
+      expect(result.rows[1][1]).toMatch(/[a-f0-9-]{36}/);
+      expect(result.rows[1][2]).toEqual('Anne');
+      expect(result.rows[1][3]).toMatch(/[a-f0-9-]{36}/);
+      expect(result.columns).toBeInstanceOf(Array);
+      expect(result.columns).toEqual([ 'User:firstName', 'User:id', 'User:lastName', 'User:primaryRoleID' ]);
     });
 
     it('should be able to request that response be formatted', async () => {

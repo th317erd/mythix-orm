@@ -6,6 +6,7 @@
 /* global describe, it, expect, beforeEach */
 
 const { SQLiteConnection } = require('../../../../lib/connection/sqlite-connection');
+const { UUID_REGEXP } = require('../../../support/test-helpers');
 
 describe('SQLiteQueryGenerator', () => {
   let connection;
@@ -25,17 +26,21 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let result          = queryGenerator.generateInsertFieldValuesFromModel(new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }));
 
-      expect(result).toEqual('\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\'');
+      expect(result.modelChanges.id).toMatch(UUID_REGEXP);
+      expect(result.modelChanges.firstName).toEqual('Test');
+      expect(result.modelChanges.lastName).toEqual('User');
+      expect(result.rowValues).toEqual('\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\'');
     });
 
     it('should generate all values for dirty fields', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let result          = queryGenerator.generateInsertFieldValuesFromModel(
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
-        { dirtyFields: [ User.fields.id, User.fields.firstName, User.fields.lastName ] },
+        { dirtyFields: [ User.fields.id ] },
       );
 
-      expect(result).toEqual('\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\'');
+      expect(result.modelChanges.id).toMatch(UUID_REGEXP);
+      expect(result.rowValues).toEqual('\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\'');
     });
   });
 
@@ -46,7 +51,16 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ]);
 
-      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual({
+        modelChanges: [
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3',
+            firstName:  'Test',
+            lastName:   'User',
+          },
+        ],
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')',
+      });
     });
 
     it('should generate all values for multiple models', () => {
@@ -56,7 +70,21 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ]);
 
-      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),\n(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual({
+        modelChanges: [
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc',
+            firstName:  'Johnny',
+            lastName:   'Bob',
+          },
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3',
+            firstName:  'Test',
+            lastName:   'User',
+          }
+        ],
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),\n(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')',
+      });
     });
 
     it('should skip newlines when requested to do so', () => {
@@ -66,7 +94,21 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ], { newlines: false });
 
-      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual({
+        modelChanges: [
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc',
+            firstName:  'Johnny',
+            lastName:   'Bob',
+          },
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3',
+            firstName:  'Test',
+            lastName:   'User',
+          },
+        ],
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')'
+      });
     });
 
     it('should work with a startIndex and endIndex', () => {
@@ -76,14 +118,32 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ], { newlines: false, startIndex: 0, endIndex: 1 });
 
-      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\')');
+      expect(result).toEqual({
+        modelChanges: [
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc',
+            firstName:  'Johnny',
+            lastName:   'Bob',
+          },
+        ],
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\')',
+      });
 
       result = queryGenerator.generateInsertValuesFromModels(User, [
         { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ], { newlines: false, startIndex: 1, endIndex: 2 });
 
-      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual({
+        modelChanges: [
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3',
+            firstName:  'Test',
+            lastName:   'User',
+          },
+        ],
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')',
+      });
     });
 
     it('should work with a startIndex and batchSize', () => {
@@ -93,14 +153,32 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ], { newlines: false, startIndex: 0, batchSize: 1 });
 
-      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\')');
+      expect(result).toEqual({
+        modelChanges: [
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc',
+            firstName:  'Johnny',
+            lastName:   'Bob',
+          },
+        ],
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\')',
+      });
 
       result = queryGenerator.generateInsertValuesFromModels(User, [
         { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbfc', firstName: 'Johnny', lastName: 'Bob' },
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ], { newlines: false, startIndex: 1, batchSize: 1 });
 
-      expect(result).toEqual('(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual({
+        modelChanges: [
+          {
+            id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3',
+            firstName:  'Test',
+            lastName:   'User',
+          },
+        ],
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')',
+      });
     });
   });
 
@@ -111,7 +189,7 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ]);
 
-      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\') RETURNING id');
     });
 
     it('should generate an insert statement for multiple models', () => {
@@ -121,7 +199,7 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ]);
 
-      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),\n(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),\n(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\') RETURNING id');
     });
 
     it('should skip newlines', () => {
@@ -131,7 +209,7 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ], { newlines: false });
 
-      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\') RETURNING id');
     });
 
     it('should skip newlines', () => {
@@ -141,7 +219,7 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       ], { newlines: false });
 
-      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')');
+      expect(result).toEqual('INSERT INTO "users" ("id","firstName","lastName") VALUES (\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\') RETURNING id');
     });
 
     it('should generate nothing if no models provided', () => {
@@ -173,7 +251,7 @@ describe('SQLiteQueryGenerator', () => {
         new User({ id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' }),
       );
 
-      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\'');
+      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\' RETURNING id');
     });
 
     it('should generate an update statement with a where clause', () => {
@@ -184,7 +262,7 @@ describe('SQLiteQueryGenerator', () => {
         User.where.firstName.EQ('Bob'),
       );
 
-      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\'\nWHERE "users"."firstName" = \'Bob\'');
+      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\'\nWHERE "users"."firstName" = \'Bob\' RETURNING id');
     });
 
     it('should generate an update statement with a where clause and an order, limit, and offset', () => {
@@ -195,7 +273,7 @@ describe('SQLiteQueryGenerator', () => {
         User.where.firstName.EQ('Bob').ORDER('firstName').LIMIT(100).OFFSET(10),
       );
 
-      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\'\nWHERE "users"."firstName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 10');
+      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\'\nWHERE "users"."firstName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 10 RETURNING id');
     });
 
     it('should skip newlines', () => {
@@ -206,7 +284,7 @@ describe('SQLiteQueryGenerator', () => {
         { newlines: false },
       );
 
-      expect(result).toEqual('UPDATE "users" SET "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',"firstName" = \'Test\',"lastName" = \'User\'');
+      expect(result).toEqual('UPDATE "users" SET "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',"firstName" = \'Test\',"lastName" = \'User\' RETURNING id');
     });
 
     it('should generate an update statement using an object instead of a model instance', () => {
@@ -216,7 +294,7 @@ describe('SQLiteQueryGenerator', () => {
         { id: '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3', firstName: 'Test', lastName: 'User' },
       );
 
-      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\'');
+      expect(result).toEqual('UPDATE "users" SET \n  "id" = \'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\n  "firstName" = \'Test\',\n  "lastName" = \'User\' RETURNING id');
     });
 
     it('should generate nothing if model is not dirty', () => {

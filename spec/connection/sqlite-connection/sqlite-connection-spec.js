@@ -31,7 +31,12 @@ describe('SQLiteConnection', () => {
   describe('query', () => {
     it('should be able to query the database', async () => {
       let result = await connection.query('SELECT 1+1');
-      expect(result).toEqual([ [ 2 ] ]);
+      expect(result.rows).toBeInstanceOf(Array);
+      expect(result.rows.length).toEqual(1);
+      expect(result.rows[0]).toEqual([ 2 ]);
+      expect(result.columns).toBeInstanceOf(Array);
+      expect(result.columns.length).toEqual(1);
+      expect(result.columns[0]).toEqual('1+1');
     });
   });
 
