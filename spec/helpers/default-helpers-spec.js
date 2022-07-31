@@ -7,7 +7,7 @@
 
 const {
   FLAG_ON_INITIALIZE,
-  FLAG_ON_CREATE,
+  FLAG_ON_INSERT,
   FLAG_ON_UPDATE,
   FLAG_ON_STORE,
   FLAG_LITERAL,
@@ -25,8 +25,8 @@ describe('DefaultHelpers', () => {
   });
 
   it('can set create flag on a default method', () => {
-    let func = defaultValueFlags(function() {}, { onCreate: true });
-    expect(func.mythixFlags).toEqual(FLAG_ON_CREATE);
+    let func = defaultValueFlags(function() {}, { onInsert: true });
+    expect(func.mythixFlags).toEqual(FLAG_ON_INSERT);
   });
 
   it('can set update flag on a default method', () => {

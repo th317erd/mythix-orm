@@ -34,7 +34,12 @@ async function truncateTables(connection) {
     let key   = keys[i];
     let model = models[key];
 
-    await await connection.truncate(model);
+    try {
+      await await connection.truncate(model);
+    } catch (error) {
+      console.error('TRUNCATE TABLE FAILED: ', error);
+      throw error;
+    }
   }
 }
 

@@ -4,6 +4,7 @@
 
 /* global describe, it, expect */
 
+const moment    = require('moment');
 const { Types } = require('../../../lib');
 
 describe('DateType', () => {
@@ -44,8 +45,22 @@ describe('DateType', () => {
   it('can cast to type', () => {
     let type = Types.DATE();
     let value = type.castToType({ value: '2001-01-01' });
-    expect(value).toBeInstanceOf(Date);
+    expect(value).toBeInstanceOf(moment);
     expect(value.toISOString()).toEqual('2001-01-01T00:00:00.000Z');
+
+    value = type.castToType({ value: undefined });
+    expect(value).toBe(undefined);
+
+    value = type.castToType({ value: null });
+    expect(value).toBe(null);
+  });
+
+  it('can cast to type with format', () => {
+    let type = Types.DATE('MM.DD.YYYY');
+    let value = type.castToType({ value: '07.23.2022' });
+    expect(value).toBeInstanceOf(moment);
+    expect(value.toISOString()).toEqual('2022-07-23T00:00:00.000Z');
+    expect(type.serialize(value)).toEqual('07.23.2022');
 
     value = type.castToType({ value: undefined });
     expect(value).toBe(undefined);
@@ -56,6 +71,6 @@ describe('DateType', () => {
 
   it('should throw an error on bad datetime string', () => {
     let type = Types.DATE();
-    expect(() => type.castToType({ value: 'derp' })).toThrow(new TypeError('DateType::castToType: Value provided ("derp") can not be cast into a date.'));
+    expect(() => type.castToType({ value: 'derp' })).toThrow(new TypeError('DateType::deserialize: Value provided ("derp") can not be cast into a date.'));
   });
 });

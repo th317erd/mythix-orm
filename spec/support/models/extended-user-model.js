@@ -13,21 +13,19 @@ class ExtendedUser extends User {
       unique:       true, // should be ignored when create table query is generated
     },
     'createdAt': {
-      type:         Types.DATETIME,
+      type:         Types.DATETIME(null, 'MM.DD.YYYY HH:mm:ss'),
       defaultValue: Types.DATETIME.Default.NOW,
       allowNull:    false,
+    },
+    'updatedAt': {
+      type:             Types.DATETIME(null, 'MM.DD.YYYY HH:mm:ss'),
+      defaultValue:     Types.DATETIME.Default.NOW.UPDATE,
+      allowNull:        false,
     },
     'email': {
       type:         Types.STRING(256),
       allowNull:    false,
       unique:       true,
-    },
-    'primaryRole': {
-      type:         Types.STRING(256),
-      defaultValue: () => {
-        return 'user';
-      },
-      allowNull:    false,
     },
     'playerType': {
       type:         Types.STRING(256),

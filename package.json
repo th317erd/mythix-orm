@@ -23,7 +23,7 @@
   "homepage": "https://github.com/th317erd/mythix-orm#readme",
   "devDependencies": {
     "@spothero/eslint-plugin-spothero": "github:spothero/eslint-plugin-spothero",
-    "better-sqlite3": "^7.5.3",
+    "better-sqlite3": "^7.6.2",
     "colors": "^1.4.0",
     "diff": "^5.1.0",
     "eslint": "^8.13.0",

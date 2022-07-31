@@ -4,7 +4,6 @@
 
 /* global describe, it, expect, beforeAll, afterEach, beforeAll, spyOn */
 
-const UUID = require('uuid');
 const Utils = require('../../../../lib/utils');
 
 const {
@@ -310,8 +309,16 @@ describe('SQLiteConnection', () => {
         let storedModels = await connection.insert(User, insertModels);
         expect(storedModels).toBeInstanceOf(Array);
         expect(storedModels.length).toEqual(2);
+        expect(storedModels[0]).toBeInstanceOf(User);
+        expect(storedModels[1]).toBeInstanceOf(User);
+
+        expect(await User.count()).toEqual(2);
+        expect(await Role.count()).toEqual(2);
 
         await connection.destroy(User, storedModels[0]);
+
+        expect(await User.count()).toEqual(1);
+        expect(await Role.count()).toEqual(2);
 
         // Ensure the changes were persisted
         let storedUsers = await Utils.collect(connection.select(User));
@@ -332,7 +339,7 @@ describe('SQLiteConnection', () => {
         expect(storedModels).toBeInstanceOf(Array);
         expect(storedModels.length).toEqual(2);
 
-        await connection.destroy(User, User.where.lastName.EQ('Anne'));
+        await connection.destroy(User.where.lastName.EQ('Anne'));
 
         // Ensure the changes were persisted
         let storedUsers = await Utils.collect(connection.select(User));

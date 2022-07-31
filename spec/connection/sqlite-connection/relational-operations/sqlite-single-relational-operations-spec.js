@@ -4,9 +4,13 @@
 
 /* global describe, it, expect, beforeAll, afterEach, beforeAll */
 
-const UUID = require('uuid');
+const moment          = require('moment');
+const UUID            = require('uuid');
 const { UUID_REGEXP } = require('../../../support/test-helpers');
-const { sortModelNamesByCreationOrder } = require('../../../../lib/utils/model-utils');
+
+const {
+  sortModelNamesByCreationOrder,
+} = require('../../../../lib/utils/model-utils');
 
 const {
   createConnection,
@@ -20,15 +24,21 @@ describe('SQLiteConnection', () => {
     let Role;
     let UserThing;
     let RoleThing;
+    let ExtendedUser;
 
     beforeAll(async () => {
-      let setup = await createConnection();
+      try {
+        let setup = await createConnection();
 
-      connection = setup.connection;
-      User = setup.User;
-      Role = setup.Role;
-      UserThing = setup.UserThing;
-      RoleThing = setup.RoleThing;
+        connection = setup.connection;
+        User = setup.User;
+        Role = setup.Role;
+        UserThing = setup.UserThing;
+        RoleThing = setup.RoleThing;
+        ExtendedUser = setup.ExtendedUser;
+      } catch (error) {
+        console.error('Error in "beforeAll": ', error);
+      }
     });
 
     afterEach(async () => {
@@ -57,10 +67,54 @@ describe('SQLiteConnection', () => {
       });
     });
 
+    describe('timestamps', () => {
+      fit('will update timestamps as expected', async () => {
+        let userModels = [
+          new ExtendedUser({
+            email:      'test@example.com',
+            firstName:  'Mary',
+            lastName:   'Anne',
+          }),
+        ];
+
+        await connection.insert(ExtendedUser, userModels);
+
+        let user = await ExtendedUser.where.first();
+        expect(user.createdAt).toBeInstanceOf(moment);
+        expect(user.createdAt.isValid()).toEqual(true);
+        expect(user.updatedAt).toBeInstanceOf(moment);
+        expect(user.updatedAt.isValid()).toEqual(true);
+
+        user.lastName = 'Joe';
+        let updatedUser = await connection.update(ExtendedUser, user, { logger: console });
+
+        expect(user.updatedAt.valueOf() < updatedUser.updatedAt.valueOf()).toEqual(true);
+      });
+    });
+
+    describe('toJSON', () => {
+      it('can serialize toJSON', async () => {
+        let userModels = [
+          new ExtendedUser({
+            email:      'test@example.com',
+            firstName:  'Mary',
+            lastName:   'Anne',
+            createdAt:   '07.30.2022 22:39:01',
+            updatedAt:   '07.30.2022 22:39:01',
+          }),
+        ];
+
+        await connection.insert(ExtendedUser, userModels);
+
+        let user = await ExtendedUser.where.first();
+        expect(JSON.stringify(user)).toEqual('{"id":1,"createdAt":"07.30.2022 15:39:01","email":"test@example.com","firstName":"Mary","lastName":"Anne","playerType":"wizard","primaryRoleID":null,"updatedAt":"07.30.2022 15:39:01"}');
+      });
+    });
+
     describe('create single-relational models', () => {
       it('can create a single model through a relational field', async () => {
         let userModels = [
-          new User({ firstName: 'Mary', lastName: 'Anne', primaryRoleID: null }),
+          new User({ firstName: 'Mary', lastName: 'Anne' }),
         ];
 
         await connection.insert(User, userModels);

@@ -249,7 +249,37 @@ describe('SQLiteConnection', () => {
 
       let queryGenerator  = connection.getQueryGenerator();
       let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
-      let result          = connection.formatSelectResponse(sqlStatement, await connection.query(sqlStatement));
+      let columns         = [
+        {
+          name:     'User:firstName',
+          column:     'firstName',
+          table:    'users',
+          database: 'main',
+          type:     'VARCHAR(64)',
+        },
+        {
+          name:     'User:id',
+          column:   'id',
+          table:    'users',
+          database: 'main',
+          type:     'VARCHAR(36)',
+        },
+        {
+          name:     'User:lastName',
+          column:   'lastName',
+          table:    'users',
+          database: 'main',
+          type:     'VARCHAR(64)',
+        },
+        {
+          name:     'User:primaryRoleID',
+          column:   'primaryRoleID',
+          table:    'users',
+          database: 'main',
+          type:     'VARCHAR(36)',
+        },
+      ];
+      let result          = connection.formatSelectResponse(sqlStatement, columns, await connection.query(sqlStatement));
 
       expect(result.columns).toEqual([
         'User:firstName',
