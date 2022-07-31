@@ -142,6 +142,33 @@ describe('SQLiteConnection', () => {
       });
     });
 
+    describe('reload', () => {
+      it('can reload a model in-place', async () => {
+        let userModels = [
+          new ExtendedUser({
+            email:      'test@example.com',
+            firstName:  'Mary',
+            lastName:   'Anne',
+          }),
+        ];
+
+        await connection.insert(ExtendedUser, userModels);
+
+        let user = await ExtendedUser.where.first();
+        user.firstName = 'Test';
+        user.lastName = 'User';
+
+        expect(user.isDirty()).toEqual(true);
+        expect(user.firstName).toEqual('Test');
+        expect(user.lastName).toEqual('User');
+
+        await user.reload();
+        expect(user.isDirty()).toEqual(false);
+        expect(user.firstName).toEqual('Mary');
+        expect(user.lastName).toEqual('Anne');
+      });
+    });
+
     describe('create single-relational models', () => {
       it('can create a single model through a relational field', async () => {
         let userModels = [
