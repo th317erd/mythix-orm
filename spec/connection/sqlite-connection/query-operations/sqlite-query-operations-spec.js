@@ -4,7 +4,6 @@
 
 /* global describe, it, expect, beforeAll, afterEach, beforeAll */
 
-const UUID = require('uuid');
 const { UUID_REGEXP } = require('../../../support/test-helpers');
 const Utils = require('../../../../lib/utils');
 
@@ -246,7 +245,7 @@ describe('SQLiteConnection', () => {
 
       let queryGenerator  = connection.getQueryGenerator();
       let sqlStatement    = queryGenerator.generateSelectStatement(User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('firstName'));
-      let result          = await connection.query(sqlStatement, { formatResponse: true });
+      let result          = await connection.query(sqlStatement);
 
       expect(result.columns).toEqual([
         'User:firstName',
@@ -265,7 +264,7 @@ describe('SQLiteConnection', () => {
       let query           = User.where.firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
       let queryGenerator  = connection.getQueryGenerator();
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
-      let result          = await connection.query(sqlStatement, { formatResponse: true });
+      let result          = await connection.query(sqlStatement);
 
       expect(connection.buildModelDataMapFromSelectResults(query, result)).toEqual({
         User: [
@@ -294,7 +293,7 @@ describe('SQLiteConnection', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
-      let result          = await connection.query(sqlStatement, { formatResponse: true });
+      let result          = await connection.query(sqlStatement);
 
       expect(connection.buildModelDataMapFromSelectResults(query, result)).toEqual({
         User: [
@@ -333,7 +332,7 @@ describe('SQLiteConnection', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
-      let result          = await connection.query(sqlStatement, { formatResponse: true });
+      let result          = await connection.query(sqlStatement);
       let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
       let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 

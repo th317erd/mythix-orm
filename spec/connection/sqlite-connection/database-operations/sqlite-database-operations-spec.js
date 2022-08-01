@@ -198,7 +198,7 @@ describe('SQLiteConnection', () => {
         let queryGenerator  = connection.getQueryGenerator();
         let query           = User.where;
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
-        let result          = await connection.query(sqlStatement, { formatResponse: true });
+        let result          = await connection.query(sqlStatement);
         let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
         let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 
@@ -227,7 +227,7 @@ describe('SQLiteConnection', () => {
         let queryGenerator  = connection.getQueryGenerator();
         let query           = User.where;
         let sqlStatement    = queryGenerator.generateSelectStatement(query);
-        let result          = await connection.query(sqlStatement, { formatResponse: true });
+        let result          = await connection.query(sqlStatement);
         let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);
         let users           = connection.buildModelsFromModelDataMap(query, modelDataMap);
 

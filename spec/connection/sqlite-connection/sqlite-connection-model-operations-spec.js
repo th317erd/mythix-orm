@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeAll, afterEach, beforeAll, spyOn, fail */
+/* global Buffer, describe, it, expect, beforeAll, afterEach, beforeAll, spyOn, fail */
 
 const moment  = require('moment');
 const {
@@ -61,6 +61,22 @@ describe('SQLiteConnection', () => {
             'UserThing',
           ]);
         });
+      });
+    });
+
+    describe('blobs', () => {
+      it('can save and retrieve blobs', async () => {
+        let buffer    = Buffer.from('hello world', 'utf8');
+        let blobModel = new models.BlobTest({ data: buffer });
+
+        await blobModel.save();
+
+        expect(await models.BlobTest.count()).toEqual(1);
+
+        let thisBlobModel = await models.BlobTest.first();
+        expect(thisBlobModel).toBeInstanceOf(models.BlobTest);
+        expect(thisBlobModel.data).toBeInstanceOf(Buffer);
+        expect(thisBlobModel.data.toString('utf8')).toEqual('hello world');
       });
     });
 
