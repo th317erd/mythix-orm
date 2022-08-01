@@ -6,7 +6,6 @@
 
 const moment  = require('moment');
 const {
-  UUID_REGEXP,
   XID_REGEXP,
   ISO8601_DATE_REGEXP,
 } = require('../../support/test-helpers');
