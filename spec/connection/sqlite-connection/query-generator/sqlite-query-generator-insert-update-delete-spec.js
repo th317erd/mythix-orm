@@ -81,7 +81,7 @@ describe('SQLiteQueryGenerator', () => {
             id:         '6a69f57b-9ada-45cd-8dd9-23a753a2bbf3',
             firstName:  'Test',
             lastName:   'User',
-          }
+          },
         ],
         values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),\n(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')',
       });
@@ -107,7 +107,7 @@ describe('SQLiteQueryGenerator', () => {
             lastName:   'User',
           },
         ],
-        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')'
+        values: '(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbfc\',\'Johnny\',\'Bob\'),(\'6a69f57b-9ada-45cd-8dd9-23a753a2bbf3\',\'Test\',\'User\')',
       });
     });
 
@@ -331,14 +331,14 @@ describe('SQLiteQueryGenerator', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let result          = queryGenerator.generateDeleteStatement(User, User.where.ORDER('firstName').LIMIT(50).OFFSET(10));
 
-      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" IN (SELECT "users"."id" FROM "users" ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10)');
+      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" IN (SELECT "users"."firstName","users"."id" FROM "users" ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10)');
     });
 
     it('should generate a delete statement with a where clause, and an order, limit, and offset', () => {
       let queryGenerator  = connection.getQueryGenerator();
       let result          = queryGenerator.generateDeleteStatement(User, User.where.firstName.EQ('Bob').ORDER('firstName').LIMIT(50).OFFSET(10));
 
-      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" IN (SELECT "users"."id" FROM "users" WHERE "users"."firstName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10)');
+      expect(result).toEqual('DELETE FROM "users" WHERE "users"."id" IN (SELECT "users"."firstName","users"."id" FROM "users" WHERE "users"."firstName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 50 OFFSET 10)');
     });
   });
 });

@@ -395,7 +395,7 @@ describe('SQLiteQueryGenerator', () => {
           ),
       );
 
-      expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID" FROM "users" INNER JOIN "roles" ON "roles"."id" = "users"."primaryRoleID" WHERE ("users"."firstName" = \'Joe\' OR "users"."firstName" = \'Mary\') AND ("users"."lastName" = \'Derp\' OR "users"."lastName" = \'Burp\') ORDER BY "users"."rowid" ASC');
+      expect(queryString).toEqual('SELECT "users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID" FROM "users" INNER JOIN "roles" ON "roles"."id" = "users"."primaryRoleID" WHERE ("users"."firstName" = \'Joe\' OR "users"."firstName" = \'Mary\') AND ("users"."lastName" = \'Derp\' OR "users"."lastName" = \'Burp\') ORDER BY "users"."rowid" ASC');
     });
 
     it('can generate a select statement with an order, limit, and offset', () => {
@@ -482,7 +482,8 @@ describe('SQLiteQueryGenerator', () => {
           .EQ('Jonny')
         .AND
         .lastName
-          .EQ('Bob'),
+          .EQ('Bob')
+        .PROJECT('*'),
       );
 
       expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","role_things"."id" AS "RoleThing:id","role_things"."roleID" AS "RoleThing:roleID","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID","user_things"."id" AS "UserThing:id","user_things"."roleThingID" AS "UserThing:roleThingID","user_things"."userID" AS "UserThing:userID" FROM "users" INNER JOIN "user_things" ON "user_things"."userID" = "users"."id" INNER JOIN "role_things" ON "role_things"."id" = "user_things"."roleThingID" INNER JOIN "roles" ON "roles"."id" = "role_things"."roleID" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."rowid" ASC');
@@ -511,7 +512,8 @@ describe('SQLiteQueryGenerator', () => {
           .EQ('Bob')
         .ORDER('User:firstName')
         .LIMIT(100)
-        .OFFSET(500),
+        .OFFSET(500)
+        .PROJECT('*'),
       );
 
       expect(queryString).toEqual('SELECT "roles"."id" AS "Role:id","roles"."name" AS "Role:name","role_things"."id" AS "RoleThing:id","role_things"."roleID" AS "RoleThing:roleID","users"."firstName" AS "User:firstName","users"."id" AS "User:id","users"."lastName" AS "User:lastName","users"."primaryRoleID" AS "User:primaryRoleID","user_things"."id" AS "UserThing:id","user_things"."roleThingID" AS "UserThing:roleThingID","user_things"."userID" AS "UserThing:userID" FROM "users" INNER JOIN "user_things" ON "user_things"."userID" = "users"."id" INNER JOIN "role_things" ON "role_things"."id" = "user_things"."roleThingID" INNER JOIN "roles" ON "roles"."id" = "role_things"."roleID" WHERE "users"."firstName" = \'Jonny\' AND "users"."lastName" = \'Bob\' ORDER BY "users"."firstName" ASC LIMIT 100 OFFSET 500');

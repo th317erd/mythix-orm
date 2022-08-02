@@ -4,17 +4,10 @@
 
 /* global describe, it, expect, beforeAll, afterEach, beforeAll */
 
-const moment          = require('moment');
 const UUID            = require('uuid');
 const {
   UUID_REGEXP,
-  XID_REGEXP,
-  ISO8601_DATE_REGEXP,
 } = require('../../../support/test-helpers');
-
-const {
-  sortModelNamesByCreationOrder,
-} = require('../../../../lib/utils/model-utils');
 
 const {
   createConnection,
@@ -28,8 +21,6 @@ describe('SQLiteConnection', () => {
     let Role;
     let UserThing;
     let RoleThing;
-    let ExtendedUser;
-    let Time;
 
     beforeAll(async () => {
       try {
@@ -40,8 +31,6 @@ describe('SQLiteConnection', () => {
         Role = setup.Role;
         UserThing = setup.UserThing;
         RoleThing = setup.RoleThing;
-        ExtendedUser = setup.ExtendedUser;
-        Time = setup.Time;
       } catch (error) {
         console.error('Error in "beforeAll": ', error);
       }

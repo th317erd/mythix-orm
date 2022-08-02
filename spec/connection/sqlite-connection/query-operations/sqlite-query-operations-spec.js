@@ -291,7 +291,7 @@ describe('SQLiteConnection', () => {
       await insertSomeRows();
 
       let queryGenerator  = connection.getQueryGenerator();
-      let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
+      let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName').PROJECT('*');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
       let result          = await connection.query(sqlStatement);
 
@@ -330,7 +330,7 @@ describe('SQLiteConnection', () => {
       await insertSomeRows();
 
       let queryGenerator  = connection.getQueryGenerator();
-      let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName');
+      let query           = User.where.primaryRoleID.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName').PROJECT('*');
       let sqlStatement    = queryGenerator.generateSelectStatement(query);
       let result          = await connection.query(sqlStatement);
       let modelDataMap    = connection.buildModelDataMapFromSelectResults(query, result);

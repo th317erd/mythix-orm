@@ -57,24 +57,24 @@ describe('SQLiteQueryGenerator', () => {
   describe('getEscapedFieldName', () => {
     it('should generate escaped column name', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getEscapedFieldName(User.fields.firstName)).toEqual('"User:firstName"');
+      expect(queryGenerator.getEscapedFieldName(User, User.fields.firstName)).toEqual('"User:firstName"');
     });
 
     it('should bypass table name when requested to do so', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getEscapedFieldName(User.fields.firstName, { fieldNameOnly: true })).toEqual('"firstName"');
+      expect(queryGenerator.getEscapedFieldName(User, User.fields.firstName, { fieldNameOnly: true })).toEqual('"firstName"');
     });
   });
 
   describe('getEscapedColumnName', () => {
     it('should generate escaped column name', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getEscapedColumnName(User.fields.firstName)).toEqual('"users"."firstName"');
+      expect(queryGenerator.getEscapedColumnName(User, User.fields.firstName)).toEqual('"users"."firstName"');
     });
 
     it('should bypass table name when requested to do so', () => {
       let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getEscapedColumnName(User.fields.firstName, { columnNameOnly: true })).toEqual('"firstName"');
+      expect(queryGenerator.getEscapedColumnName(User, User.fields.firstName, { columnNameOnly: true })).toEqual('"firstName"');
     });
   });
 

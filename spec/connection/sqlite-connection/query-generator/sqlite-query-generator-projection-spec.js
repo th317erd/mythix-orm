@@ -7,7 +7,6 @@
 
 const { SQLiteConnection } = require('../../../../lib/connection/sqlite-connection');
 const { SQLLiteral } = require('../../../../lib/connection/sql-literals');
-const ModelBase = require('../../../../lib/model');
 
 describe('SQLiteQueryGenerator', () => {
   let connection;
@@ -26,53 +25,57 @@ describe('SQLiteQueryGenerator', () => {
 
   describe('getProjectionRequiredFields', () => {
     it('can get required projection fields #1', () => {
-      let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id'))).toEqual({
-        'User:id': '"users"."id" AS "User:id"',
-      });
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id'));
+
+      let mappedResult = [];
+      for (let [ key, value ] of result)
+        mappedResult.push({ [key]: value.projectedName });
+
+      expect(mappedResult).toEqual([
+        { 'User:id': '"users"."id" AS "User:id"' },
+      ]);
     });
 
     it('can get required projection fields #2', () => {
-      let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id', 'primaryRoleID', '-firstName'))).toEqual({
-        'User:id':            '"users"."id" AS "User:id"',
-        'User:primaryRoleID': '"users"."primaryRoleID" AS "User:primaryRoleID"',
-        'User:firstName':     '"users"."firstName" AS "User:firstName"',
-      });
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.getProjectionRequiredFields(User.where.primaryRoleID.EQ(1).ORDER('+id', 'primaryRoleID', '-firstName'));
+
+      let mappedResult = [];
+      for (let [ key, value ] of result)
+        mappedResult.push({ [key]: value.projectedName });
+
+      expect(mappedResult).toEqual([
+        { 'User:id':            '"users"."id" AS "User:id"' },
+        { 'User:primaryRoleID': '"users"."primaryRoleID" AS "User:primaryRoleID"' },
+        { 'User:firstName':     '"users"."firstName" AS "User:firstName"' },
+      ]);
     });
   });
 
   describe('getProjectionFromQueryEngine', () => {
     it('can get projected fields', () => {
-      let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('+id'))).toEqual([
-        '*',
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('firstName'));
+
+      expect(result).toEqual([
         {
-          fullFieldName:  'User:id',
-          projectedName:  '"users"."id" AS "User:id"',
+          fullFieldName:  'User:firstName',
+          projectedName:  '"users"."firstName" AS "User:firstName"',
           Model:          User,
-          Field:          User.fields.id,
-          fieldName:      'id',
+          Field:          User.fields.firstName,
+          fieldName:      'firstName',
           modelName:      'User',
           direction:      '+',
         },
       ]);
     });
 
-    it('can get projected models', () => {
-      let queryGenerator    = connection.getQueryGenerator();
-      let projection        = queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id', User, Role));
-      let projectionModels  = projection.filter((item) => (item.prototype instanceof ModelBase));
-
-      expect(projectionModels).toEqual([
-        User,
-        Role,
-      ]);
-    });
-
     it('should not include fields from a model not in use in the query', () => {
-      let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id', 'Role:id'))).toEqual([
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('id', 'Role:id'));
+
+      expect(result).toEqual([
         {
           fullFieldName:  'User:id',
           projectedName:  '"users"."id" AS "User:id"',
@@ -86,8 +89,10 @@ describe('SQLiteQueryGenerator', () => {
     });
 
     it('should be able to reset the projection', () => {
-      let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('+primaryRoleID', '+id').PROJECT().PROJECT('+id'))).toEqual([
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1).PROJECT('+primaryRoleID', '+id').PROJECT('-').PROJECT('+id'));
+
+      expect(result).toEqual([
         {
           fullFieldName:  'User:id',
           projectedName:  '"users"."id" AS "User:id"',
@@ -100,15 +105,37 @@ describe('SQLiteQueryGenerator', () => {
       ]);
     });
 
-    it('will return "*" if no projection present', () => {
-      let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getProjectionFromQueryEngine(User.where.primaryRoleID.EQ(1))).toEqual([ '*' ]);
+    it('will return root model fields if no projection present', () => {
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.getProjectionFromQueryEngine(Role.where.name.EQ('test'));
+
+      expect(result).toEqual([
+        {
+          projectedName:  '"roles"."id" AS "Role:id"',
+          Model:          Role,
+          Field:          Role.fields.id,
+          direction:      '+',
+          fullFieldName:  'Role:id',
+          fieldName:      'id',
+          modelName:      'Role',
+        },
+        {
+          projectedName:  '"roles"."name" AS "Role:name"',
+          Model:          Role,
+          Field:          Role.fields.name,
+          direction:      '+',
+          fullFieldName:  'Role:name',
+          fieldName:      'name',
+          modelName:      'Role',
+        },
+      ]);
     });
 
     it('can project a raw field', () => {
-      let queryGenerator = connection.getQueryGenerator();
-      expect(queryGenerator.getProjectionFromQueryEngine(User.where.PROJECT(User.fields.id))).toEqual([
-        '*',
+      let queryGenerator  = connection.getQueryGenerator();
+      let result          = queryGenerator.getProjectionFromQueryEngine(User.where.PROJECT(User.fields.id));
+
+      expect(result).toEqual([
         {
           fullFieldName:  'User:id',
           projectedName:  '"users"."id" AS "User:id"',
@@ -133,15 +160,6 @@ describe('SQLiteQueryGenerator', () => {
           modelName:      'User',
           direction:      '+',
         },
-        {
-          fullFieldName:  'User:firstName',
-          projectedName:  '"users"."firstName" AS "User:firstName"',
-          Model:          User,
-          Field:          User.fields.firstName,
-          fieldName:      'firstName',
-          modelName:      'User',
-          direction:      '-',
-        },
       ]);
     });
   });
@@ -149,7 +167,8 @@ describe('SQLiteQueryGenerator', () => {
   describe('getProjectedFields', () => {
     it('can generate escaped field list from projected fields', () => {
       let queryGenerator  = connection.getQueryGenerator();
-      let fieldList       = queryGenerator.getProjectedFields(User.where.AND.Role);
+      let fieldList       = queryGenerator.getProjectedFields(User.where.AND.Role.PROJECT('*'));
+
       expect(fieldList).toEqual([
         '"roles"."id" AS "Role:id"',
         '"roles"."name" AS "Role:name"',

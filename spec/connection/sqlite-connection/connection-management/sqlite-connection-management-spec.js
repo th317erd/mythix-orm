@@ -162,7 +162,7 @@ describe('SQLiteConnection', () => {
     describe('findAllFieldsFromFieldProjectionMap', () => {
       it('will return all fields from projection map', async () => {
         let queryGenerator      = connection.getQueryGenerator();
-        let sqlStatement        = queryGenerator.generateSelectStatement(User.where.id.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName'));
+        let sqlStatement        = queryGenerator.generateSelectStatement(User.where.id.EQ(Role.where.id).firstName.EQ('Mary').OR.lastName.EQ(null).ORDER('User:firstName').PROJECT('*'));
         let projectionFieldMap  = queryGenerator.parseFieldProjectionToFieldMap(sqlStatement);
 
         expect(connection.findAllFieldsFromFieldProjectionMap(projectionFieldMap)).toEqual([

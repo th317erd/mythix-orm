@@ -17,6 +17,7 @@ describe('SQLiteConnection', () => {
     let User;
     let Role;
     let UserRole;
+    let ValidationTest;
 
     beforeAll(async () => {
       let setup = await createConnection();
@@ -25,10 +26,31 @@ describe('SQLiteConnection', () => {
       User = setup.User;
       Role = setup.Role;
       UserRole = setup.UserRole;
+      ValidationTest = setup.ValidationTest;
     });
 
     afterEach(async () => {
       await truncateTables(connection);
+    });
+
+    describe('join tables', () => {
+      it('can join tables between models without defined relationships', async () => {
+        await connection.insert(ValidationTest, [
+          { number: '123', boolean: 'true', date: '2022-01-01' },
+          { number: '567', boolean: 'false', date: '2022-02-02' },
+        ]);
+
+        await connection.insert(Role, { name: 'true' });
+
+        let model = await ValidationTest.where.boolean.EQ(Role.where.name).first(null, { includeRelations: true });
+        expect(model).toBeInstanceOf(ValidationTest);
+        expect(model.number).toEqual('123');
+        expect(model.boolean).toEqual('true');
+        expect(model.date).toEqual('2022-01-01');
+        expect(model._.Roles).toBeInstanceOf(Array);
+        expect(model._.Roles[0]).toBeInstanceOf(Role);
+        expect(model._.Roles[0].name).toEqual('true');
+      });
     });
 
     describe('create multi-relational models', () => {
@@ -130,7 +152,7 @@ describe('SQLiteConnection', () => {
           { name: 'test2' },
         ]);
 
-        let roles = await Utils.collect(user.getRoles(Role.where.ORDER('Role:name')));
+        let roles = await Utils.collect(user.getRoles(Role.where.ORDER('Role:name'), { includeRelations: true }));
 
         expect(roles).toBeInstanceOf(Array);
         expect(roles.length).toEqual(3);
