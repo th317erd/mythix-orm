@@ -4,16 +4,16 @@
 
 /* global describe, it, expect, beforeEach */
 
-const { SQLiteConnection } = require('../../../lib/connection/sqlite-connection');
-const Model = require('../../../lib/model');
-const { Types } = require('../../../lib');
+const ConnectionBase  = require('../../../lib/connection/connection-base');
+const Model           = require('../../../lib/model');
+const { Types }       = require('../../../lib');
 
 describe('ForeignKeyType', () => {
   let connection;
   let FKModel;
 
   beforeEach(async () => {
-    connection = new SQLiteConnection({
+    connection = new ConnectionBase({
       models: Object.assign({}, require('../../support/models'), {
         FKModel: class FKModel extends Model {
           static fields = {
