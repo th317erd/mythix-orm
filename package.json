@@ -2,7 +2,7 @@
   "name": "mythix-orm",
   "version": "1.0.0",
   "description": "ORM for Mythix framework",
-  "main": "index.js",
+  "main": "lib/index.js",
   "type": "commonjs",
   "scripts": {
     "coverage": "clear ; node ./node_modules/.bin/nyc ./node_modules/.bin/jasmine",
@@ -14,9 +14,9 @@
     "type": "git",
     "url": "git+https://github.com/th317erd/mythix-orm.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [ "orm", "mysql", "postgres", "postgresql", "mssql", "mongo", "snowflake", "database", "sql", "no-sql" ],
+  "author": "Wyatt Greenway",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/th317erd/mythix-orm/issues"
   },
