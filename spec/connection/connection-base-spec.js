@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach, fail */
+/* global describe, it, expect, beforeEach, fail, spyOn */
 
 const { ConnectionBase } = require('../../lib');
 const {
@@ -103,14 +103,11 @@ describe('ConnectionBase', () => {
   });
 
   describe('stop', () => {
-    it('should throw an unimplemented error', async () => {
-      try {
-        await connection.stop();
-        fail('unreachable');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect(error.message).toEqual('ConnectionBase::stop: Child class is required to implement "stop".');
-      }
+    it('should unbind all event listeners', async () => {
+      spyOn(connection, 'removeAllListeners').and.callThrough();
+      await connection.stop();
+
+      expect(connection.removeAllListeners.calls.count()).toEqual(1);
     });
   });
 });

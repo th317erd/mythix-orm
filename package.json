@@ -14,7 +14,18 @@
     "type": "git",
     "url": "git+https://github.com/th317erd/mythix-orm.git"
   },
-  "keywords": [ "orm", "mysql", "postgres", "postgresql", "mssql", "mongo", "snowflake", "database", "sql", "no-sql" ],
+  "keywords": [
+    "orm",
+    "mysql",
+    "postgres",
+    "postgresql",
+    "mssql",
+    "mongo",
+    "snowflake",
+    "database",
+    "sql",
+    "no-sql"
+  ],
   "author": "Wyatt Greenway",
   "license": "MIT",
   "bugs": {
@@ -31,6 +42,7 @@
     "nyc": "^15.1.0"
   },
   "dependencies": {
+    "events": "^3.3.0",
     "inflection": "^1.13.2",
     "moment": "^2.29.3",
     "nife": "^1.10.0",

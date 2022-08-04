@@ -12,12 +12,12 @@ const ModelUtils = require('../../../lib/utils/model-utils');
 describe('ModelType', () => {
   it('can construct from class', () => {
     let type = new Types.ModelType('Role:userID');
-    expect(type.toString()).toEqual('');
+    expect(type.toString()).toEqual('ModelType {}');
   });
 
   it('can construct from type helper', () => {
     let type = Types.Model('Role:userID');
-    expect(type.toString()).toEqual('');
+    expect(type.toString()).toEqual('ModelType {}');
   });
 
   it('will throw error on attempt to cast without being able to fetch target model', () => {
@@ -40,12 +40,12 @@ describe('ModelType', () => {
 describe('ModelsType', () => {
   it('can construct from class', () => {
     let type = new Types.ModelsType('Role:userID');
-    expect(type.toString()).toEqual('');
+    expect(type.toString()).toEqual('ModelsType {}');
   });
 
   it('can construct from type helper', () => {
     let type = Types.Models('Role:userID');
-    expect(type.toString()).toEqual('');
+    expect(type.toString()).toEqual('ModelsType {}');
   });
 
   it('will throw error on attempt to cast without being able to fetch target model', () => {

@@ -4,50 +4,50 @@
 
 /* global describe, it, expect */
 
-const { Types } = require('../../../lib');
+const { Types, ConnectionBase } = require('../../../lib');
 
 describe('StringType', () => {
   describe('toConnectionType', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.StringType();
-      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('VARCHAR(256)');
+      expect(type.toConnectionType(new ConnectionBase())).toEqual('VARCHAR(256)');
     });
 
-    it('can convert to connection type when dialect is "sqlite" with length', () => {
+    it('can convert to connection type when connection is defined with length', () => {
       let type = new Types.StringType(64);
-      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('VARCHAR(64)');
+      expect(type.toConnectionType(new ConnectionBase())).toEqual('VARCHAR(64)');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.StringType();
-      expect(type.toConnectionType({ dialect: undefined })).toEqual('VARCHAR(256)');
+      expect(type.toConnectionType()).toEqual('VARCHAR(256)');
     });
 
-    it('can convert to connection type when dialect is undefined with length', () => {
+    it('can convert to connection type when connection is undefined with length', () => {
       let type = new Types.StringType(64);
-      expect(type.toConnectionType({ dialect: undefined })).toEqual('VARCHAR(64)');
+      expect(type.toConnectionType()).toEqual('VARCHAR(64)');
     });
   });
 
   describe('toString', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.StringType();
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('VARCHAR(256)');
+      expect(type.toString(new ConnectionBase())).toEqual('VARCHAR(256)');
     });
 
-    it('can convert to connection type when dialect is "sqlite" with length', () => {
+    it('can convert to connection type when connection is defined with length', () => {
       let type = new Types.StringType(64);
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('VARCHAR(64)');
+      expect(type.toString(new ConnectionBase())).toEqual('VARCHAR(64)');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.StringType();
-      expect(type.toString({ dialect: undefined })).toEqual('VARCHAR(256)');
+      expect(type.toString()).toEqual('VARCHAR(256)');
     });
 
-    it('can convert to connection type when dialect is undefined with length', () => {
+    it('can convert to connection type when connection is undefined with length', () => {
       let type = new Types.StringType(64);
-      expect(type.toString({ dialect: undefined })).toEqual('VARCHAR(64)');
+      expect(type.toString()).toEqual('VARCHAR(64)');
     });
   });
 

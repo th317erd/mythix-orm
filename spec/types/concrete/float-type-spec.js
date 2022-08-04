@@ -4,30 +4,30 @@
 
 /* global describe, it, expect */
 
-const { Types } = require('../../../lib');
+const { Types, ConnectionBase } = require('../../../lib');
 
 describe('FloatType', () => {
   describe('toConnectionType', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.FloatType();
-      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('REAL');
+      expect(type.toConnectionType(new ConnectionBase())).toEqual('FLOAT');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.FloatType();
-      expect(type.toConnectionType({ dialect: undefined })).toEqual('FLOAT');
+      expect(type.toConnectionType()).toEqual('FLOAT');
     });
   });
 
   describe('toString', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.FloatType();
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('REAL');
+      expect(type.toString(new ConnectionBase())).toEqual('FLOAT');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.FloatType();
-      expect(type.toString({ dialect: undefined })).toEqual('FLOAT');
+      expect(type.toString()).toEqual('FLOAT');
     });
   });
 

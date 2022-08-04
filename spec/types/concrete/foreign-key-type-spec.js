@@ -4,9 +4,11 @@
 
 /* global describe, it, expect, beforeEach */
 
-const ConnectionBase  = require('../../../lib/connection/connection-base');
-const Model           = require('../../../lib/model');
-const { Types }       = require('../../../lib');
+const Model = require('../../../lib/model');
+const {
+  Types,
+  ConnectionBase,
+} = require('../../../lib');
 
 describe('ForeignKeyType', () => {
   let connection;
@@ -40,7 +42,7 @@ describe('ForeignKeyType', () => {
   describe('toString', () => {
     it('should be empty if a connection is provided', () => {
       let type = FKModel.fields.userID.type;
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('VARCHAR(36)');
+      expect(type.toString(new ConnectionBase())).toEqual('VARCHAR(36)');
     });
 
     it('should display field type without any arguments', () => {

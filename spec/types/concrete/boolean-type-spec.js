@@ -4,30 +4,30 @@
 
 /* global describe, it, expect */
 
-const { Types } = require('../../../lib');
+const { Types, ConnectionBase } = require('../../../lib');
 
 describe('BooleanType', () => {
   describe('toConnectionType', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.BooleanType();
-      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('BOOLEAN');
+      expect(type.toConnectionType(new ConnectionBase())).toEqual('BOOLEAN');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.BooleanType();
-      expect(type.toConnectionType({ dialect: undefined })).toEqual('BOOLEAN');
+      expect(type.toConnectionType()).toEqual('BOOLEAN');
     });
   });
 
   describe('toString', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.BooleanType();
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('BOOLEAN');
+      expect(type.toString(new ConnectionBase())).toEqual('BOOLEAN');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.BooleanType();
-      expect(type.toString({ dialect: undefined })).toEqual('BOOLEAN');
+      expect(type.toString()).toEqual('BOOLEAN');
     });
   });
 

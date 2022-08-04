@@ -5,30 +5,30 @@
 /* global describe, it, expect */
 
 const moment    = require('moment');
-const { Types } = require('../../../lib');
+const { Types, ConnectionBase } = require('../../../lib');
 
 describe('DateType', () => {
   describe('toConnectionType', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.DateType();
-      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('DATE');
+      expect(type.toConnectionType(new ConnectionBase())).toEqual('DATE');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.DateType();
-      expect(type.toConnectionType({ dialect: undefined })).toEqual('DATE');
+      expect(type.toConnectionType()).toEqual('DATE');
     });
   });
 
   describe('toString', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.DateType();
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('DATE');
+      expect(type.toString(new ConnectionBase())).toEqual('DATE');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.DateType();
-      expect(type.toString({ dialect: undefined })).toEqual('DATE');
+      expect(type.toString()).toEqual('DATE');
     });
   });
 

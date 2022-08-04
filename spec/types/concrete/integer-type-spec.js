@@ -4,30 +4,30 @@
 
 /* global describe, it, expect */
 
-const { Types } = require('../../../lib');
+const { Types, ConnectionBase } = require('../../../lib');
 
 describe('IntegerType', () => {
   describe('toConnectionType', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.IntegerType();
-      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('INTEGER');
+      expect(type.toConnectionType(new ConnectionBase())).toEqual('INTEGER');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.IntegerType();
-      expect(type.toConnectionType({ dialect: undefined })).toEqual('INTEGER');
+      expect(type.toConnectionType()).toEqual('INTEGER');
     });
   });
 
   describe('toString', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.IntegerType();
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('INTEGER');
+      expect(type.toString(new ConnectionBase())).toEqual('INTEGER');
     });
 
-    it('can convert to connection type when dialect is undefined', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.IntegerType();
-      expect(type.toString({ dialect: undefined })).toEqual('INTEGER');
+      expect(type.toString()).toEqual('INTEGER');
     });
   });
 

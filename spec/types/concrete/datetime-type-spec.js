@@ -5,50 +5,30 @@
 /* global describe, it, expect */
 
 const moment    = require('moment');
-const { Types } = require('../../../lib');
+const { Types, ConnectionBase } = require('../../../lib');
 
 describe('DateTimeType', () => {
   describe('toConnectionType', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.DateTimeType();
-      expect(type.toConnectionType({ dialect: 'sqlite' })).toEqual('DATETIME');
+      expect(type.toConnectionType(new ConnectionBase())).toEqual('DATETIME');
     });
 
-    it('can convert to connection type when dialect is "mysql" without length', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.DateTimeType();
-      expect(type.toConnectionType({ dialect: 'mysql' })).toEqual('DATETIME');
-    });
-
-    it('can convert to connection type when dialect is "mysql" with length', () => {
-      let type = new Types.DateTimeType(5);
-      expect(type.toConnectionType({ dialect: 'mysql' })).toEqual('DATETIME(5)');
-    });
-
-    it('can convert to connection type when dialect is undefined', () => {
-      let type = new Types.DateTimeType();
-      expect(type.toConnectionType({ dialect: undefined })).toEqual('DATETIME');
+      expect(type.toConnectionType()).toEqual('DATETIME');
     });
   });
 
   describe('toString', () => {
-    it('can convert to connection type when dialect is "sqlite"', () => {
+    it('can convert to connection type when connection is defined', () => {
       let type = new Types.DateTimeType();
-      expect(type.toString({ dialect: 'sqlite' })).toEqual('DATETIME');
+      expect(type.toString(new ConnectionBase())).toEqual('DATETIME');
     });
 
-    it('can convert to connection type when dialect is "mysql" without length', () => {
+    it('can convert to connection type when connection is undefined', () => {
       let type = new Types.DateTimeType();
-      expect(type.toString({ dialect: 'mysql' })).toEqual('DATETIME');
-    });
-
-    it('can convert to connection type when dialect is "mysql" with length', () => {
-      let type = new Types.DateTimeType(5);
-      expect(type.toString({ dialect: 'mysql' })).toEqual('DATETIME(5)');
-    });
-
-    it('can convert to connection type when dialect is undefined', () => {
-      let type = new Types.DateTimeType();
-      expect(type.toString({ dialect: undefined })).toEqual('DATETIME');
+      expect(type.toString()).toEqual('DATETIME');
     });
   });
 
