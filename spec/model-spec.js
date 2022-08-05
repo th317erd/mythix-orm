@@ -418,14 +418,6 @@ describe('Model', () => {
     });
   });
 
-  describe('getTablePrefix', () => {
-    instanceAndStaticTests(User, (target, type) => {
-      it(`should be able to get the table prefix for the model (${type})`, () => {
-        expect(target.getTablePrefix()).toEqual('');
-      });
-    });
-  });
-
   describe('getTableName', () => {
     instanceAndStaticTests(User, (target, type) => {
       it(`should be able to get the table name for the model (${type})`, () => {
@@ -434,14 +426,14 @@ describe('Model', () => {
     });
 
     class OtherUser extends User {
-      static getTablePrefix() {
-        return 'table_';
+      static getTableName() {
+        return 'tableOTHERUsers';
       }
     }
 
     instanceAndStaticTests(OtherUser, (target, type) => {
       it(`should be able to get the table name for the model (${type})`, () => {
-        expect(target.getTableName()).toEqual('table_other_users');
+        expect(target.getTableName()).toEqual('tableOTHERUsers');
       });
     });
   });

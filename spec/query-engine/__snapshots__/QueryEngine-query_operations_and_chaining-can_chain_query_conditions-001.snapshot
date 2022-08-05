@@ -5,185 +5,193 @@
     "level": 2
   },
   "1": {
-    "operator": "FIELD",
-    "fieldName": "id",
+    "logical": true,
+    "operator": "AND",
+    "and": true,
+    "or": false,
+    "not": false,
     "partIndex": 1,
     "partParentQuery": {
       "operator": "MODEL",
       "partIndex": 0,
       "level": 2
     },
-    "level": 4
+    "level": 3
   },
   "2": {
-    "value": 1,
-    "condition": true,
-    "operator": "EQ",
-    "inverseOperator": "NEQ",
-    "partIndex": 2,
-    "partParentQuery": {
-      "operator": "FIELD",
-      "fieldName": "id",
-      "partIndex": 1,
-      "partParentQuery": {
-        "operator": "MODEL",
-        "partIndex": 0,
-        "level": 2
-      },
-      "level": 4
-    },
-    "level": 5
-  },
-  "3": {
-    "logical": true,
-    "operator": "AND",
-    "and": true,
-    "or": false,
-    "not": false,
-    "partIndex": 3,
-    "partParentQuery": {
-      "value": 1,
-      "condition": true,
-      "operator": "EQ",
-      "inverseOperator": "NEQ",
-      "partIndex": 2,
-      "partParentQuery": {
-        "operator": "FIELD",
-        "fieldName": "id",
-        "partIndex": 1,
-        "partParentQuery": {
-          "operator": "MODEL",
-          "partIndex": 0,
-          "level": 2
-        },
-        "level": 4
-      },
-      "level": 5
-    },
-    "level": 6
-  },
-  "4": {
     "operator": "FIELD",
-    "fieldName": "firstName",
-    "partIndex": 4,
+    "fieldName": "id",
+    "partIndex": 2,
     "partParentQuery": {
       "logical": true,
       "operator": "AND",
       "and": true,
       "or": false,
       "not": false,
-      "partIndex": 3,
+      "partIndex": 1,
       "partParentQuery": {
-        "value": 1,
-        "condition": true,
-        "operator": "EQ",
-        "inverseOperator": "NEQ",
-        "partIndex": 2,
-        "partParentQuery": {
-          "operator": "FIELD",
-          "fieldName": "id",
-          "partIndex": 1,
-          "partParentQuery": {
-            "operator": "MODEL",
-            "partIndex": 0,
-            "level": 2
-          },
-          "level": 4
-        },
-        "level": 5
+        "operator": "MODEL",
+        "partIndex": 0,
+        "level": 2
       },
-      "level": 6
+      "level": 3
     },
-    "level": 8
+    "level": 5
   },
-  "5": {
-    "value": "Test",
+  "3": {
+    "value": 1,
     "condition": true,
     "operator": "EQ",
     "inverseOperator": "NEQ",
-    "partIndex": 5,
+    "partIndex": 3,
     "partParentQuery": {
       "operator": "FIELD",
-      "fieldName": "firstName",
-      "partIndex": 4,
+      "fieldName": "id",
+      "partIndex": 2,
       "partParentQuery": {
         "logical": true,
         "operator": "AND",
         "and": true,
         "or": false,
         "not": false,
-        "partIndex": 3,
+        "partIndex": 1,
         "partParentQuery": {
-          "value": 1,
-          "condition": true,
-          "operator": "EQ",
-          "inverseOperator": "NEQ",
-          "partIndex": 2,
-          "partParentQuery": {
-            "operator": "FIELD",
-            "fieldName": "id",
-            "partIndex": 1,
-            "partParentQuery": {
-              "operator": "MODEL",
-              "partIndex": 0,
-              "level": 2
-            },
-            "level": 4
-          },
-          "level": 5
+          "operator": "MODEL",
+          "partIndex": 0,
+          "level": 2
         },
-        "level": 6
+        "level": 3
       },
-      "level": 8
+      "level": 5
     },
-    "level": 9
+    "level": 6
   },
-  "6": {
+  "4": {
     "logical": true,
     "operator": "AND",
     "and": true,
     "or": false,
     "not": false,
-    "partIndex": 6,
+    "partIndex": 4,
     "partParentQuery": {
-      "value": "Test",
+      "value": 1,
       "condition": true,
       "operator": "EQ",
       "inverseOperator": "NEQ",
-      "partIndex": 5,
+      "partIndex": 3,
       "partParentQuery": {
         "operator": "FIELD",
-        "fieldName": "firstName",
-        "partIndex": 4,
+        "fieldName": "id",
+        "partIndex": 2,
         "partParentQuery": {
           "logical": true,
           "operator": "AND",
           "and": true,
           "or": false,
           "not": false,
+          "partIndex": 1,
+          "partParentQuery": {
+            "operator": "MODEL",
+            "partIndex": 0,
+            "level": 2
+          },
+          "level": 3
+        },
+        "level": 5
+      },
+      "level": 6
+    },
+    "level": 7
+  },
+  "5": {
+    "operator": "FIELD",
+    "fieldName": "firstName",
+    "partIndex": 5,
+    "partParentQuery": {
+      "logical": true,
+      "operator": "AND",
+      "and": true,
+      "or": false,
+      "not": false,
+      "partIndex": 4,
+      "partParentQuery": {
+        "value": 1,
+        "condition": true,
+        "operator": "EQ",
+        "inverseOperator": "NEQ",
+        "partIndex": 3,
+        "partParentQuery": {
+          "operator": "FIELD",
+          "fieldName": "id",
+          "partIndex": 2,
+          "partParentQuery": {
+            "logical": true,
+            "operator": "AND",
+            "and": true,
+            "or": false,
+            "not": false,
+            "partIndex": 1,
+            "partParentQuery": {
+              "operator": "MODEL",
+              "partIndex": 0,
+              "level": 2
+            },
+            "level": 3
+          },
+          "level": 5
+        },
+        "level": 6
+      },
+      "level": 7
+    },
+    "level": 9
+  },
+  "6": {
+    "value": "Test",
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ",
+    "partIndex": 6,
+    "partParentQuery": {
+      "operator": "FIELD",
+      "fieldName": "firstName",
+      "partIndex": 5,
+      "partParentQuery": {
+        "logical": true,
+        "operator": "AND",
+        "and": true,
+        "or": false,
+        "not": false,
+        "partIndex": 4,
+        "partParentQuery": {
+          "value": 1,
+          "condition": true,
+          "operator": "EQ",
+          "inverseOperator": "NEQ",
           "partIndex": 3,
           "partParentQuery": {
-            "value": 1,
-            "condition": true,
-            "operator": "EQ",
-            "inverseOperator": "NEQ",
+            "operator": "FIELD",
+            "fieldName": "id",
             "partIndex": 2,
             "partParentQuery": {
-              "operator": "FIELD",
-              "fieldName": "id",
+              "logical": true,
+              "operator": "AND",
+              "and": true,
+              "or": false,
+              "not": false,
               "partIndex": 1,
               "partParentQuery": {
                 "operator": "MODEL",
                 "partIndex": 0,
                 "level": 2
               },
-              "level": 4
+              "level": 3
             },
             "level": 5
           },
           "level": 6
         },
-        "level": 8
+        "level": 7
       },
       "level": 9
     },
@@ -191,55 +199,57 @@
   },
   "7": {
     "logical": true,
-    "operator": "NOT",
-    "not": true,
+    "operator": "AND",
+    "and": true,
+    "or": false,
+    "not": false,
     "partIndex": 7,
     "partParentQuery": {
-      "logical": true,
-      "operator": "AND",
-      "and": true,
-      "or": false,
-      "not": false,
+      "value": "Test",
+      "condition": true,
+      "operator": "EQ",
+      "inverseOperator": "NEQ",
       "partIndex": 6,
       "partParentQuery": {
-        "value": "Test",
-        "condition": true,
-        "operator": "EQ",
-        "inverseOperator": "NEQ",
+        "operator": "FIELD",
+        "fieldName": "firstName",
         "partIndex": 5,
         "partParentQuery": {
-          "operator": "FIELD",
-          "fieldName": "firstName",
+          "logical": true,
+          "operator": "AND",
+          "and": true,
+          "or": false,
+          "not": false,
           "partIndex": 4,
           "partParentQuery": {
-            "logical": true,
-            "operator": "AND",
-            "and": true,
-            "or": false,
-            "not": false,
+            "value": 1,
+            "condition": true,
+            "operator": "EQ",
+            "inverseOperator": "NEQ",
             "partIndex": 3,
             "partParentQuery": {
-              "value": 1,
-              "condition": true,
-              "operator": "EQ",
-              "inverseOperator": "NEQ",
+              "operator": "FIELD",
+              "fieldName": "id",
               "partIndex": 2,
               "partParentQuery": {
-                "operator": "FIELD",
-                "fieldName": "id",
+                "logical": true,
+                "operator": "AND",
+                "and": true,
+                "or": false,
+                "not": false,
                 "partIndex": 1,
                 "partParentQuery": {
                   "operator": "MODEL",
                   "partIndex": 0,
                   "level": 2
                 },
-                "level": 4
+                "level": 3
               },
               "level": 5
             },
             "level": 6
           },
-          "level": 8
+          "level": 7
         },
         "level": 9
       },
@@ -248,60 +258,63 @@
     "level": 11
   },
   "8": {
-    "operator": "FIELD",
-    "fieldName": "lastName",
+    "logical": true,
+    "operator": "NOT",
+    "not": true,
     "partIndex": 8,
     "partParentQuery": {
       "logical": true,
-      "operator": "NOT",
-      "not": true,
+      "operator": "AND",
+      "and": true,
+      "or": false,
+      "not": false,
       "partIndex": 7,
       "partParentQuery": {
-        "logical": true,
-        "operator": "AND",
-        "and": true,
-        "or": false,
-        "not": false,
+        "value": "Test",
+        "condition": true,
+        "operator": "EQ",
+        "inverseOperator": "NEQ",
         "partIndex": 6,
         "partParentQuery": {
-          "value": "Test",
-          "condition": true,
-          "operator": "EQ",
-          "inverseOperator": "NEQ",
+          "operator": "FIELD",
+          "fieldName": "firstName",
           "partIndex": 5,
           "partParentQuery": {
-            "operator": "FIELD",
-            "fieldName": "firstName",
+            "logical": true,
+            "operator": "AND",
+            "and": true,
+            "or": false,
+            "not": false,
             "partIndex": 4,
             "partParentQuery": {
-              "logical": true,
-              "operator": "AND",
-              "and": true,
-              "or": false,
-              "not": false,
+              "value": 1,
+              "condition": true,
+              "operator": "EQ",
+              "inverseOperator": "NEQ",
               "partIndex": 3,
               "partParentQuery": {
-                "value": 1,
-                "condition": true,
-                "operator": "EQ",
-                "inverseOperator": "NEQ",
+                "operator": "FIELD",
+                "fieldName": "id",
                 "partIndex": 2,
                 "partParentQuery": {
-                  "operator": "FIELD",
-                  "fieldName": "id",
+                  "logical": true,
+                  "operator": "AND",
+                  "and": true,
+                  "or": false,
+                  "not": false,
                   "partIndex": 1,
                   "partParentQuery": {
                     "operator": "MODEL",
                     "partIndex": 0,
                     "level": 2
                   },
-                  "level": 4
+                  "level": 3
                 },
                 "level": 5
               },
               "level": 6
             },
-            "level": 8
+            "level": 7
           },
           "level": 9
         },
@@ -309,69 +322,70 @@
       },
       "level": 11
     },
-    "level": 13
+    "level": 12
   },
   "9": {
-    "value": "Stuff",
-    "condition": true,
-    "operator": "EQ",
-    "inverseOperator": "NEQ",
+    "operator": "FIELD",
+    "fieldName": "lastName",
     "partIndex": 9,
     "partParentQuery": {
-      "operator": "FIELD",
-      "fieldName": "lastName",
+      "logical": true,
+      "operator": "NOT",
+      "not": true,
       "partIndex": 8,
       "partParentQuery": {
         "logical": true,
-        "operator": "NOT",
-        "not": true,
+        "operator": "AND",
+        "and": true,
+        "or": false,
+        "not": false,
         "partIndex": 7,
         "partParentQuery": {
-          "logical": true,
-          "operator": "AND",
-          "and": true,
-          "or": false,
-          "not": false,
+          "value": "Test",
+          "condition": true,
+          "operator": "EQ",
+          "inverseOperator": "NEQ",
           "partIndex": 6,
           "partParentQuery": {
-            "value": "Test",
-            "condition": true,
-            "operator": "EQ",
-            "inverseOperator": "NEQ",
+            "operator": "FIELD",
+            "fieldName": "firstName",
             "partIndex": 5,
             "partParentQuery": {
-              "operator": "FIELD",
-              "fieldName": "firstName",
+              "logical": true,
+              "operator": "AND",
+              "and": true,
+              "or": false,
+              "not": false,
               "partIndex": 4,
               "partParentQuery": {
-                "logical": true,
-                "operator": "AND",
-                "and": true,
-                "or": false,
-                "not": false,
+                "value": 1,
+                "condition": true,
+                "operator": "EQ",
+                "inverseOperator": "NEQ",
                 "partIndex": 3,
                 "partParentQuery": {
-                  "value": 1,
-                  "condition": true,
-                  "operator": "EQ",
-                  "inverseOperator": "NEQ",
+                  "operator": "FIELD",
+                  "fieldName": "id",
                   "partIndex": 2,
                   "partParentQuery": {
-                    "operator": "FIELD",
-                    "fieldName": "id",
+                    "logical": true,
+                    "operator": "AND",
+                    "and": true,
+                    "or": false,
+                    "not": false,
                     "partIndex": 1,
                     "partParentQuery": {
                       "operator": "MODEL",
                       "partIndex": 0,
                       "level": 2
                     },
-                    "level": 4
+                    "level": 3
                   },
                   "level": 5
                 },
                 "level": 6
               },
-              "level": 8
+              "level": 7
             },
             "level": 9
           },
@@ -379,8 +393,89 @@
         },
         "level": 11
       },
-      "level": 13
+      "level": 12
     },
     "level": 14
+  },
+  "10": {
+    "value": "Stuff",
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ",
+    "partIndex": 10,
+    "partParentQuery": {
+      "operator": "FIELD",
+      "fieldName": "lastName",
+      "partIndex": 9,
+      "partParentQuery": {
+        "logical": true,
+        "operator": "NOT",
+        "not": true,
+        "partIndex": 8,
+        "partParentQuery": {
+          "logical": true,
+          "operator": "AND",
+          "and": true,
+          "or": false,
+          "not": false,
+          "partIndex": 7,
+          "partParentQuery": {
+            "value": "Test",
+            "condition": true,
+            "operator": "EQ",
+            "inverseOperator": "NEQ",
+            "partIndex": 6,
+            "partParentQuery": {
+              "operator": "FIELD",
+              "fieldName": "firstName",
+              "partIndex": 5,
+              "partParentQuery": {
+                "logical": true,
+                "operator": "AND",
+                "and": true,
+                "or": false,
+                "not": false,
+                "partIndex": 4,
+                "partParentQuery": {
+                  "value": 1,
+                  "condition": true,
+                  "operator": "EQ",
+                  "inverseOperator": "NEQ",
+                  "partIndex": 3,
+                  "partParentQuery": {
+                    "operator": "FIELD",
+                    "fieldName": "id",
+                    "partIndex": 2,
+                    "partParentQuery": {
+                      "logical": true,
+                      "operator": "AND",
+                      "and": true,
+                      "or": false,
+                      "not": false,
+                      "partIndex": 1,
+                      "partParentQuery": {
+                        "operator": "MODEL",
+                        "partIndex": 0,
+                        "level": 2
+                      },
+                      "level": 3
+                    },
+                    "level": 5
+                  },
+                  "level": 6
+                },
+                "level": 7
+              },
+              "level": 9
+            },
+            "level": 10
+          },
+          "level": 11
+        },
+        "level": 12
+      },
+      "level": 14
+    },
+    "level": 15
   }
 }

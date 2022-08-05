@@ -212,20 +212,16 @@ describe('Model relations', () => {
       let result = rolesField.type.getJoinableRelations(connection);
       expect(result).toEqual([
         {
-          relationType:     'target',
-          fieldIndex:       0,
-          sourceModelName:  'User',
-          sourceFieldName:  'id',
-          targetModelName:  'UserRole',
-          targetFieldName:  'userID',
-        },
-        {
-          relationType:     'target',
-          fieldIndex:       0,
           sourceModelName:  'UserRole',
           sourceFieldName:  'roleID',
           targetModelName:  'Role',
           targetFieldName:  'id',
+        },
+        {
+          sourceModelName:  'User',
+          sourceFieldName:  'id',
+          targetModelName:  'UserRole',
+          targetFieldName:  'userID',
         },
       ]);
     });
@@ -237,27 +233,21 @@ describe('Model relations', () => {
       let result = userThingRoleField.type.getJoinableRelations(connection);
       expect(result).toEqual([
         {
-          relationType:     'target',
-          fieldIndex:       0,
+          sourceModelName:  'RoleThing',
+          sourceFieldName:  'roleID',
+          targetModelName:  'Role',
+          targetFieldName:  'id',
+        },
+        {
           sourceModelName:  'User',
           sourceFieldName:  'id',
           targetModelName:  'UserThing',
           targetFieldName:  'userID',
         },
         {
-          relationType:     'target',
-          fieldIndex:       0,
           sourceModelName:  'UserThing',
           sourceFieldName:  'roleThingID',
           targetModelName:  'RoleThing',
-          targetFieldName:  'id',
-        },
-        {
-          relationType:     'target',
-          fieldIndex:       0,
-          sourceModelName:  'RoleThing',
-          sourceFieldName:  'roleID',
-          targetModelName:  'Role',
           targetFieldName:  'id',
         },
       ]);
@@ -270,20 +260,16 @@ describe('Model relations', () => {
       let result = rolesField.type.getJoinableRelations(connection);
       expect(result).toEqual([
         {
-          relationType:     'target',
-          fieldIndex:       0,
-          sourceModelName:  'User',
-          sourceFieldName:  'id',
-          targetModelName:  'UserRole',
-          targetFieldName:  'userID',
-        },
-        {
-          relationType:     'target',
-          fieldIndex:       0,
           sourceModelName:  'UserRole',
           sourceFieldName:  'roleID',
           targetModelName:  'Role',
           targetFieldName:  'id',
+        },
+        {
+          sourceModelName:  'User',
+          sourceFieldName:  'id',
+          targetModelName:  'UserRole',
+          targetFieldName:  'userID',
         },
       ]);
     });
@@ -295,29 +281,24 @@ describe('Model relations', () => {
       let result = userThingRoleField.type.getJoinableRelations(connection);
       expect(result).toEqual([
         {
-          relationType:     'target',
-          fieldIndex:       0,
+          sourceModelName:  'RoleThing',
+          sourceFieldName:  'roleID',
+          targetModelName:  'Role',
+          targetFieldName:  'id',
+        },
+        {
           sourceModelName:  'User',
           sourceFieldName:  'id',
           targetModelName:  'UserThing',
           targetFieldName:  'userID',
         },
         {
-          relationType:     'target',
-          fieldIndex:       0,
           sourceModelName:  'UserThing',
           sourceFieldName:  'roleThingID',
           targetModelName:  'RoleThing',
           targetFieldName:  'id',
         },
-        {
-          relationType:     'target',
-          fieldIndex:       0,
-          sourceModelName:  'RoleThing',
-          sourceFieldName:  'roleID',
-          targetModelName:  'Role',
-          targetFieldName:  'id',
-        },
+
       ]);
     });
 
@@ -328,8 +309,6 @@ describe('Model relations', () => {
       let result = field.type.getJoinableRelations(connection);
       expect(result).toEqual([
         {
-          relationType:     'target',
-          fieldIndex:       0,
           sourceModelName:  'User',
           sourceFieldName:  'primaryRoleID',
           targetModelName:  'Role',
