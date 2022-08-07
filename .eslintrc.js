@@ -35,7 +35,7 @@ module.exports = {
     'func-call-spacing':                      [ 'error', 'never' ],
     'guard-for-in':                           'error',
     'implicit-arrow-linebreak':               [ 'error', 'beside' ],
-    'indent':                                 [ 'error', 2, { 'SwitchCase': 1 } ],
+    'indent':                                 [ 'error', 2, { 'SwitchCase': 1, 'MemberExpression': 'off' } ],
     'jsx-quotes':                             [ 'error', 'prefer-double' ],
     'key-spacing':                            [ 'error', { beforeColon: false, afterColon: true, mode: 'minimum', 'align': 'value' } ],
     'keyword-spacing':                        [ 'error', { before: true, after: true } ],
