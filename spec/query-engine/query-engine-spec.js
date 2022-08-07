@@ -34,6 +34,12 @@ describe('QueryEngine', () => {
     });
   };
 
+  // fdescribe('operations', () => {
+  //   it('can live happily without a connection', () => {
+  //     expect((new QueryEngine().User.id('derp'))._getRawQuery()).toBe([ ]);
+  //   });
+  // });
+
   describe('isQueryContext', () => {
     it('can validly detect a query context', () => {
       expect(QueryEngine.isQueryContext({})).toBe(false);

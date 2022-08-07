@@ -1,0 +1,27 @@
+[
+  {
+    "operator": "MODEL",
+    "modelName": "ScopedUser",
+    "dialect": "none",
+    "rootModelName": "ScopedUser",
+    "currentScopeName": "model"
+  },
+  {
+    "operator": "FIELD",
+    "fieldName": "id",
+    "Field": {
+      "type": {},
+      "allowNull": false,
+      "primaryKey": true,
+      "fieldName": "id",
+      "columnName": "id"
+    },
+    "currentScopeName": "field"
+  },
+  {
+    "value": "test",
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ"
+  }
+]
