@@ -3,7 +3,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach, spyOn */
+/* global describe, it, expect, beforeAll, spyOn */
 
 const UUID = require('uuid');
 const { Types, ConnectionBase } = require('../../../lib');
@@ -72,32 +72,37 @@ describe('Model relations', () => {
   let UserThing;
   let RoleThing;
 
-  beforeEach(() => {
-    connection = new ConnectionBase({
-      models: require('../../support/models'),
-    });
+  beforeAll(() => {
+    try {
+      connection = new ConnectionBase({
+        bindModels: false,
+        models:     require('../../support/models'),
+      });
 
-    let models = connection.getModels();
-    User = models.User;
-    Role = models.Role;
-    UserThing = models.UserThing;
-    RoleThing = models.RoleThing;
+      let models = connection.getModels();
+      User = models.User;
+      Role = models.Role;
+      UserThing = models.UserThing;
+      RoleThing = models.RoleThing;
+    } catch (error) {
+      console.error('Error in beforeAll: ', error);
+    }
   });
 
   describe('setRelationalValues', () => {
     it('can set relational values on a model instance', () => {
-      let user  = new User();
-      let role  = new Role({ id: UUID.v4(), name: 'test' });
+      let user  = new User(null, { connection });
+      let role  = new Role({ id: UUID.v4(), name: 'test' }, { connection });
 
-      ModelUtils.setRelationalValues(User, user, Role, role);
+      ModelUtils.setRelationalValues(connection, User, user, Role, role);
 
       expect(user.primaryRoleID).toEqual(role.id);
     });
 
     it('can set relational values on a model instance when related model is null', () => {
-      let user  = new User({ primaryRoleID: UUID.v4() });
+      let user  = new User({ primaryRoleID: UUID.v4() }, { connection });
 
-      ModelUtils.setRelationalValues(User, user, Role);
+      ModelUtils.setRelationalValues(connection, User, user, Role);
 
       expect(user.primaryRoleID).toBe(null);
     });
@@ -105,10 +110,10 @@ describe('Model relations', () => {
 
   describe('walkTargetRelation', () => {
     it('can walk target relation #1', () => {
-      let user  = new User();
+      let user  = new User(null, { connection });
       let field = user.getField('roles');
 
-      let result = field.type.walkTargetRelation(({ source, target }) => {
+      let result = field.type.walkTargetRelation(connection, ({ source, target }) => {
         let sourceStr = `${source.modelName}:${source.fieldName}`;
         let targetStr = `${target.modelName}:${target.fieldName}`;
         return `${sourceStr} -> ${targetStr}`;
@@ -120,10 +125,10 @@ describe('Model relations', () => {
     });
 
     it('can walk target relation #2', () => {
-      let user  = new User();
+      let user  = new User(null, { connection });
       let field = user.getField('userThingRole');
 
-      let result = field.type.walkTargetRelation(({ source, target }) => {
+      let result = field.type.walkTargetRelation(connection, ({ source, target }) => {
         let sourceStr = `${source.modelName}:${source.fieldName}`;
         let targetStr = `${target.modelName}:${target.fieldName}`;
         return `${sourceStr} -> ${targetStr}`;
@@ -137,10 +142,10 @@ describe('Model relations', () => {
 
   describe('walkSourceRelation', () => {
     it('can walk source relation #1', () => {
-      let user  = new User();
+      let user  = new User(null, { connection });
       let field = user.getField('roles');
 
-      let result = field.type.walkSourceRelation(({ source, target }) => {
+      let result = field.type.walkSourceRelation(connection, ({ source, target }) => {
         let sourceStr = `${source.modelName}:${source.fieldName}`;
         let targetStr = `${target.modelName}:${target.fieldName}`;
         return `${sourceStr} -> ${targetStr}`;
@@ -155,10 +160,10 @@ describe('Model relations', () => {
     });
 
     it('can walk source relation #2', () => {
-      let user  = new User();
+      let user  = new User(null, { connection });
       let field = user.getField('userThingRole');
 
-      let result = field.type.walkSourceRelation(({ source, target }) => {
+      let result = field.type.walkSourceRelation(connection, ({ source, target }) => {
         let sourceStr = `${source.modelName}:${source.fieldName}`;
         let targetStr = `${target.modelName}:${target.fieldName}`;
         return `${sourceStr} -> ${targetStr}`;
@@ -177,36 +182,36 @@ describe('Model relations', () => {
 
   describe('getSourceField', () => {
     it('can get source field', () => {
-      let user  = new User();
+      let user  = new User(null, { connection });
       let field = user.getField('primaryRole');
 
-      let result = field.type.getSourceField();
+      let result = field.type.getSourceField(connection);
       expect(result).toBe(User.fields.primaryRoleID);
     });
 
     it('will skip following foreign keys if requested', () => {
-      let roleThing = new RoleThing();
+      let roleThing = new RoleThing(null, { connection });
       let field = roleThing.getField('user');
 
-      let result = field.type.getSourceField({ recursive: true, followForeignKeys: false });
+      let result = field.type.getSourceField(connection, { recursive: true, followForeignKeys: false });
       expect(result).toBe(UserThing.fields.userID);
 
-      result = field.type.getSourceField({ recursive: true });
+      result = field.type.getSourceField(connection, { recursive: true });
       expect(result).toBe(User.fields.id);
     });
 
     it('can get source field recursively', () => {
-      let user  = new User();
+      let user  = new User(null, { connection });
       let field = user.getField('roles');
 
-      let result = field.type.getSourceField({ recursive: true });
+      let result = field.type.getSourceField(connection, { recursive: true });
       expect(result).toBe(Role.fields.id);
     });
   });
 
   describe('getJoinableRelations', () => {
     it('can recursively parse target relations #1', () => {
-      let user        = new User();
+      let user        = new User(null, { connection });
       let rolesField  = user.getField('roles');
 
       let result = rolesField.type.getJoinableRelations(connection);
@@ -227,7 +232,7 @@ describe('Model relations', () => {
     });
 
     it('can recursively parse relations #2', () => {
-      let user                = new User();
+      let user                = new User(null, { connection });
       let userThingRoleField  = user.getField('userThingRole');
 
       let result = userThingRoleField.type.getJoinableRelations(connection);
@@ -254,7 +259,7 @@ describe('Model relations', () => {
     });
 
     it('can recursively parse relations #3', () => {
-      let user        = new User();
+      let user        = new User(null, { connection });
       let rolesField  = user.getField('roles');
 
       let result = rolesField.type.getJoinableRelations(connection);
@@ -275,7 +280,7 @@ describe('Model relations', () => {
     });
 
     it('can recursively parse relations #4', () => {
-      let user                = new User();
+      let user                = new User(null, { connection });
       let userThingRoleField  = user.getField('userThingRole');
 
       let result = userThingRoleField.type.getJoinableRelations(connection);
@@ -303,7 +308,7 @@ describe('Model relations', () => {
     });
 
     it('can recursively parse relations #5', () => {
-      let user  = new User();
+      let user  = new User(null, { connection });
       let field = user.getField('primaryRole');
 
       let result = field.type.getJoinableRelations(connection);

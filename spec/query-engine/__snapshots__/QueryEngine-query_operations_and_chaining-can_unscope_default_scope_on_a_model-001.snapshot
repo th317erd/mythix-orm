@@ -1,37 +1,27 @@
-{
-  "0": {
+[
+  {
     "operator": "MODEL",
-    "partIndex": 0,
-    "level": 2
+    "modelName": "ScopedUser",
+    "dialect": "none",
+    "rootModelName": "ScopedUser",
+    "currentScopeName": "model"
   },
-  "1": {
+  {
     "operator": "FIELD",
     "fieldName": "id",
-    "partIndex": 1,
-    "partParentQuery": {
-      "operator": "MODEL",
-      "partIndex": 0,
-      "level": 2
+    "Field": {
+      "type": {},
+      "allowNull": false,
+      "primaryKey": true,
+      "fieldName": "id",
+      "columnName": "id"
     },
-    "level": 4
+    "currentScopeName": "field"
   },
-  "2": {
+  {
     "value": "test",
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ",
-    "partIndex": 2,
-    "partParentQuery": {
-      "operator": "FIELD",
-      "fieldName": "id",
-      "partIndex": 1,
-      "partParentQuery": {
-        "operator": "MODEL",
-        "partIndex": 0,
-        "level": 2
-      },
-      "level": 4
-    },
-    "level": 5
+    "inverseOperator": "NEQ"
   }
-}
+]

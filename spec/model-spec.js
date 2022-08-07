@@ -3,10 +3,10 @@
 
 'use strict';
 
-/* global describe, it, expect, spyOn */
+/* global describe, it, expect, spyOn, beforeAll */
 
 const Nife = require('nife');
-const { Model, Types } = require('../lib');
+const { Model, Types, ConnectionBase } = require('../lib');
 
 class User extends Model {
   static fields = {
@@ -86,14 +86,28 @@ class NoFieldsModel extends Model {
 }
 
 describe('Model', () => {
+  let connection;
+
+  beforeAll(async () => {
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     {
+        User,
+        DefaultValuesModel,
+        ArrayFieldsModel,
+        NoFieldsModel,
+      },
+    });
+  });
+
   const instanceAndStaticTests = (Klass, callback) => {
     callback(Klass, 'static');
     callback(new Klass(), 'instance');
   };
 
-  describe('cloneFields', () => {
+  describe('mergeFields', () => {
     it('should be able to clone object fields', () => {
-      let clonedFields = DefaultValuesModel.cloneFields();
+      let clonedFields = DefaultValuesModel.mergeFields();
       expect(typeof clonedFields).toEqual('object');
 
       let keys = Object.keys(clonedFields).sort();
@@ -110,7 +124,7 @@ describe('Model', () => {
     });
 
     it('should be able to clone array fields', () => {
-      let clonedFields = ArrayFieldsModel.cloneFields();
+      let clonedFields = ArrayFieldsModel.mergeFields();
       expect(Array.isArray(clonedFields)).toEqual(true);
 
       expect(clonedFields.length).toEqual(2);
@@ -127,7 +141,7 @@ describe('Model', () => {
     });
 
     it('should be able to clone object fields adding extra fields', () => {
-      let clonedFields = DefaultValuesModel.cloneFields({
+      let clonedFields = DefaultValuesModel.mergeFields({
         'derp': {
           fieldName:  'derp',
           type:       Types.INTEGER,
@@ -153,7 +167,7 @@ describe('Model', () => {
     });
 
     it('should be able to clone array fields adding extra fields', () => {
-      let clonedFields = ArrayFieldsModel.cloneFields([
+      let clonedFields = ArrayFieldsModel.mergeFields([
         {
           fieldName:  'derp',
           type:       Types.STRING(128),
@@ -314,11 +328,11 @@ describe('Model', () => {
     }
 
     it('should throw an error if "type" is empty (static)', () => {
-      expect(() => BadTypeModel.iterateFields(() => {})).toThrow(new Error('BadTypeModel::iterateFields: "type" not found on "BadTypeModel.name". "type" is required for all fields.'));
+      expect(() => BadTypeModel.iterateFields(() => {})).toThrow(new Error('BadTypeModel::initializeFields: "type" not found on "BadTypeModel.name". "type" is required for all fields.'));
     });
 
     it('should throw an error if "type" is empty (instance)', () => {
-      expect(() => new BadTypeModel()).toThrow(new Error('BadTypeModel::iterateFields: "type" not found on "BadTypeModel.name". "type" is required for all fields.'));
+      expect(() => new BadTypeModel()).toThrow(new Error('BadTypeModel::initializeFields: "type" not found on "BadTypeModel.name". "type" is required for all fields.'));
     });
 
     it('should throw an error with no "fieldName" when fields are an array', () => {
@@ -334,11 +348,11 @@ describe('Model', () => {
 
       expect(() => {
         BadModel.iterateFields(() => {});
-      }).toThrow(new Error('BadModel::iterateFields: "fieldName" is missing on field index 0.'));
+      }).toThrow(new Error('BadModel::initializeFields: "fieldName" is missing on field index 0.'));
 
       expect(() => {
         new BadModel();
-      }).toThrow(new Error('BadModel::iterateFields: "fieldName" is missing on field index 0.'));
+      }).toThrow(new Error('BadModel::initializeFields: "fieldName" is missing on field index 0.'));
     });
   });
 
@@ -446,12 +460,12 @@ describe('Model', () => {
 
   describe('_castFieldValue', () => {
     it('should be able cast a value', () => {
-      let user = new User();
-      expect(user._castFieldValue({ type: { _castToType: () => 'derp' } }, 'hello')).toEqual('derp');
+      let user = new User(null, { connection });
+      expect(user._castFieldValue({ type: { castToType: () => 'derp' } }, 'hello')).toEqual('derp');
     });
 
     it('should return value if type is empty', () => {
-      let user = new User();
+      let user = new User(null, { connection });
       expect(user._castFieldValue({ type: null }, null)).toBe(null);
       expect(user._castFieldValue({ type: null }, undefined)).toBe(undefined);
       expect(user._castFieldValue({ type: null }, 'derp')).toBe('derp');
@@ -460,12 +474,12 @@ describe('Model', () => {
 
   describe('getDataValue', () => {
     it('should be able get a value', () => {
-      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' }, { connection });
       expect(user.getDataValue('firstName')).toEqual('Bob');
     });
 
     it('should be able get a dirty value', () => {
-      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' }, { connection });
       user.clearDirty();
 
       expect(user.getDataValue('lastName')).toEqual('Pickle');
@@ -486,7 +500,7 @@ describe('Model', () => {
 
   describe('setDataValue', () => {
     it('should be able set a value', () => {
-      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' }, { connection });
 
       user.clearDirty();
       expect(user.firstName).toEqual('Bob');
@@ -499,12 +513,12 @@ describe('Model', () => {
     });
 
     it('should throw an error if the field does not exist', () => {
-      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' }, { connection });
       expect(() => user.setDataValue('invalid', 'Booger')).toThrow(new Error('User::setDataValue: Unable to find field named "invalid".'));
     });
 
     it('should clear dirty state if field is set back to original value', () => {
-      let user = new User({ firstName: 'Bob', lastName: 'Pickle' });
+      let user = new User({ firstName: 'Bob', lastName: 'Pickle' }, { connection });
       user.clearDirty();
 
       user.firstName = 'Booger';
@@ -523,7 +537,7 @@ describe('Model', () => {
 
   describe('misc', () => {
     it('can define schema', () => {
-      let user = new User();
+      let user = new User(null, { connection });
       expect(Object.prototype.hasOwnProperty.call(user, 'id')).toEqual(true);
       expect(Object.prototype.hasOwnProperty.call(user, 'firstName')).toEqual(true);
       expect(Object.prototype.hasOwnProperty.call(user, 'lastName')).toEqual(true);
@@ -531,14 +545,14 @@ describe('Model', () => {
     });
 
     it('can get/set field values', () => {
-      let user = new User();
+      let user = new User(null, { connection });
 
       user.id = 1234;
       user.firstName = 'Test';
       user.lastName = 'User';
       user.isOver21 = true;
 
-      expect(user.id).toEqual(BigInt(1234));
+      expect(user.id).toEqual(1234);
       expect(user.firstName).toEqual('Test');
       expect(user.lastName).toEqual('User');
       expect(user.isOver21).toEqual(true);
@@ -555,7 +569,7 @@ describe('Model', () => {
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: BigInt(1234) },
+        id:         { previous: undefined, current: 1234 },
         firstName:  { previous: undefined, current: 'Test' },
         lastName:   { previous: undefined, current: 'User' },
         isOver21:   { previous: undefined, current: true },
@@ -568,9 +582,9 @@ describe('Model', () => {
         firstName:  'Test',
         lastName:   'User',
         isOver21:   true,
-      });
+      }, { connection });
 
-      expect(user.id).toEqual(BigInt(1234));
+      expect(user.id).toEqual(1234);
       expect(user.firstName).toEqual('Test');
       expect(user.lastName).toEqual('User');
       expect(user.isOver21).toEqual(true);
@@ -580,14 +594,14 @@ describe('Model', () => {
       expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'lastName')).toEqual(true);
       expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'isOver21')).toEqual(true);
 
-      expect(user._dirtyFieldData.id).toEqual(BigInt(1234));
+      expect(user._dirtyFieldData.id).toEqual(1234);
       expect(user._dirtyFieldData.firstName).toEqual('Test');
       expect(user._dirtyFieldData.lastName).toEqual('User');
       expect(user._dirtyFieldData.isOver21).toEqual(true);
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: BigInt(1234) },
+        id:         { previous: undefined, current: 1234 },
         firstName:  { previous: undefined, current: 'Test' },
         isOver21:   { previous: undefined, current: true },
         lastName:   { previous: undefined, current: 'User' },
@@ -600,9 +614,9 @@ describe('Model', () => {
         firstName:  'Test',
         lastName:   'User',
         isOver21:   'true',
-      });
+      }, { connection });
 
-      expect(user.id).toEqual(BigInt(1234));
+      expect(user.id).toEqual(1234);
       expect(user.firstName).toEqual('Test');
       expect(user.lastName).toEqual('User');
       expect(user.isOver21).toEqual(true);
@@ -612,14 +626,14 @@ describe('Model', () => {
       expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'lastName')).toEqual(true);
       expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'isOver21')).toEqual(true);
 
-      expect(user._dirtyFieldData.id).toEqual(BigInt(1234));
+      expect(user._dirtyFieldData.id).toEqual(1234);
       expect(user._dirtyFieldData.firstName).toEqual('Test');
       expect(user._dirtyFieldData.lastName).toEqual('User');
       expect(user._dirtyFieldData.isOver21).toEqual(true);
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: BigInt(1234) },
+        id:         { previous: undefined, current: 1234 },
         firstName:  { previous: undefined, current: 'Test' },
         isOver21:   { previous: undefined, current: true },
         lastName:   { previous: undefined, current: 'User' },
@@ -632,9 +646,9 @@ describe('Model', () => {
         firstName:  () => 'Test',
         lastName:   () => 'User',
         isOver21:   () => true,
-      });
+      }, { connection });
 
-      expect(user.id).toEqual(BigInt(1234));
+      expect(user.id).toEqual(1234);
       expect(user.firstName).toEqual('Test');
       expect(user.lastName).toEqual('User');
       expect(user.isOver21).toEqual(true);
@@ -644,14 +658,14 @@ describe('Model', () => {
       expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'lastName')).toEqual(true);
       expect(Object.prototype.hasOwnProperty.call(user._dirtyFieldData, 'isOver21')).toEqual(true);
 
-      expect(user._dirtyFieldData.id).toEqual(BigInt(1234));
+      expect(user._dirtyFieldData.id).toEqual(1234);
       expect(user._dirtyFieldData.firstName).toEqual('Test');
       expect(user._dirtyFieldData.lastName).toEqual('User');
       expect(user._dirtyFieldData.isOver21).toEqual(true);
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: BigInt(1234) },
+        id:         { previous: undefined, current: 1234 },
         firstName:  { previous: undefined, current: 'Test' },
         isOver21:   { previous: undefined, current: true },
         lastName:   { previous: undefined, current: 'User' },
@@ -659,8 +673,8 @@ describe('Model', () => {
     });
 
     it('can have default values for fields', () => {
-      let model = new DefaultValuesModel();
-      expect(model.id).toEqual(BigInt(654321));
+      let model = new DefaultValuesModel(null, { connection });
+      expect(model.id).toEqual(654321);
       expect(model.name).toEqual('derp');
       expect(model.onlyOnSave).toEqual(undefined);
     });
@@ -680,7 +694,7 @@ describe('Model', () => {
         };
       }
 
-      let model = new TestModel();
+      let model = new TestModel(null, { connection });
 
       spyOn(TestModel.fields.test, 'get').and.callThrough();
       spyOn(TestModel.fields.test, 'set').and.callThrough();
@@ -708,7 +722,7 @@ describe('Model', () => {
         };
       }
 
-      let instance = new VirtualFieldTest();
+      let instance = new VirtualFieldTest(null, { connection });
       expect(instance.createRole).toBeInstanceOf(Function);
       expect(instance.getRole).toBeInstanceOf(Function);
       expect(instance.updateRole).toBeInstanceOf(Function);

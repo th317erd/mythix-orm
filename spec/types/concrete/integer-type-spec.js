@@ -2,15 +2,24 @@
 
 'use strict';
 
-/* global describe, it, expect */
+/* global describe, it, expect, beforeAll */
 
 const { Types, ConnectionBase } = require('../../../lib');
 
 describe('IntegerType', () => {
+  let connection;
+
+  beforeAll(async () => {
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     require('../../support/models'),
+    });
+  });
+
   describe('toConnectionType', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.IntegerType();
-      expect(type.toConnectionType(new ConnectionBase())).toEqual('INTEGER');
+      expect(type.toConnectionType(connection)).toEqual('INTEGER');
     });
 
     it('can convert to connection type when connection is undefined', () => {
@@ -22,7 +31,7 @@ describe('IntegerType', () => {
   describe('toString', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.IntegerType();
-      expect(type.toString(new ConnectionBase())).toEqual('INTEGER');
+      expect(type.toString(connection)).toEqual('INTEGER');
     });
 
     it('can convert to connection type when connection is undefined', () => {

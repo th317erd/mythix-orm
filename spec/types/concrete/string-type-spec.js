@@ -2,20 +2,29 @@
 
 'use strict';
 
-/* global describe, it, expect */
+/* global describe, it, expect, beforeAll */
 
 const { Types, ConnectionBase } = require('../../../lib');
 
 describe('StringType', () => {
+  let connection;
+
+  beforeAll(async () => {
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     require('../../support/models'),
+    });
+  });
+
   describe('toConnectionType', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.StringType();
-      expect(type.toConnectionType(new ConnectionBase())).toEqual('VARCHAR(256)');
+      expect(type.toConnectionType(connection)).toEqual('VARCHAR(256)');
     });
 
     it('can convert to connection type when connection is defined with length', () => {
       let type = new Types.StringType(64);
-      expect(type.toConnectionType(new ConnectionBase())).toEqual('VARCHAR(64)');
+      expect(type.toConnectionType(connection)).toEqual('VARCHAR(64)');
     });
 
     it('can convert to connection type when connection is undefined', () => {
@@ -32,12 +41,12 @@ describe('StringType', () => {
   describe('toString', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.StringType();
-      expect(type.toString(new ConnectionBase())).toEqual('VARCHAR(256)');
+      expect(type.toString(connection)).toEqual('VARCHAR(256)');
     });
 
     it('can convert to connection type when connection is defined with length', () => {
       let type = new Types.StringType(64);
-      expect(type.toString(new ConnectionBase())).toEqual('VARCHAR(64)');
+      expect(type.toString(connection)).toEqual('VARCHAR(64)');
     });
 
     it('can convert to connection type when connection is undefined', () => {

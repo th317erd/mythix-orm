@@ -2,16 +2,25 @@
 
 'use strict';
 
-/* global describe, it, expect */
+/* global describe, it, expect, beforeAll */
 
-const moment    = require('moment');
+const moment = require('moment');
 const { Types, ConnectionBase } = require('../../../lib');
 
 describe('DateType', () => {
+  let connection;
+
+  beforeAll(async () => {
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     require('../../support/models'),
+    });
+  });
+
   describe('toConnectionType', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.DateType();
-      expect(type.toConnectionType(new ConnectionBase())).toEqual('DATE');
+      expect(type.toConnectionType(connection)).toEqual('DATE');
     });
 
     it('can convert to connection type when connection is undefined', () => {
@@ -23,7 +32,7 @@ describe('DateType', () => {
   describe('toString', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.DateType();
-      expect(type.toString(new ConnectionBase())).toEqual('DATE');
+      expect(type.toString(connection)).toEqual('DATE');
     });
 
     it('can convert to connection type when connection is undefined', () => {
@@ -46,7 +55,7 @@ describe('DateType', () => {
     let type = Types.DATE();
     let value = type.castToType({ value: '2001-01-01' });
     expect(value).toBeInstanceOf(moment);
-    expect(value.toISOString()).toEqual('2001-01-01T00:00:00.000Z');
+    expect(value.utc(true).toISOString()).toEqual('2001-01-01T00:00:00.000Z');
 
     value = type.castToType({ value: undefined });
     expect(value).toBe(undefined);
@@ -59,7 +68,7 @@ describe('DateType', () => {
     let type = Types.DATE('MM.DD.YYYY');
     let value = type.castToType({ value: '07.23.2022' });
     expect(value).toBeInstanceOf(moment);
-    expect(value.toISOString()).toEqual('2022-07-23T00:00:00.000Z');
+    expect(value.utc(true).toISOString()).toEqual('2022-07-23T00:00:00.000Z');
     expect(type.serialize(value)).toEqual('07.23.2022');
 
     value = type.castToType({ value: undefined });

@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach */
+/* global describe, it, expect, beforeAll */
 
 const Model = require('../../../lib/model');
 const {
@@ -14,9 +14,10 @@ describe('ForeignKeyType', () => {
   let connection;
   let FKModel;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     connection = new ConnectionBase({
-      models: Object.assign({}, require('../../support/models'), {
+      bindModels: false,
+      models:     Object.assign({}, require('../../support/models'), {
         FKModel: class FKModel extends Model {
           static fields = {
             'id': {
@@ -42,7 +43,7 @@ describe('ForeignKeyType', () => {
   describe('toString', () => {
     it('should be empty if a connection is provided', () => {
       let type = FKModel.fields.userID.type;
-      expect(type.toString(new ConnectionBase())).toEqual('VARCHAR(36)');
+      expect(type.toString(connection)).toEqual('VARCHAR(36)');
     });
 
     it('should display field type without any arguments', () => {

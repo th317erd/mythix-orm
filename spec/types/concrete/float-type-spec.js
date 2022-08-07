@@ -2,15 +2,24 @@
 
 'use strict';
 
-/* global describe, it, expect */
+/* global describe, it, expect, beforeAll */
 
 const { Types, ConnectionBase } = require('../../../lib');
 
 describe('FloatType', () => {
+  let connection;
+
+  beforeAll(async () => {
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     require('../../support/models'),
+    });
+  });
+
   describe('toConnectionType', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.FloatType();
-      expect(type.toConnectionType(new ConnectionBase())).toEqual('FLOAT');
+      expect(type.toConnectionType(connection)).toEqual('FLOAT');
     });
 
     it('can convert to connection type when connection is undefined', () => {
@@ -22,7 +31,7 @@ describe('FloatType', () => {
   describe('toString', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.FloatType();
-      expect(type.toString(new ConnectionBase())).toEqual('FLOAT');
+      expect(type.toString(connection)).toEqual('FLOAT');
     });
 
     it('can convert to connection type when connection is undefined', () => {

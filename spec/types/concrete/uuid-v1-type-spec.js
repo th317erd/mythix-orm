@@ -2,16 +2,25 @@
 
 'use strict';
 
-/* global describe, it, expect */
+/* global describe, it, expect, beforeAll */
 
 const { Types, ConnectionBase } = require('../../../lib');
 const { UUID_REGEXP }           = require('../../support/test-helpers');
 
 describe('UUIDV1Type', () => {
+  let connection;
+
+  beforeAll(async () => {
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     require('../../support/models'),
+    });
+  });
+
   describe('toConnectionType', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.UUIDV1Type();
-      expect(type.toConnectionType(new ConnectionBase())).toEqual('VARCHAR(36)');
+      expect(type.toConnectionType(connection)).toEqual('VARCHAR(36)');
     });
 
     it('can convert to connection type when connection is undefined', () => {
@@ -23,7 +32,7 @@ describe('UUIDV1Type', () => {
   describe('toString', () => {
     it('can convert to connection type when connection is defined', () => {
       let type = new Types.UUIDV1Type();
-      expect(type.toString(new ConnectionBase())).toEqual('VARCHAR(36)');
+      expect(type.toString(connection)).toEqual('VARCHAR(36)');
     });
 
     it('can convert to connection type when connection is undefined', () => {

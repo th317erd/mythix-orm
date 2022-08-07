@@ -4,7 +4,7 @@ const { Types } = require('../../../lib');
 const User      = require('./user-model');
 
 class ExtendedUser extends User {
-  static fields = User.cloneFields({
+  static fields = User.mergeFields({
     'id': {
       type:         Types.INTEGER,
       defaultValue: Types.INTEGER.Default.AUTO_INCREMENT,

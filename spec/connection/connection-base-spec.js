@@ -2,72 +2,85 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach, fail, spyOn */
+/* global describe, it, expect, beforeAll, fail, spyOn */
 
-const { ConnectionBase } = require('../../lib');
-const {
-  Role,
-  User,
-} = require('../support/models');
+const { Model, ConnectionBase, Types } = require('../../lib');
+const { User } = require('../support/models');
+
+class TestModel extends Model {
+  static fields = {
+    'id': {
+      type:         Types.UUIDV4,
+      defaultValue: Types.UUIDV4.Default.UUIDV4,
+      allowNull:    false,
+      primaryKey:   true,
+    },
+    'firstName': {
+      type:         Types.STRING(64),
+      allowNull:    true,
+      index:        true,
+    },
+    'lastName': {
+      type:         Types.STRING(64),
+      allowNull:    true,
+      index:        true,
+    },
+  };
+}
 
 describe('ConnectionBase', () => {
   let connection;
 
-  beforeEach(() => {
-    connection = new ConnectionBase({
-      models: [
-        User,
-        Role,
-      ],
-    });
+  beforeAll(() => {
+    try {
+      connection = new ConnectionBase({ models: [ TestModel ] });
+    } catch (error) {
+      console.error('Error in BeforeAll: ', error);
+    }
   });
 
   describe('Model', () => {
     describe('where', () => {
       it('should be able to get a query engine from where', () => {
-        let User = connection.getModel('User');
-
-        expect(User.where._getRawQuery()[0].rootModelName).toEqual('User');
-        expect(User.where._getRawQuery()[0].Model.getModelName()).toEqual('User');
+        expect(User.where(connection)._getRawQuery()[0].rootModelName).toEqual('User');
+        expect(User.where(connection)._getRawQuery()[0].Model.getModelName()).toEqual('User');
       });
     });
 
     describe('getUnscopedQueryEngine', () => {
       it('should be able to get a query engine from getUnscopedQueryEngine', () => {
-        let User = connection.getModel('User');
-        let user = new User();
+        let user = new TestModel();
 
-        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].rootModelName).toEqual('User');
-        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('User');
+        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].rootModelName).toEqual('TestModel');
+        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('TestModel');
       });
     });
 
     describe('getQueryEngine', () => {
       it('should be able to get a query engine from getQueryEngine', () => {
-        let User = connection.getModel('User');
-        let user = new User();
+        let user = new TestModel();
 
-        expect(user.getQueryEngine()._getRawQuery()[0].rootModelName).toEqual('User');
-        expect(user.getQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('User');
+        expect(user.getQueryEngine()._getRawQuery()[0].rootModelName).toEqual('TestModel');
+        expect(user.getQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('TestModel');
       });
     });
   });
 
   describe('getModel', () => {
     it('should be able to get a model by name', () => {
-      let model = connection.getModel('User');
-      expect(model.getModelName()).toEqual('User');
+      let model = connection.getModel('TestModel');
+      expect(model.getModelName()).toEqual('TestModel');
     });
 
     it('should be able to get a model by a fully qualified name', () => {
-      let model = connection.getModel('User:id');
-      expect(model.getModelName()).toEqual('User');
+      let model = connection.getModel('TestModel:id');
+      expect(model.getModelName()).toEqual('TestModel');
 
-      model = connection.getModel('User::id.field');
-      expect(model.getModelName()).toEqual('User');
+      model = connection.getModel('TestModel::id.field');
+      expect(model.getModelName()).toEqual('TestModel');
 
-      model = connection.getModel('User::');
-      expect(model.getModelName()).toEqual('User');
+      model = connection.getModel('TestModel::');
+      expect(model.getModelName()).toEqual('TestModel');
     });
   });
 
@@ -78,15 +91,15 @@ describe('ConnectionBase', () => {
     });
 
     it('should be able to get a field by name', () => {
-      let field = connection.getField('firstName', 'User');
+      let field = connection.getField('firstName', 'TestModel');
       expect(field.fieldName).toEqual('firstName');
-      expect(field.Model.getModelName()).toEqual('User');
+      expect(field.Model.getModelName()).toEqual('TestModel');
     });
 
     it('should be able to get a field by a fully qualified name', () => {
-      let field = connection.getField('User:firstName');
+      let field = connection.getField('TestModel:firstName');
       expect(field.fieldName).toEqual('firstName');
-      expect(field.Model.getModelName()).toEqual('User');
+      expect(field.Model.getModelName()).toEqual('TestModel');
     });
   });
 

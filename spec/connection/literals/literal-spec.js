@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach */
+/* global describe, it, expect, beforeAll */
 
 const ConnectionBase  = require('../../../lib/connection/connection-base');
 const { Literal }     = require('../../../lib/connection/literals');
@@ -10,9 +10,10 @@ const { Literal }     = require('../../../lib/connection/literals');
 describe('Literal', () => {
   let connection;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     connection = new ConnectionBase({
-      models: require('../../support/models'),
+      bindModels: false,
+      models:     require('../../support/models'),
     });
   });
 

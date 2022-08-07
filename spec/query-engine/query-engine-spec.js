@@ -9,12 +9,14 @@ const { ConnectionBase, QueryEngine } = require('../../lib');
 const matchesSnapshot = require('../support/snapshots');
 
 describe('QueryEngine', () => {
+  let connection;
   let User;
   let ScopedUser;
 
   beforeAll(() => {
-    let connection = new ConnectionBase({
-      models: require('../support/models'),
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     require('../support/models'),
     });
 
     let models = connection.getModels();
@@ -22,14 +24,14 @@ describe('QueryEngine', () => {
     ScopedUser = models.ScopedUser;
   });
 
-  const getFilteredContext = (context) => {
-    let filter = [ 'contextID' ];
-    return Nife.extend(Nife.extend.DEEP | Nife.extend.FILTER, (key) => {
-      if (filter.indexOf(key) >= 0)
-        return false;
-
-      return true;
-    }, {}, context);
+  const getFilteredContext = (parts) => {
+    return parts.map((part) => {
+      return Object.assign({}, part, {
+        contextID:    undefined,
+        modelContext: undefined,
+        fieldContext: undefined,
+      });
+    });
   };
 
   describe('isQueryContext', () => {

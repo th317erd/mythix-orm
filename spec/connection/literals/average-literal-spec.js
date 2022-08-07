@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeEach */
+/* global describe, it, expect, beforeAll */
 
 const ConnectionBase              = require('../../../lib/connection/connection-base');
 const { AverageLiteral, Literal } = require('../../../lib/connection/literals');
@@ -11,14 +11,18 @@ describe('AverageLiteral', () => {
   let connection;
   let User;
 
-  beforeEach(async () => {
-    connection = new ConnectionBase({
-      models: require('../../support/models'),
-    });
+  beforeAll(async () => {
+    try {
+      connection = new ConnectionBase({
+        bindModels: false,
+        models:     require('../../support/models'),
+      });
 
-    let models = connection.getModels();
-
-    User = models.User;
+      let models = connection.getModels();
+      User = models.User;
+    } catch (error) {
+      console.error('Error in beforeAll: ', error);
+    }
   });
 
   describe('toString', () => {
