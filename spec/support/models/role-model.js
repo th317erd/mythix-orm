@@ -11,12 +11,14 @@ class Role extends Model {
       primaryKey:   true,
     },
     'name': {
-      type:       Types.STRING(64),
-      allowNull:  false,
-      index:      true,
+      type:         Types.STRING(64),
+      allowNull:    false,
+      index:        true,
     },
     'user': {
-      type:       Types.Model('UserRole:user', 'UserRole:role'),
+      type:         Types.Model(({ User, self }) => {
+        return User.$.primaryRoleID.EQ(self.primaryRoleID);
+      }),
     },
   };
 }

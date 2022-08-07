@@ -11,20 +11,24 @@ class UserRole extends Model {
       primaryKey:   true,
     },
     'roleID': {
-      type:       Types.FOREIGN_KEY('Role:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
-      allowNull:  false,
-      index:      true,
+      type:         Types.FOREIGN_KEY('Role:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
+      allowNull:    false,
+      index:        true,
     },
     'userID': {
-      type:       Types.FOREIGN_KEY('User:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
-      allowNull:  false,
-      index:      true,
+      type:         Types.FOREIGN_KEY('User:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
+      allowNull:    false,
+      index:        true,
     },
     'role': {
-      type:       Types.Model('Role:id', 'roleID'),
+      type:         Types.Model(({ Role, userQuery, self }) => {
+        return Role.$.id.EQ(self.roleID).MERGE(userQuery);
+      }),
     },
     'user': {
-      type:       Types.Model('User:id', 'userID'),
+      type:         Types.Model(({ User, userQuery, self }) => {
+        return User.$.id.EQ(self.userID).MERGE(userQuery);
+      }),
     },
   };
 }

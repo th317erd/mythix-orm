@@ -11,33 +11,58 @@ class User extends Model {
       primaryKey:   true,
     },
     'firstName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
+      type:         Types.STRING(64),
+      allowNull:    true,
+      index:        true,
     },
     'lastName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
+      type:         Types.STRING(64),
+      allowNull:    true,
+      index:        true,
     },
     'primaryRoleID': {
-      type:       Types.FOREIGN_KEY('Role:id', { onDelete: 'SET NULL', onUpdate: 'SET NULL' }),
-      allowNull:  true,
+      type:         Types.FOREIGN_KEY('Role:id', { onDelete: 'SET NULL', onUpdate: 'SET NULL' }),
+      allowNull:    true,
     },
     'roles': {
-      type:       Types.Models('Role', 'userRoles.role'),
+      type:         Types.Models(({ Role, UserRole, userQuery, self }) => {
+        return Role
+          .$.id
+            .EQ(UserRole.$.roleID)
+          .UserRole.userID
+            .EQ(self.id)
+          .MERGE(userQuery);
+      }),
     },
     'userRoles': {
-      type:       Types.Models('UserRole:userID'),
+      type:         Types.Models(({ UserRole, userQuery, self }) => {
+        return UserRole.$.userID.EQ(self.id).MERGE(userQuery);
+      }),
     },
     'userThing': {
-      type:       Types.Model('UserThing:userID'),
+      type:         Types.Model(({ UserThing, userQuery, self }) => {
+        return UserThing
+          .$.userID
+            .EQ(self.id)
+          .MERGE(userQuery);
+      }),
     },
     'userThingRole': {
-      type:       Types.Model('Role', 'userThing.role'),
+      type:         Types.Model(({ Role, UserThing, RoleThing, userQuery, self }) => {
+        return Role
+          .$.id
+            .EQ(RoleThing.$.roleID)
+          .RoleThing.id
+            .EQ(UserThing.$.roleThingID)
+          .UserThing.userID
+            .EQ(self.id)
+          .MERGE(userQuery);
+      }),
     },
     'primaryRole': {
-      type:       Types.Model('Role', 'primaryRoleID'),
+      type:         Types.Model(({ Role, userQuery, self }) => {
+        return Role.$.id.EQ(self.primaryRoleID).MERGE(userQuery);
+      }),
     },
   };
 }

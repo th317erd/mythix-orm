@@ -11,12 +11,12 @@ class Number extends Model {
       primaryKey:   true,
     },
     'numberInt': {
-      type:       Types.INTEGER,
-      index:      true,
+      type:         Types.INTEGER,
+      index:        true,
     },
     'numberFloat': {
-      type:       Types.FLOAT,
-      index:      true,
+      type:         Types.FLOAT,
+      index:        true,
     },
   };
 }

@@ -5,15 +5,34 @@
 
 /* global describe, it, expect, beforeAll, spyOn */
 
-const UUID = require('uuid');
+const UUID                      = require('uuid');
 const { Types, ConnectionBase } = require('../../../lib');
-const ModelUtils = require('../../../lib/utils/model-utils');
+const ModelUtils                = require('../../../lib/utils/model-utils');
 
 describe('ModelType', () => {
   let connection;
+  let User;
+  let UserRole;
+  let RoleThing;
+  let UserThing;
+  let Role;
 
   beforeAll(() => {
+    try {
+      connection = new ConnectionBase({
+        bindModels: false,
+        models:     require('../../support/models'),
+      });
 
+      let models = connection.getModels();
+      User = models.User;
+      UserRole = models.UserRole;
+      RoleThing = models.RoleThing;
+      UserThing = models.UserThing;
+      Role = models.Role;
+    } catch (error) {
+      console.error('Error in beforeAll: ', error);
+    }
   });
 
   it('can construct from class', () => {
@@ -24,6 +43,51 @@ describe('ModelType', () => {
   it('can construct from type helper', () => {
     let type = Types.Model('Role:userID');
     expect(type.toString()).toEqual('ModelType {}');
+  });
+
+  fit('can walk a field relation', async () => {
+    let relations = [];
+    let user = new User({
+      id:             '664e9071-11d9-4544-85fe-1359ce1904b1',
+      firstName:      'Mary',
+      lastName:       'Anne',
+      primaryRoleID:  '5016a9dc-0271-41a0-937a-a0c95acd117b',
+    });
+
+    await User.fields.userThingRole.type.walkQueryRelations(connection, (context) => {
+      relations.push(context);
+    }, { self: user, field: User.fields.roles });
+
+    expect(relations).toEqual([
+      {
+        source: {
+          Model:      RoleThing,
+          modelName:  'RoleThing',
+          field:      RoleThing.fields.roleID,
+          fieldName:  'roleID',
+        },
+        target: {
+          Model:      Role,
+          modelName:  'Role',
+          field:      Role.fields.id,
+          fieldName:  'id',
+        },
+      },
+      {
+        source: {
+          Model:      UserThing,
+          modelName:  'UserThing',
+          field:      UserThing.fields.roleThingID,
+          fieldName:  'roleThingID',
+        },
+        target: {
+          Model:      RoleThing,
+          modelName:  'RoleThing',
+          field:      RoleThing.fields.id,
+          fieldName:  'id',
+        },
+      },
+    ]);
   });
 
   // it('will throw error on attempt to cast without being able to fetch target model', () => {

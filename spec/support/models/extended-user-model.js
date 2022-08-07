@@ -18,9 +18,9 @@ class ExtendedUser extends User {
       allowNull:    false,
     },
     'updatedAt': {
-      type:             Types.DATETIME(null, 'MM.DD.YYYY HH:mm:ss'),
-      defaultValue:     Types.DATETIME.Default.NOW.UPDATE,
-      allowNull:        false,
+      type:         Types.DATETIME(null, 'MM.DD.YYYY HH:mm:ss'),
+      defaultValue: Types.DATETIME.Default.NOW.UPDATE,
+      allowNull:    false,
     },
     'email': {
       type:         Types.STRING(256),
