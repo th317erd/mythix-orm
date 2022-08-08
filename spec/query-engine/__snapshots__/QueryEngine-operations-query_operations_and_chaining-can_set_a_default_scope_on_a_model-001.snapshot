@@ -18,6 +18,16 @@
       "fieldName": "firstName",
       "columnName": "firstName"
     },
+    "rootFieldName": "firstName",
+    "rootField": {
+      "type": {
+        "length": 64
+      },
+      "allowNull": true,
+      "index": true,
+      "fieldName": "firstName",
+      "columnName": "firstName"
+    },
     "currentScopeName": "field"
   },
   {

@@ -16,6 +16,14 @@
       "fieldName": "id",
       "columnName": "id"
     },
+    "rootFieldName": "id",
+    "rootField": {
+      "type": {},
+      "allowNull": false,
+      "primaryKey": true,
+      "fieldName": "id",
+      "columnName": "id"
+    },
     "currentScopeName": "field"
   },
   {

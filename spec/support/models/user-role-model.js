@@ -21,12 +21,12 @@ class UserRole extends Model {
       index:        true,
     },
     'role': {
-      type:         Types.Model(({ Role, userQuery, self }) => {
+      type:         Types.Model('Role', ({ Role, userQuery, self }) => {
         return Role.$.id.EQ(self.roleID).MERGE(userQuery);
       }),
     },
     'user': {
-      type:         Types.Model(({ User, userQuery, self }) => {
+      type:         Types.Model('User', ({ User, userQuery, self }) => {
         return User.$.id.EQ(self.userID).MERGE(userQuery);
       }),
     },

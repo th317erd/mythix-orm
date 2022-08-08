@@ -45,7 +45,7 @@ describe('ModelType', () => {
     expect(type.toString()).toEqual('ModelType {}');
   });
 
-  fit('can walk a field relation', async () => {
+  it('can walk a field relation', async () => {
     let relations = [];
     let user = new User({
       id:             '664e9071-11d9-4544-85fe-1359ce1904b1',
@@ -60,13 +60,16 @@ describe('ModelType', () => {
 
     expect(relations).toEqual([
       {
-        source: {
+        PrimaryModel: User,
+        TargetModel:  Role,
+        TargetField:  Role.fields.id,
+        source:       {
           Model:      RoleThing,
           modelName:  'RoleThing',
           field:      RoleThing.fields.roleID,
           fieldName:  'roleID',
         },
-        target: {
+        target:       {
           Model:      Role,
           modelName:  'Role',
           field:      Role.fields.id,
@@ -74,13 +77,16 @@ describe('ModelType', () => {
         },
       },
       {
-        source: {
+        PrimaryModel: User,
+        TargetModel:  Role,
+        TargetField:  Role.fields.id,
+        source:       {
           Model:      UserThing,
           modelName:  'UserThing',
           field:      UserThing.fields.roleThingID,
           fieldName:  'roleThingID',
         },
-        target: {
+        target:       {
           Model:      RoleThing,
           modelName:  'RoleThing',
           field:      RoleThing.fields.id,
