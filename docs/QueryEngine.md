@@ -383,8 +383,10 @@ Connection interface methods are methods which hand off the query to a connectio
   12. `NOT.LT(...)` (greater than or equal to `>=`)
   13. `LTE(...)` (less than or equal to `<=`)
   14. `NOT.LTE(...)` (greater than `>`)
-  15. `LIKE` **coming soon!**
-  16. `NOT.LIKE` **coming soon!**
+  15. `LIKE(...)` (pattern match `LIKE '%something%'`)
+  16. `LIKE(..., { caseSensitive: true })` (pattern match `LIKE '%something%'`) [only supported in PostgreSQL -- default is `ILIKE`]
+  17. `NOT.LIKE(...)` (not matching pattern `NOT LIKE '%something%'`)
+  18. `NOT.LIKE(..., { caseSensitive: true })` (not matching pattern `NOT LIKE '%something%'`) [only supported in PostgreSQL -- default is `NOT ILIKE`]
 
 ### Control
 
