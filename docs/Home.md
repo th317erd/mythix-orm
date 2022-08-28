@@ -47,4 +47,8 @@ We expect prompt communication when we ask clarifying questions or request chang
 
 ### How can I get my Mythix library off the blacklist?
 
-The Mythix team will regularly groom (NPM)(https://npmjs.com/) for Mythix libraries published to the community. If any are found that don't meet our standards, we will immediately add that library to our blacklist and notify the author. If you would like your library removed from our blacklist, then you will need to contact our team, and notify them that you have resolved the issues, and that you are ready to have your library certified. If for whatever reason you feel we are being unfair, then please open an issue on github under the `mythix-orm` repository describing your concerns. At this point, we, along with the community, will review your concerns, and decide how to proceed.
+The Mythix team will regularly groom [NPM](https://npmjs.com/) for Mythix libraries published to the community. If any are found that don't meet our standards, we will immediately add that library to our blacklist and notify the author. If you would like your library removed from our blacklist, then you will need to contact our team, and notify them that you have resolved the issues, and that you are ready to have your library certified. If for whatever reason you feel we are being unfair, then please open an issue on github under the `mythix-orm` repository describing your concerns. At this point, we, along with the community, will review your concerns, and decide how to proceed.
+
+### Certification list
+
+Our list of certified and blacklisted libraries can be found on our [Certifications](./Certifications) page.
