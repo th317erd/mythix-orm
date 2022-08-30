@@ -85,11 +85,11 @@ describe('SerializedType', () => {
 
   it('can properly serialize a value', () => {
     let type = Types.SERIALIZED(Types.STRING(100));
-    let value = type.serialize({ hello: 'world' });
+    let value = type.serialize({ hello: 'world' }, {});
     expect(typeof value).toEqual('string');
     expect(value).toEqual('{"hello":"world"}');
 
-    value = type.serialize('derp');
+    value = type.serialize('derp', {});
     expect(typeof value).toEqual('string');
     expect(value).toEqual('derp');
   });
