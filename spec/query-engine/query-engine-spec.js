@@ -4,7 +4,6 @@
 
 /* global describe, it, expect, beforeAll */
 
-const Nife = require('nife');
 const { ConnectionBase, QueryEngine } = require('../../lib');
 const matchesSnapshot = require('../support/snapshots');
 
@@ -12,6 +11,7 @@ describe('QueryEngine', () => {
   let connection;
   let User;
   let ScopedUser;
+  let UserThing;
 
   beforeAll(() => {
     connection = new ConnectionBase({
@@ -22,6 +22,7 @@ describe('QueryEngine', () => {
     let models = connection.getModels();
     User = models.User;
     ScopedUser = models.ScopedUser;
+    UserThing = models.UserThing;
   });
 
   const getFilteredContext = (parts) => {
@@ -33,12 +34,6 @@ describe('QueryEngine', () => {
       });
     });
   };
-
-  // fdescribe('operations', () => {
-  //   it('can live happily without a connection', () => {
-  //     expect((new QueryEngine().User.id('derp'))._getRawQuery()).toBe([ ]);
-  //   });
-  // });
 
   describe('isQueryContext', () => {
     it('can validly detect a query context', () => {
@@ -93,6 +88,14 @@ describe('QueryEngine', () => {
 
     it('can chain query conditions', () => {
       let context = User.where.id.EQ(1).AND.firstName.EQ('Test').AND.NOT.lastName.EQ('Stuff')._getRawQuery();
+      expect(matchesSnapshot(getFilteredContext(context))).toEqual(true);
+    });
+  });
+
+  describe('merging', () => {
+    it('can merge two queries', () => {
+      let subQuery = UserThing.where.userID.EQ(User.where.id).AND(User.where.firstName.EQ('Bob').OR.lastName.EQ('Brown'));
+      let context = UserThing.where.id.EQ('test').AND.MERGE(subQuery)._getRawQuery();
       expect(matchesSnapshot(getFilteredContext(context))).toEqual(true);
     });
   });

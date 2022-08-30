@@ -1,0 +1,135 @@
+[
+  {
+    "operator": "MODEL",
+    "modelName": "UserThing",
+    "dialect": "none",
+    "rootModelName": "UserThing",
+    "currentScopeName": "model"
+  },
+  {
+    "operator": "FIELD",
+    "fieldName": "id",
+    "Field": {
+      "type": {},
+      "allowNull": false,
+      "primaryKey": true,
+      "fieldName": "id",
+      "columnName": "id"
+    },
+    "rootFieldName": "id",
+    "rootField": {
+      "type": {},
+      "allowNull": false,
+      "primaryKey": true,
+      "fieldName": "id",
+      "columnName": "id"
+    },
+    "currentScopeName": "field"
+  },
+  {
+    "value": "test",
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ"
+  },
+  {
+    "logical": true,
+    "operator": "AND",
+    "and": true,
+    "or": false,
+    "not": false
+  },
+  {
+    "modelName": "UserThing",
+    "Field": {
+      "type": {
+        "options": {
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "modelName": "User",
+          "fieldName": "id",
+          "fullyQualifiedName": "User:id"
+        },
+        "fullyQualifiedName": "User:id"
+      },
+      "allowNull": false,
+      "index": true,
+      "fieldName": "userID",
+      "columnName": "userID"
+    },
+    "fieldName": "userID",
+    "operator": "FIELD",
+    "rootFieldName": "userID",
+    "rootField": {
+      "type": {
+        "options": {
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "modelName": "User",
+          "fieldName": "id",
+          "fullyQualifiedName": "User:id"
+        },
+        "fullyQualifiedName": "User:id"
+      },
+      "allowNull": false,
+      "index": true,
+      "fieldName": "userID",
+      "columnName": "userID"
+    },
+    "currentScopeName": "field"
+  },
+  {
+    "value": {
+      "_isQueryEngine": true
+    },
+    "modelName": "UserThing",
+    "Field": {
+      "type": {
+        "options": {
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "modelName": "User",
+          "fieldName": "id",
+          "fullyQualifiedName": "User:id"
+        },
+        "fullyQualifiedName": "User:id"
+      },
+      "allowNull": false,
+      "index": true,
+      "fieldName": "userID",
+      "columnName": "userID"
+    },
+    "fieldName": "userID",
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ"
+  },
+  {
+    "value": {
+      "_isQueryEngine": true
+    },
+    "modelName": "UserThing",
+    "Field": {
+      "type": {
+        "options": {
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "modelName": "User",
+          "fieldName": "id",
+          "fullyQualifiedName": "User:id"
+        },
+        "fullyQualifiedName": "User:id"
+      },
+      "allowNull": false,
+      "index": true,
+      "fieldName": "userID",
+      "columnName": "userID"
+    },
+    "fieldName": "userID",
+    "logical": true,
+    "operator": "AND",
+    "and": true,
+    "or": false,
+    "not": false
+  }
+]
