@@ -2,7 +2,7 @@
 
 Mythix ORM makes associations really easy.
 
-I many other ORMs you need to define how two models are related... and what fields are related on those models, and if the relation ship is polymorphic, and if it should load related models while accessing the relation, and if there is a default scope that should be applied, and...
+In many other ORMs you need to define how two models are related... and what fields are related on those models, and if the relationship is polymorphic, and if it should load related models while accessing the relation, and if there is a default scope that should be applied, and...
 
 Lame.
 
@@ -533,7 +533,7 @@ if (doorUsage === 'back') {
 
   1. I would like to bring it to the attention of the reader that concrete types are defined all *UPPERCASE*, whereas virtual types are defined as *CamelCase*.
   2. "But, what if I am using two, three, or more through-tables?" you ask. Well, you are in luck! Nothing described above changes. You simply define a more complex primary query using the query provider, and Mythix ORM will be smart enough to recursively walk the relationships in the query, join as many tables as it needs to to get the job done, and do the right thing.
-  3. Mythix forces you to manually define all table/model fields. Yes, this is extra overhead, but it comes with the benefit of not needing to painstakingly manually define all *relationships*. This design pattern was also decided upon so that there aren't any table columns that are ambiguously "hidden" from developers. By forcing the user to always define all columns/fields manually, it simplifies seeing what fields exist on the table, removes down-stream dependencies, and prevents the user from needing to go look-up documentation to understand how things are working and why. Feel free to write your own helper methods that will automatically inject fields into your schema for you!
+  3. Mythix forces you to manually define all table/model fields. Yes, this is extra overhead, but it comes with the benefit of not needing to painstakingly lookup fields that have been "magically" defined somewhere deep in the library. By forcing the user to always define all columns/fields manually, it simplifies seeing what fields exist on the table, removes down-stream dependencies, and prevents the user from needing to go look-up documentation to understand how things are working and why. Feel free to write your own helper methods that will automatically inject fields into your schema for you!
   4. When pulling related models, Mythix ORM will always put them in a plural {model name} key... i.e. if you noticed above, `UserRole` models that were fetched were placed into `.UserRoles`. This is true for all relationship operations. If you opt-in to loading other relationships during an operation, the related models will always be placed on the loaded model instances, under their plural name (always as an array of models).
 
 Happy coding!
