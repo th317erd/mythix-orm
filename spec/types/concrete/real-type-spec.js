@@ -6,7 +6,7 @@
 
 const { Types, ConnectionBase } = require('../../../lib');
 
-describe('FloatType', () => {
+describe('RealType', () => {
   let connection;
 
   beforeAll(async () => {
@@ -18,40 +18,40 @@ describe('FloatType', () => {
 
   describe('toConnectionType', () => {
     it('can convert to connection type when connection is defined', () => {
-      let type = new Types.FloatType();
+      let type = new Types.RealType();
       expect(type.toConnectionType(connection)).toEqual('FLOAT');
     });
 
     it('can convert to connection type when connection is undefined', () => {
-      let type = new Types.FloatType();
+      let type = new Types.RealType();
       expect(type.toConnectionType()).toEqual('FLOAT');
     });
   });
 
   describe('toString', () => {
     it('can convert to connection type when connection is defined', () => {
-      let type = new Types.FloatType();
+      let type = new Types.RealType();
       expect(type.toString(connection)).toEqual('FLOAT');
     });
 
     it('can convert to connection type when connection is undefined', () => {
-      let type = new Types.FloatType();
+      let type = new Types.RealType();
       expect(type.toString()).toEqual('FLOAT');
     });
   });
 
   it('can construct from class', () => {
-    let type = new Types.FloatType();
+    let type = new Types.RealType();
     expect(type.toString()).toEqual('FLOAT');
   });
 
   it('can construct from type helper', () => {
-    let type = Types.FLOAT();
+    let type = Types.REAL();
     expect(type.toString()).toEqual('FLOAT');
   });
 
   it('can cast to type', () => {
-    let type = Types.FLOAT();
+    let type = Types.REAL();
     let value = type.castToType({ value: '1234' });
     expect(typeof value).toEqual('number');
     expect(value).toEqual(1234);
@@ -66,6 +66,6 @@ describe('FloatType', () => {
     value = type.castToType({ value: null });
     expect(value).toBe(null);
 
-    expect(() => type.castToType({ value: 'derp' })).toThrow(new TypeError('FloatType::castToType: Value provided ("derp") can not be cast into an floating point number.'));
+    expect(() => type.castToType({ value: 'derp' })).toThrow(new TypeError('RealType::castToType: Value provided ("derp") can not be cast into an floating point number.'));
   });
 });

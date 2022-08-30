@@ -15,7 +15,7 @@ class Number extends Model {
       index:        true,
     },
     'numberFloat': {
-      type:         Types.FLOAT,
+      type:         Types.REAL,
       index:        true,
     },
   };
