@@ -48,7 +48,7 @@ describe('DateTimeType', () => {
   });
 
   it('can construct from type helper', () => {
-    let type = Types.DATETIME(6);
+    let type = Types.DATETIME(null, 6);
     expect(type.toString()).toEqual('DATETIME');
     expect(type.length).toBe(6);
   });
@@ -67,7 +67,7 @@ describe('DateTimeType', () => {
   });
 
   it('can cast to type with format', () => {
-    let type = Types.DATETIME(null, 'MM.DD.YYYY / HH:mm:ss.SSS');
+    let type = Types.DATETIME('MM.DD.YYYY / HH:mm:ss.SSS');
     let value = type.castToType({ value: '07.23.2022 / 10:15:45.125' });
     expect(value).toBeInstanceOf(moment);
     expect(value.utc(true).toISOString()).toEqual('2022-07-23T10:15:45.125Z');
