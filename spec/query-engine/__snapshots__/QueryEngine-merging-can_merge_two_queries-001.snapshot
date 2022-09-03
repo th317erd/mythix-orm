@@ -30,7 +30,8 @@
     "value": "test",
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ"
+    "inverseOperator": "NEQ",
+    "hasCondition": true
   },
   {
     "logical": true,
@@ -102,7 +103,8 @@
     "fieldName": "userID",
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ"
+    "inverseOperator": "NEQ",
+    "hasCondition": true
   },
   {
     "value": {

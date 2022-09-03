@@ -30,7 +30,8 @@
     "value": 1,
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ"
+    "inverseOperator": "NEQ",
+    "hasCondition": true
   },
   {
     "logical": true,
@@ -57,7 +58,8 @@
     "value": "Test",
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ"
+    "inverseOperator": "NEQ",
+    "hasCondition": true
   },
   {
     "logical": true,
@@ -89,6 +91,7 @@
     "value": "Stuff",
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ"
+    "inverseOperator": "NEQ",
+    "hasCondition": true
   }
 ]

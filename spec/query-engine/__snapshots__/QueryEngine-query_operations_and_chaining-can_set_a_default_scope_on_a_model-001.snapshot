@@ -34,7 +34,8 @@
     "value": "Bob",
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ"
+    "inverseOperator": "NEQ",
+    "hasCondition": true
   },
   {
     "operator": "FIELD",
@@ -52,6 +53,7 @@
     "value": "test",
     "condition": true,
     "operator": "EQ",
-    "inverseOperator": "NEQ"
+    "inverseOperator": "NEQ",
+    "hasCondition": true
   }
 ]
