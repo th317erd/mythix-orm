@@ -21,7 +21,7 @@ let roles = await Role.where.userID.EQ(User.where.id).all();
 Example 3: Query a user's roles with a sub-query
 
 ```javascript
-let roles = Role.where.userID.EQ(User.where.firstName.EQ('Bob').lastName.EQ('Brown')).all();
+let roles = await Role.where.userID.EQ(User.where.firstName.EQ('Bob').lastName.EQ('Brown')).all();
 ```
 
 ## Terminology
