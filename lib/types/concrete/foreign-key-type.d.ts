@@ -1,7 +1,7 @@
-import { ConnectionBase } from "../../connection/connection-base";
-import { Field } from "../../field";
-import { ModelClass } from "../../model";
-import Type, { TypeWrapper } from "../type";
+import { ConnectionBase } from '../../connection/connection-base';
+import { Field } from '../../field';
+import { ModelClass } from '../../model';
+import Type, { TypeWrapper } from '../type';
 
 export declare interface ForeignKeyTypeWrapper extends TypeWrapper<ForeignKeyType> {
   (fullyQualifiedName: string | ForeignKeyTypeOptions, options?: ForeignKeyTypeOptions): ForeignKeyType;

@@ -1,4 +1,4 @@
-import Type from "../type";
+import Type from '../type';
 
 declare class UUIDBaseType extends Type {
   getPrefix(options?: { prefix: string; }): string;

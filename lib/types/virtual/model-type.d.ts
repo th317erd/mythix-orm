@@ -1,7 +1,7 @@
-import { Field } from "../../field";
-import { GenericObject } from "../../interfaces/common";
-import { TypeWrapper } from "../type";
-import RelationalTypeBase, { QueryFactory } from "./relational-type-base";
+import { Field } from '../../field';
+import { GenericObject } from '../../interfaces/common';
+import { TypeWrapper } from '../type';
+import RelationalTypeBase, { QueryFactory } from './relational-type-base';
 
 export declare interface ModelTypeWrapper extends TypeWrapper<ModelType> {
   (targetModelName: string, queryFactory: QueryFactory, options?: GenericObject): ModelType;

@@ -1,5 +1,5 @@
-import { AutoIncrementDefaultValueProvider } from "../helpers/default-helpers";
-import Type, { TypeWrapper } from "../type";
+import { AutoIncrementDefaultValueProvider } from '../helpers/default-helpers';
+import Type, { TypeWrapper } from '../type';
 
 export declare interface BigIntTypeWrapper extends TypeWrapper<BigIntType> {
   (length?: number, options?: { strict: boolean }): BigIntType;

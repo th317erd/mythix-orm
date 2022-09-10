@@ -1,5 +1,5 @@
-import { DefaultValueProvider, UpdateDefaultValueProvider } from "../helpers/default-helpers";
-import Type, { TypeWrapper } from "../type";
+import { DefaultValueProvider, UpdateDefaultValueProvider } from '../helpers/default-helpers';
+import Type, { TypeWrapper } from '../type';
 
 export declare interface DateTimeTypeWrapper extends TypeWrapper<DateTimeType> {
   (format?: string, length?: number): DateTimeType;

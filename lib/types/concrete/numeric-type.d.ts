@@ -1,4 +1,4 @@
-import Type, { TypeWrapper } from "../type";
+import Type, { TypeWrapper } from '../type';
 
 export declare interface NumericTypeWrapper extends TypeWrapper<NumericType> {
   (precision?: number, scale?: number): NumericType;

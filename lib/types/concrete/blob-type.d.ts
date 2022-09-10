@@ -1,4 +1,4 @@
-import Type, { TypeWrapper } from "../type";
+import Type, { TypeWrapper } from '../type';
 
 export declare interface BlobTypeWrapper extends TypeWrapper<BlobType> {
   (length: number): BlobType;

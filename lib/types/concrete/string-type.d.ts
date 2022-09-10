@@ -1,4 +1,4 @@
-import Type, { TypeWrapper } from "../type";
+import Type, { TypeWrapper } from '../type';
 
 export declare interface StringTypeWrapper extends TypeWrapper<StringType> {
   (length: number): StringType;

@@ -1,8 +1,8 @@
-import { ConnectionBase } from "./connection/connection-base";
-import { GenericObject } from "./interfaces/common";
-import { Model, ModelClass } from "./model";
-import Type from "./types/type";
-import { DefaultValueProvider } from "./types/helpers/default-helpers";
+import { ConnectionBase } from './connection/connection-base';
+import { GenericObject } from './interfaces/common';
+import { Model, ModelClass } from './model';
+import Type from './types/type';
+import { DefaultValueProvider } from './types/helpers/default-helpers';
 
 export declare interface GetSetContext {
   field: Field;

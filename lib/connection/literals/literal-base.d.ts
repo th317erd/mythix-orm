@@ -1,7 +1,7 @@
-import { Field } from "../../field";
-import { GenericObject } from "../../interfaces/common";
-import { FullyQualifiedDefinition } from "../../utils/model-utils";
-import { ConnectionBase } from "../connection-base";
+import { Field } from '../../field';
+import { GenericObject } from '../../interfaces/common';
+import { FullyQualifiedDefinition } from '../../utils/model-utils';
+import { ConnectionBase } from '../connection-base';
 
 declare class LiteralBase {
   declare public static _isMythixLiteral: boolean;

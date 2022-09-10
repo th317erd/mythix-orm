@@ -1,7 +1,7 @@
-import { ConnectionBase } from "../../connection/connection-base";
-import { Field } from "../../field";
-import { GenericObject } from "../../interfaces/common";
-import { Model } from "../../model";
+import { ConnectionBase } from '../../connection/connection-base';
+import { Field } from '../../field';
+import { GenericObject } from '../../interfaces/common';
+import { Model } from '../../model';
 
 export const FLAG_ON_INITIALIZE: number;
 export const FLAG_ON_INSERT: number;

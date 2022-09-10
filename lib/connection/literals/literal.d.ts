@@ -1,4 +1,4 @@
-import LiteralBase from "./literal-base";
+import LiteralBase from './literal-base';
 
 declare class Literal extends LiteralBase { }
 

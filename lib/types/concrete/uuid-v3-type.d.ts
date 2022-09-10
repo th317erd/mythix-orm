@@ -1,6 +1,6 @@
-import { DefaultValueProvider } from "../helpers/default-helpers";
-import { TypeWrapper } from "../type";
-import UUIDBaseType from "./uuid-base";
+import { DefaultValueProvider } from '../helpers/default-helpers';
+import { TypeWrapper } from '../type';
+import UUIDBaseType from './uuid-base';
 
 export declare interface UUIDV3TypeWrapper extends TypeWrapper<UUIDV3Type> {
   (options?: UUIDV3TypeOptions): UUIDV3Type;

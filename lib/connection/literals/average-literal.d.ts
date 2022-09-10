@@ -1,4 +1,4 @@
-import LiteralFieldBase from "./literal-field-base";
+import LiteralFieldBase from './literal-field-base';
 
 declare class AverageLiteral extends LiteralFieldBase { }
 

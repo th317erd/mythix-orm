@@ -1,7 +1,7 @@
-import { GenericObject } from "./interfaces/common";
-import { ConnectionBase } from "./connection/connection-base";
-import { Field, FieldDefinition } from "./field";
-import { QueryEngine } from "./query-engine/query-engine";
+import { GenericObject } from './interfaces/common';
+import { ConnectionBase } from './connection/connection-base';
+import { Field, FieldDefinition } from './field';
+import { QueryEngine } from './query-engine/query-engine';
 
 export class CacheKey {
   constructor(number: number);
