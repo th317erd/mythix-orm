@@ -1,8 +1,10 @@
 import EventEmitter from 'events';
 import { Moment } from 'moment';
+import { Field } from '../field';
 import { GenericObject } from '../interfaces/common';
-import { Field, IterateFieldsCallback, ModelClass, Models, Model } from '../model';
+import { IterateFieldsCallback, ModelClass, Models, Model } from '../model';
 import { QueryEngine, QueryEngineClass } from '../query-engine/query-engine';
+import { BigIntType, BlobType, BooleanType, CharType, DateTimeType, DateType, IntegerType, NumericType, RealType, StringType, TextType, Type, UUIDV1Type, UUIDV3Type, UUIDV4Type, UUIDV5Type, XIDType } from '../types';
 import { FullyQualifiedDefinition } from '../utils/model-utils';
 import { AverageLiteral, CountLiteral, DistinctLiteral, FieldLiteral, MaxLiteral, MinLiteral, SumLiteral } from './literals';
 import LiteralBase from './literals/literal-base';

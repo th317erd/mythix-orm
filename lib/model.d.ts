@@ -1,22 +1,26 @@
 import { GenericObject } from "./interfaces/common";
 import { ConnectionBase } from "./connection/connection-base";
-import { QueryEngine } from "./query-engine";
-import { Field } from "./field";
+import { Field, FieldDefinition } from "./field";
+import { QueryEngine } from "./query-engine/query-engine";
 
 export class CacheKey {
   constructor(number: number);
   valueOf(): number;
 }
 
+export declare interface ModelOptions extends GenericObject {
+  connection: ConnectionBase;
+}
+
 export declare interface ModelClass {
-  new(data: GenericObject, options?: GenericObject): Model;
+  new(data: GenericObject, options?: ModelOptions): Model;
 }
 
 export declare interface Models {
   [ key: string ]: ModelClass;
 }
 
-export declare type Fields = Array<Field> | { [ key: string ]: Field } | Map<string, Field> | Set<Field>;
+export declare type Fields = Array<Field | FieldDefinition> | { [ key: string ]: Field | FieldDefinition } | Map<string, Field | FieldDefinition> | Set<Field | FieldDefinition>;
 
 export declare interface IterateFieldsContext {
   field: Field;
