@@ -1,7 +1,7 @@
-import { Field } from '../../field';
+import Field from '../../field';
 import { GenericObject } from '../../interfaces/common';
-import { FullyQualifiedDefinition } from '../../utils/model-utils';
-import { ConnectionBase } from '../connection-base';
+import { FullyQualifiedFieldDefinition } from '../../utils/model-utils';
+import ConnectionBase from '../connection-base';
 import LiteralBase from './literal-base';
 
 declare class LiteralFieldBase extends LiteralBase {
@@ -11,7 +11,7 @@ declare class LiteralFieldBase extends LiteralBase {
   getFullyQualifiedFieldName(): string | undefined;
   getField(connection: ConnectionBase): Field | undefined;
 
-  declare public definition: FullyQualifiedDefinition | undefined;
+  declare public definition: FullyQualifiedFieldDefinition | undefined;
 }
 
 export default LiteralFieldBase;

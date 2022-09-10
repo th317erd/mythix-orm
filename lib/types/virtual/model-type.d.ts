@@ -1,4 +1,4 @@
-import { Field } from '../../field';
+import Field from '../../field';
 import { GenericObject } from '../../interfaces/common';
 import { TypeWrapper } from '../type';
 import RelationalTypeBase, { QueryFactory } from './relational-type-base';

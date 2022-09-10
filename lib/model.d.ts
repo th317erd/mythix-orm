@@ -1,6 +1,6 @@
 import { GenericObject } from './interfaces/common';
-import { ConnectionBase } from './connection/connection-base';
-import { Field, FieldDefinition } from './field';
+import ConnectionBase from './connection/connection-base';
+import Field, { FieldDefinition } from './field';
 import { QueryEngine, QueryEngineClass } from './query-engine/query-engine';
 
 export class CacheKey {
@@ -197,7 +197,7 @@ export declare class Model {
   declare public _fieldData: GenericObject;
   declare public _dirtyFieldData: GenericObject;
   declare public _typeData: GenericObject;
-  declare public dirtyID: CacheKey;
+  declare public _dirtyID: CacheKey;
   declare public _persisted: boolean;
   declare public __order: number;
   declare public __assignedRelatedModels: Map<string, ModelClass>;

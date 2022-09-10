@@ -1,4 +1,4 @@
-import { ConnectionBase } from '../../connection/connection-base';
+import ConnectionBase from '../../connection/connection-base';
 import Type, { CheckDirtyContext, TypeWrapper } from '../type';
 
 export declare interface SerializedTypeWrapper extends TypeWrapper<SerializedType> {

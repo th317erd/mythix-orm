@@ -1,4 +1,4 @@
-import { ConnectionBase } from './connection/connection-base';
+import ConnectionBase from './connection/connection-base';
 import { GenericObject } from './interfaces/common';
 import { Model, ModelClass } from './model';
 import Type from './types/type';
@@ -33,7 +33,7 @@ export declare interface FieldDefinition {
   validate: (value: any, context: ValidateContext) => Promise<any> | any;
 }
 
-export declare class Field {
+declare class Field {
   declare public static _isMythixField: boolean;
 
   public static isFieldClass(value: any): boolean;
@@ -56,3 +56,5 @@ export declare class Field {
   declare public set: ((context: GetSetContext) => void) | undefined;
   declare public validate: (value: any, context: ValidateContext) => Promise<any> | any;
 }
+
+export default Field;

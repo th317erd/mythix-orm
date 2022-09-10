@@ -1,8 +1,8 @@
-import { ConnectionBase } from '../connection/connection-base';
+import ConnectionBase from '../connection/connection-base';
 import { LiteralBase } from '../connection/literals';
 import { GenericObject } from '../interfaces/common';
 import { Model, ModelClass } from '../model';
-import { Field } from '../field';
+import Field from '../field';
 
 export declare interface QueryEngineOptions<T = ConnectionBase> {
   connection: T;

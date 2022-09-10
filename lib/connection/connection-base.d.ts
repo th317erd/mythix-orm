@@ -1,11 +1,11 @@
 import EventEmitter from 'events';
 import { Moment } from 'moment';
-import { Field } from '../field';
+import Field from '../field';
 import { GenericObject } from '../interfaces/common';
 import { IterateFieldsCallback, ModelClass, Models, Model } from '../model';
 import { QueryEngine, QueryEngineClass } from '../query-engine/query-engine';
 import { BigIntType, BlobType, BooleanType, CharType, DateTimeType, DateType, IntegerType, NumericType, RealType, StringType, TextType, Type, UUIDV1Type, UUIDV3Type, UUIDV4Type, UUIDV5Type, XIDType } from '../types';
-import { FullyQualifiedDefinition } from '../utils/model-utils';
+import { FullyQualifiedFieldDefinition } from '../utils/model-utils';
 import { AverageLiteral, CountLiteral, DistinctLiteral, FieldLiteral, MaxLiteral, MinLiteral, SumLiteral } from './literals';
 import LiteralBase from './literals/literal-base';
 import QueryGeneratorBase from './query-generator-base';
@@ -25,7 +25,7 @@ export declare interface PreparedModels {
   _mythixPreparedModels: boolean;
 }
 
-export class ConnectionBase extends EventEmitter {
+declare class ConnectionBase extends EventEmitter {
   declare public static dialect: string;
   declare public static _isMythixConnection: boolean;
 
@@ -50,7 +50,7 @@ export class ConnectionBase extends EventEmitter {
   public registerModel<T = ModelClass>(Model: T): T;
   public registerModels(models: Models | Array<ModelClass>): Models | undefined;
   public findModelField(finder: IterateFieldsCallback): Array<Field>;
-  public parseQualifiedName(fullyQualifiedName: string): FullyQualifiedDefinition;
+  public parseQualifiedName(fullyQualifiedName: string): FullyQualifiedFieldDefinition;
   public getModels(): Models;
   public getModel(modelName: string): ModelClass | undefined;
   public getField(fieldName: string, modelName?: string): Field | undefined;
@@ -121,3 +121,5 @@ export class ConnectionBase extends EventEmitter {
   public pluck(queryEngine: QueryEngine, fields: Array<Field> | Array<string> | Field | string, options?: GenericObject): Promise<Array<any> | Array<Array<any>>>;
   public exists(queryEngine: QueryEngine, options?: GenericObject): Promise<boolean>;
 }
+
+export default ConnectionBase;

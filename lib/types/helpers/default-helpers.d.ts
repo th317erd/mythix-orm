@@ -1,5 +1,5 @@
-import { ConnectionBase } from '../../connection/connection-base';
-import { Field } from '../../field';
+import ConnectionBase from '../../connection/connection-base';
+import Field from '../../field';
 import { GenericObject } from '../../interfaces/common';
 import { Model } from '../../model';
 

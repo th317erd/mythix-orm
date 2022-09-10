@@ -1,5 +1,5 @@
-import { ConnectionBase } from '../../connection/connection-base';
-import { Field } from '../../field';
+import ConnectionBase from '../../connection/connection-base';
+import Field from '../../field';
 import { ModelClass } from '../../model';
 import Type, { TypeWrapper } from '../type';
 

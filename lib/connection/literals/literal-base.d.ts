@@ -1,7 +1,7 @@
-import { Field } from '../../field';
+import Field from '../../field';
 import { GenericObject } from '../../interfaces/common';
-import { FullyQualifiedDefinition } from '../../utils/model-utils';
-import { ConnectionBase } from '../connection-base';
+import { FullyQualifiedFieldDefinition } from '../../utils/model-utils';
+import ConnectionBase from '../connection-base';
 
 declare class LiteralBase {
   declare public static _isMythixLiteral: boolean;
@@ -11,7 +11,7 @@ declare class LiteralBase {
   public static isLiteralType(value: any): boolean;
 
   public constructor(literal: any, options?: GenericObject);
-  public fullyQualifiedNameToDefinition(fullyQualifiedName: LiteralBase | string | Field): LiteralBase | FullyQualifiedDefinition;
+  public fullyQualifiedNameToDefinition(fullyQualifiedName: LiteralBase | string | Field): LiteralBase | FullyQualifiedFieldDefinition;
   public definitionToField(connection, definition): LiteralBase | Field;
   public toString(connection: ConnectionBase, options?: GenericObject): string;
 
