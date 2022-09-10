@@ -55,9 +55,10 @@ export declare class QueryEngine<T = ConnectionBase> {
   public unscoped(context?: GenericObject): QueryEngine<T>;
   public toString(options?: GenericObject): string;
   public MERGE(queryEngine: QueryEngine<T>): QueryEngine<T>;
-  public all(options): Promise<Array<Model>> | AsyncGenerator<Model>;
-  public first(limit: number | null | undefined, options?: GenericObject): Promise<Model | undefined>;
-  public last(limit: number | null | undefined, options?: GenericObject): Promise<Model | undefined>;
+  public all(options?: GenericObject): Promise<Array<Model>>;
+  public fetchAll(options?: GenericObject): AsyncGenerator<Model>;
+  public first(limit?: number | null | undefined, options?: GenericObject): Promise<Model | undefined>;
+  public last(limit?: number | null | undefined, options?: GenericObject): Promise<Model | undefined>;
   public update(attributes: Model | GenericObject, options?: GenericObject): Promise<number>;
   public destroy(options?: GenericObject): Promise<number>;
   public average(field: Field | string, options?: GenericObject): Promise<number>;
@@ -65,7 +66,7 @@ export declare class QueryEngine<T = ConnectionBase> {
   public min(field: Field | string, options?: GenericObject): Promise<number>;
   public max(field: Field | string, options?: GenericObject): Promise<number>;
   public sum(field: Field | string, options?: GenericObject): Promise<number>;
-  public pluck(fields: string | Array<string>, options?: GenericObject): Promise<Array<any> | Array<Array<any>>>;
+  public pluck(fields: string | Array<string>, options?: GenericObject): Promise<Array<any>>;
   public exists(options?: GenericObject): Promise<boolean>;
 
   // ModelScope
