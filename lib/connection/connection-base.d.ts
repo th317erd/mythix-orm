@@ -1,24 +1,20 @@
-import EventEmitter from "events";
-import { Moment } from "moment";
-import { GenericObject } from "../interfaces/common";
-import { Field, IterateFieldsCallback, ModelClass, Models, Model } from "../model";
-import { FullyQualifiedDefinition } from "../utils/model-utils";
-import { AverageLiteral, CountLiteral, DistinctLiteral, FieldLiteral, MaxLiteral, MinLiteral, SumLiteral } from "./literals";
-import LiteralBase from "./literals/literal-base";
-import QueryGeneratorBase from "./query-generator-base";
-
-// TODO: Needs to be removed
-type QueryEngine = any;
+import EventEmitter from 'events';
+import { Moment } from 'moment';
+import { GenericObject } from '../interfaces/common';
+import { Field, IterateFieldsCallback, ModelClass, Models, Model } from '../model';
+import { QueryEngine, QueryEngineClass } from '../query-engine/query-engine';
+import { FullyQualifiedDefinition } from '../utils/model-utils';
+import { AverageLiteral, CountLiteral, DistinctLiteral, FieldLiteral, MaxLiteral, MinLiteral, SumLiteral } from './literals';
+import LiteralBase from './literals/literal-base';
+import QueryGeneratorBase from './query-generator-base';
 
 export declare interface ConnectionBaseOptions {
-  // TODO: Needs update to proper types
-  QueryEngine: any;
-  queryGenerator: any;
+  QueryEngine: QueryEngineClass;
+  queryGenerator: QueryGeneratorBase;
   models: Models | Array<ModelClass>;
 }
 
-// TODO: Needs updated types
-export declare type ModelCache = Map<any, any>;
+export declare type ModelCache = Map<ModelClass, Map<string, any>>;
 
 export declare interface PreparedModels {
   models: Array<Model>;
