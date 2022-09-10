@@ -1,4 +1,4 @@
-import { DefaultValueProvider } from "../../field";
+import { DefaultValueProvider } from "../helpers/default-helpers";
 import { TypeWrapper } from "../type";
 import UUIDBaseType from "./uuid-base";
 

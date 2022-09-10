@@ -1,16 +1,8 @@
 import { ConnectionBase } from "./connection/connection-base";
 import { GenericObject } from "./interfaces/common";
 import { Model, ModelClass } from "./model";
-
-export declare interface DefaultValueContext {
-  _initial: boolean;
-  connection: ConnectionBase;
-  data: GenericObject | undefined;
-  field: Field;
-  fieldName: string;
-  fieldValue: any;
-  self: Model;
-}
+import Type from "./types/type";
+import { DefaultValueProvider } from "./types/helpers/default-helpers";
 
 export declare interface GetSetContext {
   field: Field;
@@ -25,11 +17,6 @@ export declare interface ValidateContext {
   connection: ConnectionBase;
   Model: ModelClass;
   options: GenericObject;
-}
-
-export declare interface DefaultValueProvider {
-  (context: DefaultValueContext): any;
-  mythixFlags: number | undefined;
 }
 
 export declare interface FieldDefinition {

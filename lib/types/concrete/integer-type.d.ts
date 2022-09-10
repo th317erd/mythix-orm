@@ -1,4 +1,4 @@
-import { DefaultValueProvider } from "../../field";
+import { AutoIncrementDefaultValueProvider } from "../helpers/default-helpers";
 import Type, { TypeWrapper } from "../type";
 
 export declare interface IntegerTypeWrapper extends TypeWrapper<IntegerType> {
@@ -7,7 +7,7 @@ export declare interface IntegerTypeWrapper extends TypeWrapper<IntegerType> {
 
 export declare class IntegerType extends Type {
   declare public static Default: {
-    AUTO_INCREMENT: DefaultValueProvider;
+    AUTO_INCREMENT: AutoIncrementDefaultValueProvider;
   };
 
   public constructor(length?: number);

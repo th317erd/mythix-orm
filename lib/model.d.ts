@@ -1,6 +1,7 @@
 import { GenericObject } from "./interfaces/common";
 import { ConnectionBase } from "./connection/connection-base";
 import { QueryEngine } from "./query-engine";
+import { Field } from "./field";
 
 export class CacheKey {
   constructor(number: number);
@@ -14,9 +15,6 @@ export declare interface ModelClass {
 export declare interface Models {
   [ key: string ]: ModelClass;
 }
-
-// TODO: Needs to be removed
-type Field = any;
 
 export declare type Fields = Array<Field> | { [ key: string ]: Field } | Map<string, Field> | Set<Field>;
 

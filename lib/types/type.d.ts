@@ -1,7 +1,8 @@
 import { ConnectionBase } from "../connection/connection-base";
-import { DefaultValueProvider, Field } from "../field";
+import { Field } from "../field";
 import { GenericObject } from "../interfaces/common";
 import { Model, ModelClass } from "../model";
+import { DefaultValueProvider } from "./helpers/default-helpers";
 
 export declare interface TypeClass {
   new(...any: Array<any>): Type;
