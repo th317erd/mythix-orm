@@ -12,9 +12,7 @@ export declare interface ModelOptions extends GenericObject {
   connection: ConnectionBase;
 }
 
-export declare interface ModelClass {
-  new(data: GenericObject, options?: ModelOptions): Model;
-}
+export declare type ModelClass = typeof Model;
 
 export declare interface Models {
   [ key: string ]: ModelClass;
@@ -106,8 +104,8 @@ export declare class Model {
   public static getPluralModelName(): string;
   public getPluralModelName(): string;
 
-  public static getModel(): ModelClass;
-  public getModel(): ModelClass;
+  public static getModel(modelName?: string): ModelClass | undefined;
+  public getModel(modelName?: string): ModelClass | undefined;
 
   public static getFields(fieldNames?: Array<string>): Fields;
   public getFields(fieldNames?: Array<string>): Fields;
@@ -185,9 +183,9 @@ export declare class Model {
   public onAfterCreate(context: HookContext): Promise<any>;
   public onAfterUpdate(context: HookContext): Promise<any>;
   public onAfterSave(context: HookContext): Promise<any>;
-  public save(options?: GenericObject): boolean;
-  public reload(options?: GenericObject): void;
-  public destroy(options?: GenericObject): number;
+  public save(options?: GenericObject): Promise<boolean>;
+  public reload(options?: GenericObject): Promise<void>;
+  public destroy(options?: GenericObject): Promise<number>;
   public toString(): string;
   public toJSON(): GenericObject;
 

@@ -10,17 +10,21 @@
     "operator": "FIELD",
     "fieldName": "id",
     "Field": {
-      "type": {},
-      "allowNull": false,
       "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "type": {},
       "fieldName": "id",
       "columnName": "id"
     },
     "rootFieldName": "id",
     "rootField": {
-      "type": {},
-      "allowNull": false,
       "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "type": {},
       "fieldName": "id",
       "columnName": "id"
     },
@@ -43,6 +47,10 @@
   {
     "modelName": "UserThing",
     "Field": {
+      "primaryKey": false,
+      "allowNull": false,
+      "index": true,
+      "unique": false,
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -53,8 +61,6 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "allowNull": false,
-      "index": true,
       "fieldName": "userID",
       "columnName": "userID"
     },
@@ -62,6 +68,10 @@
     "operator": "FIELD",
     "rootFieldName": "userID",
     "rootField": {
+      "primaryKey": false,
+      "allowNull": false,
+      "index": true,
+      "unique": false,
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -72,8 +82,6 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "allowNull": false,
-      "index": true,
       "fieldName": "userID",
       "columnName": "userID"
     },
@@ -85,6 +93,10 @@
     },
     "modelName": "UserThing",
     "Field": {
+      "primaryKey": false,
+      "allowNull": false,
+      "index": true,
+      "unique": false,
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -95,8 +107,6 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "allowNull": false,
-      "index": true,
       "fieldName": "userID",
       "columnName": "userID"
     },
@@ -112,6 +122,10 @@
     },
     "modelName": "UserThing",
     "Field": {
+      "primaryKey": false,
+      "allowNull": false,
+      "index": true,
+      "unique": false,
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -122,8 +136,6 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "allowNull": false,
-      "index": true,
       "fieldName": "userID",
       "columnName": "userID"
     },

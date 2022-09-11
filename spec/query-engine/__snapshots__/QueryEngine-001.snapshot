@@ -10,17 +10,21 @@
     "operator": "FIELD",
     "fieldName": "id",
     "Field": {
-      "type": {},
-      "allowNull": false,
       "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "type": {},
       "fieldName": "id",
       "columnName": "id"
     },
     "rootFieldName": "id",
     "rootField": {
-      "type": {},
-      "allowNull": false,
       "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "type": {},
       "fieldName": "id",
       "columnName": "id"
     },
@@ -44,11 +48,13 @@
     "operator": "FIELD",
     "fieldName": "firstName",
     "Field": {
+      "primaryKey": false,
+      "allowNull": true,
+      "index": true,
+      "unique": false,
       "type": {
         "length": 64
       },
-      "allowNull": true,
-      "index": true,
       "fieldName": "firstName",
       "columnName": "firstName"
     },
@@ -77,11 +83,13 @@
     "operator": "FIELD",
     "fieldName": "lastName",
     "Field": {
+      "primaryKey": false,
+      "allowNull": true,
+      "index": true,
+      "unique": false,
       "type": {
         "length": 64
       },
-      "allowNull": true,
-      "index": true,
       "fieldName": "lastName",
       "columnName": "lastName"
     },

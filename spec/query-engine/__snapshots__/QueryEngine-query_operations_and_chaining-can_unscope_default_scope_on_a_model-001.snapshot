@@ -10,17 +10,21 @@
     "operator": "FIELD",
     "fieldName": "id",
     "Field": {
-      "type": {},
-      "allowNull": false,
       "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "type": {},
       "fieldName": "id",
       "columnName": "id"
     },
     "rootFieldName": "id",
     "rootField": {
-      "type": {},
-      "allowNull": false,
       "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "type": {},
       "fieldName": "id",
       "columnName": "id"
     },

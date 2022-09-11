@@ -4,9 +4,7 @@ import { GenericObject } from '../interfaces/common';
 import { Model, ModelClass } from '../model';
 import { DefaultValueProvider } from './helpers/default-helpers';
 
-export declare interface TypeClass {
-  new(...any: Array<any>): Type;
-}
+export declare type TypeClass = typeof Type;
 
 export declare interface TypeWrapper<T = Type> {
   (...any: Array<any>): T;

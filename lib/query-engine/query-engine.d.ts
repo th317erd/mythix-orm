@@ -4,18 +4,16 @@ import { GenericObject } from '../interfaces/common';
 import { Model, ModelClass } from '../model';
 import Field from '../field';
 
-export declare interface QueryEngineOptions<T = ConnectionBase> {
-  connection: T;
+export declare interface QueryEngineOptions {
+  connection: ConnectionBase;
   [ key: string ]: any;
 }
 
-export declare interface QueryEngineClass<T = ConnectionBase> {
-  new(data: GenericObject, options?: QueryEngineOptions<T>): QueryEngine<T>;
-}
+export declare type QueryEngineClass = typeof QueryEngine;
 
-export declare interface CallableInterface<T> {
-  (...args: Array<any>): QueryEngine<T>;
-  [ key: string ]: QueryEngine<T>;
+export declare interface CallableInterface {
+  (...args: Array<any>): QueryEngine;
+  [ key: string ]: QueryEngine;
 }
 
 export declare class QueryEngine<T = ConnectionBase> {
@@ -25,14 +23,14 @@ export declare class QueryEngine<T = ConnectionBase> {
   static isQuery(value: any): boolean;
   static queryContextType(queryContext: GenericObject): { hasCondition: boolean; hasField: boolean; hasModel: boolean; };
 
-  public getModelScopeClass(): QueryEngine<T>;
-  public getFieldScopeClass(): QueryEngine<T>;
+  public getModelScopeClass(): QueryEngine;
+  public getFieldScopeClass(): QueryEngine;
   public _inheritContext(context: GenericObject, name: string, ...args: Array<GenericObject>): GenericObject;
-  public _fetchScope(...scopeNames: Array<string>): QueryEngine<T>;
-  public _newQueryEngineScope(): QueryEngine<T>;
-  public _newModelScope(Model: ModelClass): QueryEngine<T>;
-  public _newFieldScope(Field: Field): QueryEngine<T>;
-  public constructor(context: QueryEngineOptions<T>);
+  public _fetchScope(...scopeNames: Array<string>): QueryEngine;
+  public _newQueryEngineScope(): QueryEngine;
+  public _newModelScope(Model: ModelClass): QueryEngine;
+  public _newFieldScope(Field: Field): QueryEngine;
+  public constructor(context: QueryEngineOptions);
   public _getTopContextID(): number;
   public _getRawQueryContext(): GenericObject;
   public _getRawQuery(): Array<GenericObject>;
@@ -44,17 +42,17 @@ export declare class QueryEngine<T = ConnectionBase> {
   public _addToQuery(queryPart: GenericObject, context: GenericObject): void;
   public getConnection(): ConnectionBase;
   public getModel(modelName: string): ModelClass | undefined;
-  public getQueryEngineScope(): QueryEngine<T>;
-  public getQueryEngineClass(): QueryEngineClass<T>;
-  public clone(): QueryEngine<T>;
+  public getQueryEngineScope(): QueryEngine;
+  public getQueryEngineClass(): QueryEngineClass;
+  public clone(): QueryEngine;
 
   // QueryEngine
   public getModelScopeClass(): QueryEngineClass;
   public getFieldScopeClass(): QueryEngineClass;
-  public Model(modelName: string): QueryEngine<T>;
-  public unscoped(context?: GenericObject): QueryEngine<T>;
+  public Model(modelName: string): QueryEngine;
+  public unscoped(context?: GenericObject): QueryEngine;
   public toString(options?: GenericObject): string;
-  public MERGE(queryEngine: QueryEngine<T>): QueryEngine<T>;
+  public MERGE(queryEngine: QueryEngine): QueryEngine;
   public all(options?: GenericObject): Promise<Array<Model>>;
   public fetchAll(options?: GenericObject): AsyncGenerator<Model>;
   public first(limit?: number | null | undefined, options?: GenericObject): Promise<Model | undefined>;
@@ -72,72 +70,72 @@ export declare class QueryEngine<T = ConnectionBase> {
   // ModelScope
   public _getField(fieldName: string): Field | undefined;
   public _getQueryEngineClass(): QueryEngineClass;
-  public Field(fieldName: string): QueryEngine<T>;
-  public LIMIT(value: number): QueryEngine<T>;
-  public OFFSET(value: number): QueryEngine<T>;
-  public ORDER(...args: Array<string | Array<string>>): QueryEngine<T>;
-  public PROJECT(...args: Array<string | ModelClass | LiteralBase | Field>): QueryEngine<T>;
+  public Field(fieldName: string): QueryEngine;
+  public LIMIT(value: number): QueryEngine;
+  public OFFSET(value: number): QueryEngine;
+  public ORDER(...args: Array<string | Array<string>>): QueryEngine;
+  public PROJECT(...args: Array<string | ModelClass | LiteralBase | Field>): QueryEngine;
 
   declare public NOT: {
-    (): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public AND: {
-    (query: QueryEngine<T>): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (query: QueryEngine): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public OR: {
-    (query: QueryEngine<T>): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (query: QueryEngine): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public DISTINCT: {
-    (fullyQualifiedName: string | Field): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (fullyQualifiedName: string | Field): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public INNER_JOIN: {
-    (): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public LEFT_JOIN: {
-    (): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public RIGHT_JOIN: {
-    (): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public FULL_JOIN: {
-    (): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public CROSS_JOIN: {
-    (): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   declare public JOIN: {
-    (type: string | LiteralBase): QueryEngine<T>;
-    [ key: string ]: QueryEngine<T>;
+    (type: string | LiteralBase): QueryEngine;
+    [ key: string ]: QueryEngine;
   };
 
   // FieldScope
   public _fetchOperatorValue(value: any): any;
-  public EQ(value: any): QueryEngine<T>;
-  public NEQ(value: any): QueryEngine<T>;
-  public GT(value: any): QueryEngine<T>;
-  public GTE(value: any): QueryEngine<T>;
-  public LT(value: any): QueryEngine<T>;
-  public LTE(value: any): QueryEngine<T>;
-  public LIKE(value: string, options?: { caseSensitive: boolean }): QueryEngine<T>;
-  public NOT_LIKE(value: string, options?: { caseSensitive: boolean }): QueryEngine<T>;
+  public EQ(value: any): QueryEngine;
+  public NEQ(value: any): QueryEngine;
+  public GT(value: any): QueryEngine;
+  public GTE(value: any): QueryEngine;
+  public LT(value: any): QueryEngine;
+  public LTE(value: any): QueryEngine;
+  public LIKE(value: string, options?: { caseSensitive: boolean }): QueryEngine;
+  public NOT_LIKE(value: string, options?: { caseSensitive: boolean }): QueryEngine;
 
   [ key: string ]: any;
 }

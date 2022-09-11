@@ -1,8 +1,9 @@
 import EventEmitter from 'events';
 import { Moment } from 'moment';
+import { Literals } from '.';
 import Field from '../field';
 import { GenericObject } from '../interfaces/common';
-import { IterateFieldsCallback, ModelClass, Models, Model } from '../model';
+import { IterateFieldsCallback, ModelClass, Models, Model, HookContext } from '../model';
 import { QueryEngine, QueryEngineClass } from '../query-engine/query-engine';
 import { BigIntType, BlobType, BooleanType, CharType, DateTimeType, DateType, IntegerType, NumericType, RealType, StringType, TextType, Type, UUIDV1Type, UUIDV3Type, UUIDV4Type, UUIDV5Type, XIDType } from '../types';
 import { FullyQualifiedFieldDefinition } from '../utils/model-utils';
@@ -25,12 +26,34 @@ export declare interface PreparedModels {
   _mythixPreparedModels: boolean;
 }
 
+export declare interface LockModeOptions {
+  modelName?: string;
+  lock?: boolean;
+  read?: boolean;
+  write?: boolean;
+}
+
+export declare interface LockMode {
+  modelName?: string;
+  lock: boolean;
+  read: boolean;
+  write: boolean;
+}
+
+export declare interface QueryResults {
+  rows: Array<any>;
+  columns: Array<string>;
+}
+
 declare class ConnectionBase extends EventEmitter {
+  declare public static Literals: typeof Literals;
   declare public static dialect: string;
   declare public static _isMythixConnection: boolean;
 
   public static isConnectionClass(value: any): boolean;
   public static isConnection(value: any): boolean;
+  public static getLiteralClassByName(name: string): typeof LiteralBase;
+  public static Literal(name: string, ...args: Array<any>): LiteralBase;
 
   declare public dialect: string;
   declare protected _models: Models;
@@ -39,6 +62,7 @@ declare class ConnectionBase extends EventEmitter {
   declare protected queryGenerator: any; // TODO: Needs proper type
 
   public constructor(options?: ConnectionBaseOptions);
+  public getLockMode(options: string | LockModeOptions): LockMode;
   public getDefaultOrder(Model: ModelClass, options?: GenericObject): Array<string>;
   public isLimitSupportedInContext(options?: GenericObject): boolean;
   public isOrderSupportedInContext(options?: GenericObject): boolean | string;
@@ -105,6 +129,22 @@ declare class ConnectionBase extends EventEmitter {
   public setPersisted(models: Array<Models> | PreparedModels, value: boolean): void;
   public start(): Promise<void>;
   public stop(): Promise<void>;
+
+  public runSaveHooks(Model: ModelClass, models: Array<Model>, operationHookName: string, saveHookName: string, options: GenericObject): Promise<Array<any>>;
+  public dropTable(Model: ModelClass, options?: GenericObject): Promise<any>;
+  public dropTables(Models: Models, options?: GenericObject): Promise<Array<any>>;
+  public createTable(Model: ModelClass, options?: GenericObject): Promise<any>;
+  public createTables(Models: Models, options?: GenericObject): Promise<Array<any>>;
+  public defineTable(): Promise<any>;
+  public defineConstraints(): Promise<any>;
+  public defineIndexes(): Promise<any>;
+  public renameTable(): Promise<any>;
+  public renameColumn(): Promise<any>;
+  public dropColumn(): Promise<any>;
+  public alterColumn(): Promise<any>;
+  public addColumn(): Promise<any>;
+  public addConstraint(): Promise<any>;
+  public addIndex(): Promise<any>;
   public insert(Model: ModelClass, models: Array<Model | GenericObject> | Model | GenericObject, options?: GenericObject): Promise<Array<Models> | undefined>;
   public upsert(Model: ModelClass, models: Array<Model | GenericObject> | Model | GenericObject, options?: GenericObject): Promise<Array<Models> | undefined>;
   public update(Model: ModelClass, models: Array<Model | GenericObject> | Model | GenericObject, options?: GenericObject): Promise<Array<Models> | undefined>;
@@ -120,6 +160,9 @@ declare class ConnectionBase extends EventEmitter {
   public sum(queryEngine: QueryEngine, field: Field | string, options?: GenericObject): Promise<number>;
   public pluck(queryEngine: QueryEngine, fields: Array<Field> | Array<string> | Field | string, options?: GenericObject): Promise<Array<any> | Array<Array<any>>>;
   public exists(queryEngine: QueryEngine, options?: GenericObject): Promise<boolean>;
+
+  public query(sql: string | GenericObject, options?: GenericObject): Promise<any>;
+  public transaction(callback: (connection: ConnectionBase) => any, options?: GenericObject): Promise<any>;
 }
 
 export default ConnectionBase;

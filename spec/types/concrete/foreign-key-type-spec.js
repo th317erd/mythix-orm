@@ -4,7 +4,7 @@
 
 /* global describe, it, expect, beforeAll */
 
-const Model = require('../../../lib/model');
+const { Model } = require('../../../lib/model');
 const {
   Types,
   ConnectionBase,
@@ -15,25 +15,30 @@ describe('ForeignKeyType', () => {
   let FKModel;
 
   beforeAll(async () => {
-    connection = new ConnectionBase({
-      bindModels: false,
-      models:     Object.assign({}, require('../../support/models'), {
-        FKModel: class FKModel extends Model {
-          static fields = {
-            'id': {
-              type:         Types.UUIDV4,
-              defaultValue: Types.UUIDV4.Default.UUIDV4,
-              allowNull:    false,
-              primaryKey:   true,
-            },
-            'userID': {
-              type:       Types.FOREIGN_KEY('User:id'),
-              allowNull:  true,
-            },
-          };
-        },
-      }),
-    });
+    try {
+      connection = new ConnectionBase({
+        bindModels: false,
+        models:     Object.assign({}, require('../../support/models'), {
+          FKModel: class FKModel extends Model {
+            static fields = {
+              'id': {
+                type:         Types.UUIDV4,
+                defaultValue: Types.UUIDV4.Default.UUIDV4,
+                allowNull:    false,
+                primaryKey:   true,
+              },
+              'userID': {
+                type:       Types.FOREIGN_KEY('User:id'),
+                allowNull:  true,
+              },
+            };
+          },
+        }),
+      });
+    } catch (error) {
+      console.log('Failed in beforeAll', error);
+      throw error;
+    }
 
     let models = connection.getModels();
 
