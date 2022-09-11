@@ -2,7 +2,7 @@
   "name": "mythix-orm",
   "version": "1.5.6",
   "description": "ORM for Mythix framework",
-  "main": "lib/index.js",
+  "main": "lib/index",
   "type": "commonjs",
   "scripts": {
     "coverage": "clear ; node ./node_modules/.bin/nyc ./node_modules/.bin/jasmine",
@@ -34,6 +34,7 @@
   "homepage": "https://github.com/th317erd/mythix-orm#readme",
   "devDependencies": {
     "@spothero/eslint-plugin-spothero": "github:spothero/eslint-plugin-spothero",
+    "@types/node": "^18.7.16",
     "better-sqlite3": "^7.6.2",
     "colors": "^1.4.0",
     "diff": "^5.1.0",
