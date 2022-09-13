@@ -183,7 +183,7 @@ export declare class Model {
   public onAfterCreate(context: HookContext): Promise<any>;
   public onAfterUpdate(context: HookContext): Promise<any>;
   public onAfterSave(context: HookContext): Promise<any>;
-  public save(options?: GenericObject): Promise<boolean>;
+  public save(options?: GenericObject): Promise<Model | boolean>;
   public reload(options?: GenericObject): Promise<void>;
   public destroy(options?: GenericObject): Promise<number>;
   public toString(): string;

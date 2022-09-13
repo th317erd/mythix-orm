@@ -1,21 +1,19 @@
 import ConnectionBase from '../../connection/connection-base';
 import Field from '../../field';
 import { GenericObject } from '../../interfaces/common';
-import { Model, ModelClass } from '../../model';
+import { Model, ModelClass, Models } from '../../model';
 import { QueryEngine } from '../../query-engine';
 import Type from '../type';
 
-export declare interface QueryFactoryContext {
-  userQuery: QueryEngine | GenericObject | Array<GenericObject> | undefined;
+export declare interface QueryFactoryContext<T extends Model> {
   type: Type;
-  self: Model;
+  self: T;
   connection: ConnectionBase;
   field: Field;
-  [ key: string ]: ModelClass | any;
 }
 
-export declare interface QueryFactory {
-  (context: QueryFactoryContext, ...args: Array<any>): QueryEngine;
+export declare interface QueryFactory<T extends Model, M = Models> {
+  (context: QueryFactoryContext<T>, models: M, ...args: Array<any>): QueryEngine | Promise<QueryEngine>;
 }
 
 export declare interface RelationalInfo {
@@ -33,16 +31,16 @@ export declare interface RelationalContext {
   source: RelationalInfo;
 }
 
-declare class RelationalTypeBase extends Type {
+declare class RelationalTypeBase<T extends Model, M = Models> extends Type {
   declare public targetModelName: string;
-  declare public queryFactory: QueryFactory;
+  declare public queryFactory: QueryFactory<T, M>;
   declare public options: string;
 
-  constructor(targetModelName: string, queryFactory: QueryFactory, options?: GenericObject);
+  constructor(targetModelName: string, queryFactory: QueryFactory<T, M>, options?: GenericObject);
   getOptions(): GenericObject;
-  walkQueryRelations(connection: ConnectionBase, callback: (context: RelationalContext) => void, context: QueryFactoryContext, ...args: Array<any>): Promise<QueryEngine>;
+  walkQueryRelations(connection: ConnectionBase, callback: (context: RelationalContext) => void, context: QueryFactoryContext<T>, ...args: Array<any>): Promise<QueryEngine>;
   getTargetModel(connection?: ConnectionBase): ModelClass;
-  prepareQuery(context: QueryFactoryContext, args: Array<any>): Promise<QueryEngine>;
+  prepareQuery(context: QueryFactoryContext<T>, args: Array<any>): Promise<QueryEngine>;
 }
 
 export default RelationalTypeBase;

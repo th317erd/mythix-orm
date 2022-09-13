@@ -25,7 +25,7 @@ class User extends Model {
       allowNull:    true,
     },
     'roles': {
-      type:         Types.Models('Role', ({ Role, UserRole, userQuery, self }) => {
+      type:         Types.Models('Role', ({ self }, { Role, UserRole }, userQuery) => {
         return Role
           .$.id
             .EQ(UserRole.$.roleID)
@@ -35,12 +35,12 @@ class User extends Model {
       }),
     },
     'userRoles': {
-      type:         Types.Models('UserRole', ({ UserRole, userQuery, self }) => {
+      type:         Types.Models('UserRole', ({ self }, { UserRole }, userQuery) => {
         return UserRole.$.userID.EQ(self.id).MERGE(userQuery);
       }),
     },
     'userThing': {
-      type:         Types.Model('UserThing', ({ UserThing, userQuery, self }) => {
+      type:         Types.Model('UserThing', ({ self }, { UserThing }, userQuery) => {
         return UserThing
           .$.userID
             .EQ(self.id)
@@ -48,7 +48,7 @@ class User extends Model {
       }),
     },
     'userThingRole': {
-      type:         Types.Model('Role', ({ Role, UserThing, RoleThing, userQuery, self }) => {
+      type:         Types.Model('Role', ({ self }, { Role, UserThing, RoleThing }, userQuery) => {
         return Role
           .$.id
             .EQ(RoleThing.$.roleID)
@@ -60,7 +60,7 @@ class User extends Model {
       }),
     },
     'primaryRole': {
-      type:         Types.Model('Role', ({ Role, userQuery, self }) => {
+      type:         Types.Model('Role', ({ self }, { Role }, userQuery) => {
         return Role.$.id.EQ(self.primaryRoleID).MERGE(userQuery);
       }),
     },

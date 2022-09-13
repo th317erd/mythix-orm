@@ -5,14 +5,11 @@
 
 /* global describe, it, expect, beforeAll, spyOn */
 
-const UUID                      = require('uuid');
 const { Types, ConnectionBase } = require('../../../lib');
-const ModelUtils                = require('../../../lib/utils/model-utils');
 
 describe('ModelType', () => {
   let connection;
   let User;
-  let UserRole;
   let RoleThing;
   let UserThing;
   let Role;
@@ -26,7 +23,6 @@ describe('ModelType', () => {
 
       let models = connection.getModels();
       User = models.User;
-      UserRole = models.UserRole;
       RoleThing = models.RoleThing;
       UserThing = models.UserThing;
       Role = models.Role;

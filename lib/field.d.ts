@@ -17,6 +17,7 @@ export declare interface ValidateContext {
   connection: ConnectionBase;
   Model: ModelClass;
   options: GenericObject;
+  self: Model;
 }
 
 export declare interface FieldDefinition {

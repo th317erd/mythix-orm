@@ -16,7 +16,7 @@ class Role extends Model {
       index:        true,
     },
     'user': {
-      type:         Types.Model('User', ({ User, self }) => {
+      type:         Types.Model('User', ({ self }, { User }) => {
         return User.$.primaryRoleID.EQ(self.primaryRoleID);
       }),
     },

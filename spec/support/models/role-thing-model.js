@@ -16,17 +16,17 @@ class RoleThing extends Model {
       index:        true,
     },
     'userThing': {
-      type:         Types.Model('UserThing', ({ UserThing, userQuery, self }) => {
+      type:         Types.Model('UserThing', ({ self }, { UserThing }, userQuery) => {
         return UserThing.$.roleThingID.EQ(self.id).MERGE(userQuery);
       }),
     },
     'role': {
-      type:         Types.Model('Role', ({ Role, userQuery, self }) => {
+      type:         Types.Model('Role', ({ self }, { Role }, userQuery) => {
         return Role.$.id.EQ(self.roleID).MERGE(userQuery);
       }),
     },
     'user': {
-      type:         Types.Model('User', ({ UserThing, User, userQuery, self }) => {
+      type:         Types.Model('User', ({ self }, { UserThing, User }, userQuery) => {
         return User
           .$.id
             .EQ(UserThing.userID)

@@ -3,9 +3,10 @@ import { Moment } from 'moment';
 import { Literals } from '.';
 import Field from '../field';
 import { GenericObject } from '../interfaces/common';
-import { IterateFieldsCallback, ModelClass, Models, Model, HookContext } from '../model';
+import { IterateFieldsCallback, ModelClass, Models, Model, HookContext, DirtyChanges } from '../model';
 import { QueryEngine, QueryEngineClass } from '../query-engine/query-engine';
 import { BigIntType, BlobType, BooleanType, CharType, DateTimeType, DateType, IntegerType, NumericType, RealType, StringType, TextType, Type, UUIDV1Type, UUIDV3Type, UUIDV4Type, UUIDV5Type, XIDType } from '../types';
+import { DefaultValueContext } from '../types/helpers';
 import { FullyQualifiedFieldDefinition } from '../utils/model-utils';
 import { AverageLiteral, CountLiteral, DistinctLiteral, FieldLiteral, MaxLiteral, MinLiteral, SumLiteral } from './literals';
 import LiteralBase from './literals/literal-base';
@@ -43,6 +44,15 @@ export declare interface LockMode {
 export declare interface QueryResults {
   rows: Array<any>;
   columns: Array<string>;
+}
+
+export declare interface DirtyFieldHelperContext {
+  options: GenericObject;
+  fieldData: GenericObject;
+  dirtyFieldData: GenericObject;
+  dirtyFields: DirtyChanges;
+  field: Field;
+  fieldName: string;
 }
 
 declare class ConnectionBase extends EventEmitter {
@@ -160,9 +170,11 @@ declare class ConnectionBase extends EventEmitter {
   public sum(queryEngine: QueryEngine, field: Field | string, options?: GenericObject): Promise<number>;
   public pluck(queryEngine: QueryEngine, fields: Array<Field> | Array<string> | Field | string, options?: GenericObject): Promise<Array<any> | Array<Array<any>>>;
   public exists(queryEngine: QueryEngine, options?: GenericObject): Promise<boolean>;
-
+  public truncate(Model: ModelClass, options?: GenericObject): Promise<void>;
   public query(sql: string | GenericObject, options?: GenericObject): Promise<any>;
   public transaction(callback: (connection: ConnectionBase) => any, options?: GenericObject): Promise<any>;
+  public getDefaultFieldValue(type: string | LiteralBase, context: DefaultValueContext): Promise<any>;
+  public dirtyFieldHelper(context: DirtyFieldHelperContext): any;
 }
 
 export default ConnectionBase;

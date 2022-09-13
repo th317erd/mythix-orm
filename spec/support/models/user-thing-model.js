@@ -21,12 +21,12 @@ class UserThing extends Model {
       index:        true,
     },
     'roleThing': {
-      type:         Types.Model('RoleThing', ({ RoleThing, userQuery, self }) => {
+      type:         Types.Model('RoleThing', ({ self }, { RoleThing }, userQuery) => {
         return RoleThing.$.id.EQ(self.roleThingID).MERGE(userQuery);
       }),
     },
     'role': {
-      type:         Types.Model('Role', ({ Role, RoleThing, userQuery, self }) => {
+      type:         Types.Model('Role', ({ self }, { Role, RoleThing }, userQuery) => {
         return Role
           .$.id
             .EQ(RoleThing.$.roleID)
@@ -36,7 +36,7 @@ class UserThing extends Model {
       }),
     },
     'user': {
-      type:         Types.Model('User', ({ User, userQuery, self }) => {
+      type:         Types.Model('User', ({ self }, { User }, userQuery) => {
         return User.$.id.EQ(self.userID).MERGE(userQuery);
       }),
     },

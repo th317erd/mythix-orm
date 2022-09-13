@@ -717,7 +717,7 @@ describe('Model', () => {
             primaryKey: true,
           },
           'role': {
-            type:       Types.Model('Role', ({ Role }) => {
+            type:       Types.Model('Role', (_, { Role }) => {
               return Role.where;
             }),
           },

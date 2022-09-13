@@ -6,9 +6,9 @@ import { DefaultValueProvider } from './helpers/default-helpers';
 
 export declare type TypeClass = typeof Type;
 
-export declare interface TypeWrapper<T = Type> {
+export declare interface TypeWrapper<T = Type, P = DefaultValueProvider> {
   (...any: Array<any>): T;
-  Default: { [ key: string ]: DefaultValueProvider };
+  Default?: { [ key: string ]: P };
   _isMythixFieldType: boolean;
   clone: () => TypeClass;
   isTypeClass: (value: any) => boolean;

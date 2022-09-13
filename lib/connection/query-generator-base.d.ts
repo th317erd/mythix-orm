@@ -1,10 +1,10 @@
-import Field from "../field";
-import { GenericObject } from "../interfaces/common";
-import { ModelClass } from "../model";
-import { QueryEngine } from "../query-engine";
-import ConnectionBase from "./connection-base";
-import { AverageLiteral, CountLiteral, DistinctLiteral, FieldLiteral, MaxLiteral, MinLiteral, SumLiteral } from "./literals";
-import LiteralBase from "./literals/literal-base";
+import Field from '../field';
+import { GenericObject } from '../interfaces/common';
+import { ModelClass } from '../model';
+import { QueryEngine } from '../query-engine';
+import ConnectionBase from './connection-base';
+import { AverageLiteral, CountLiteral, DistinctLiteral, FieldLiteral, MaxLiteral, MinLiteral, SumLiteral } from './literals';
+import LiteralBase from './literals/literal-base';
 
 export declare interface GetEscapedFieldNameOptions {
   fieldNameOnly?: boolean;
