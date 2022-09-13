@@ -107,3 +107,6 @@ dist
 **/spec
 .eslintrc.js
 playground
+
+docs/
+.biblorc.js
