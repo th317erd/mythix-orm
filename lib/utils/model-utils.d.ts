@@ -64,7 +64,7 @@ export declare function createAndSaveAllRelatedModels(
   options?: GenericObject,
 ): Promise<Array<Model> | undefined>;
 
-export declare function setRelationalValues<T = Model>(
+export declare function setRelationalValues<T extends Model = Model>(
   connection: ConnectionBase,
   TargetModel: ModelClass,
   targetModelInstance: T,

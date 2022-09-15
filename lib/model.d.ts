@@ -146,16 +146,18 @@ export declare class Model {
   public static getWhereWithConnection(options?: { connection: ConnectionBase }): QueryEngine;
   public getWhereWithConnection(options?: { connection: ConnectionBase }): QueryEngine;
 
-  public static create(models: Array<Model | GenericObject>, options?: GenericObject): Promise<Array<Model>>;
-  public static create(models: Model | GenericObject, options?: GenericObject): Promise<Model>;
+  public static create<T extends Model = Model>(models: Array<T>, options?: GenericObject): Promise<Array<T>>;
+  public static create<T extends Model = Model>(models: T, options?: GenericObject): Promise<T>;
+  public static create<T extends Model = Model>(models: Array<GenericObject>, options?: GenericObject): Promise<Array<T>>;
+  public static create<T extends Model = Model>(models: GenericObject, options?: GenericObject): Promise<T>;
   public static count(options?: GenericObject): Promise<number>;
-  public static all(options?: GenericObject): Promise<Array<Model>>;
-  public static fetchAll(options?: GenericObject): AsyncGenerator<Model>;
-  public static first(limit?: number, options?: GenericObject): Promise<Model | undefined>;
-  public static last(limit?: number, options?: GenericObject): Promise<Model | undefined>;
+  public static all<T extends Model = Model>(options?: GenericObject): Promise<Array<T>>;
+  public static fetchAll<T extends Model = Model>(options?: GenericObject): AsyncGenerator<T>;
+  public static first<T extends Model = Model>(limit?: number, options?: GenericObject): Promise<T | undefined>;
+  public static last<T extends Model = Model>(limit?: number, options?: GenericObject): Promise<T | undefined>;
   public static pluck(fields: string | Array<string>, options?: GenericObject): Promise<Array<any>>;
 
-  public constructor(data: GenericObject, _options?: ModelOptions);
+  public constructor(data?: GenericObject, _options?: ModelOptions);
   public getOptions(): ModelOptions;
   public _constructor(data?: GenericObject): void;
   public _constructFields(): void;
@@ -183,7 +185,7 @@ export declare class Model {
   public onAfterCreate(context: HookContext): Promise<any>;
   public onAfterUpdate(context: HookContext): Promise<any>;
   public onAfterSave(context: HookContext): Promise<any>;
-  public save(options?: GenericObject): Promise<Model | boolean>;
+  public save(options?: GenericObject): Promise<this | boolean>;
   public reload(options?: GenericObject): Promise<void>;
   public destroy(options?: GenericObject): Promise<number>;
   public toString(): string;

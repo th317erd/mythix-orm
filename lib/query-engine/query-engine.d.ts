@@ -53,11 +53,11 @@ export declare class QueryEngine<T = ConnectionBase> {
   public unscoped(context?: GenericObject): QueryEngine;
   public toString(options?: GenericObject): string;
   public MERGE(queryEngine: QueryEngine): QueryEngine;
-  public all(options?: GenericObject): Promise<Array<Model>>;
-  public fetchAll(options?: GenericObject): AsyncGenerator<Model>;
-  public first(limit?: number | null | undefined, options?: GenericObject): Promise<Model | undefined>;
-  public last(limit?: number | null | undefined, options?: GenericObject): Promise<Model | undefined>;
-  public update(attributes: Model | GenericObject, options?: GenericObject): Promise<number>;
+  public all<T extends Model = Model>(options?: GenericObject): Promise<Array<T>>;
+  public fetchAll<T extends Model = Model>(options?: GenericObject): AsyncGenerator<T>;
+  public first<T extends Model = Model>(limit?: number | null | undefined, options?: GenericObject): Promise<T | undefined>;
+  public last<T extends Model = Model>(limit?: number | null | undefined, options?: GenericObject): Promise<T | undefined>;
+  public update<T extends Model = Model>(attributes: T | GenericObject, options?: GenericObject): Promise<number>;
   public destroy(options?: GenericObject): Promise<number>;
   public average(field: Field | string, options?: GenericObject): Promise<number>;
   public count(field: Field | string, options?: GenericObject): Promise<number>;
@@ -78,51 +78,71 @@ export declare class QueryEngine<T = ConnectionBase> {
 
   declare public NOT: {
     (): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public AND: {
     (query: QueryEngine): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public OR: {
     (query: QueryEngine): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public DISTINCT: {
     (fullyQualifiedName: string | Field): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public INNER_JOIN: {
     (): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public LEFT_JOIN: {
     (): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public RIGHT_JOIN: {
     (): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public FULL_JOIN: {
     (): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public CROSS_JOIN: {
     (): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
   declare public JOIN: {
     (type: string | LiteralBase): QueryEngine;
+
+    name: QueryEngine;
     [ key: string ]: QueryEngine;
   };
 
@@ -137,6 +157,7 @@ export declare class QueryEngine<T = ConnectionBase> {
   public LIKE(value: string, options?: { caseSensitive: boolean }): QueryEngine;
   public NOT_LIKE(value: string, options?: { caseSensitive: boolean }): QueryEngine;
 
+  name: QueryEngine;
   [ key: string ]: any;
 }
 
