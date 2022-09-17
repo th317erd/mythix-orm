@@ -14,9 +14,9 @@
       "allowNull": false,
       "index": false,
       "unique": false,
+      "columnName": "id",
       "type": {},
-      "fieldName": "id",
-      "columnName": "id"
+      "fieldName": "id"
     },
     "rootFieldName": "id",
     "rootField": {
@@ -24,9 +24,9 @@
       "allowNull": false,
       "index": false,
       "unique": false,
+      "columnName": "id",
       "type": {},
-      "fieldName": "id",
-      "columnName": "id"
+      "fieldName": "id"
     },
     "currentScopeName": "field"
   },
@@ -51,6 +51,7 @@
       "allowNull": false,
       "index": true,
       "unique": false,
+      "columnName": "userID",
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -61,8 +62,7 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "fieldName": "userID",
-      "columnName": "userID"
+      "fieldName": "userID"
     },
     "fieldName": "userID",
     "operator": "FIELD",
@@ -72,6 +72,7 @@
       "allowNull": false,
       "index": true,
       "unique": false,
+      "columnName": "userID",
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -82,8 +83,7 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "fieldName": "userID",
-      "columnName": "userID"
+      "fieldName": "userID"
     },
     "currentScopeName": "field"
   },
@@ -97,6 +97,7 @@
       "allowNull": false,
       "index": true,
       "unique": false,
+      "columnName": "userID",
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -107,8 +108,7 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "fieldName": "userID",
-      "columnName": "userID"
+      "fieldName": "userID"
     },
     "fieldName": "userID",
     "condition": true,
@@ -126,6 +126,7 @@
       "allowNull": false,
       "index": true,
       "unique": false,
+      "columnName": "userID",
       "type": {
         "options": {
           "onDelete": "CASCADE",
@@ -136,8 +137,7 @@
         },
         "fullyQualifiedName": "User:id"
       },
-      "fieldName": "userID",
-      "columnName": "userID"
+      "fieldName": "userID"
     },
     "fieldName": "userID",
     "logical": true,

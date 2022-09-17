@@ -11,7 +11,8 @@ export const FLAG_LITERAL: number;
 export const FLAG_REMOTE: number;
 
 export declare interface DefaultValueContext {
-  _initial: boolean;
+  _initial?: boolean;
+  _static?: boolean;
   connection: ConnectionBase;
   data: GenericObject | undefined;
   field: Field;

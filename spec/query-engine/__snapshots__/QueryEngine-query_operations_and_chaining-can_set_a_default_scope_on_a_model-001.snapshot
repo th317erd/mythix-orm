@@ -14,11 +14,11 @@
       "allowNull": true,
       "index": true,
       "unique": false,
+      "columnName": "firstName",
       "type": {
         "length": 64
       },
-      "fieldName": "firstName",
-      "columnName": "firstName"
+      "fieldName": "firstName"
     },
     "rootFieldName": "firstName",
     "rootField": {
@@ -26,11 +26,11 @@
       "allowNull": true,
       "index": true,
       "unique": false,
+      "columnName": "firstName",
       "type": {
         "length": 64
       },
-      "fieldName": "firstName",
-      "columnName": "firstName"
+      "fieldName": "firstName"
     },
     "currentScopeName": "field"
   },
@@ -49,9 +49,9 @@
       "allowNull": false,
       "index": false,
       "unique": false,
+      "columnName": "id",
       "type": {},
-      "fieldName": "id",
-      "columnName": "id"
+      "fieldName": "id"
     },
     "currentScopeName": "field"
   },

@@ -14,9 +14,9 @@
       "allowNull": false,
       "index": false,
       "unique": false,
+      "columnName": "id",
       "type": {},
-      "fieldName": "id",
-      "columnName": "id"
+      "fieldName": "id"
     },
     "rootFieldName": "id",
     "rootField": {
@@ -24,9 +24,9 @@
       "allowNull": false,
       "index": false,
       "unique": false,
+      "columnName": "id",
       "type": {},
-      "fieldName": "id",
-      "columnName": "id"
+      "fieldName": "id"
     },
     "currentScopeName": "field"
   },

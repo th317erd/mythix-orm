@@ -141,20 +141,24 @@ declare class ConnectionBase extends EventEmitter {
   public stop(): Promise<void>;
 
   public runSaveHooks(Model: ModelClass, models: Array<Model>, operationHookName: string, saveHookName: string, options: GenericObject): Promise<Array<any>>;
+
+  public defineTable(): Promise<any>;
+  public defineConstraints(): Promise<any>;
+  public defineIndexes(): Promise<any>;
+
   public dropTable(Model: ModelClass, options?: GenericObject): Promise<any>;
   public dropTables(Models: Models, options?: GenericObject): Promise<Array<any>>;
   public createTable(Model: ModelClass, options?: GenericObject): Promise<any>;
   public createTables(Models: Models, options?: GenericObject): Promise<Array<any>>;
-  public defineTable(): Promise<any>;
-  public defineConstraints(): Promise<any>;
-  public defineIndexes(): Promise<any>;
-  public renameTable(): Promise<any>;
-  public renameColumn(): Promise<any>;
-  public dropColumn(): Promise<any>;
-  public alterColumn(): Promise<any>;
-  public addColumn(): Promise<any>;
-  public addConstraint(): Promise<any>;
-  public addIndex(): Promise<any>;
+  public alterTable(Model: ModelClass, newModelAttributes: GenericObject, options?: GenericObject): Promise<void>;
+
+  public dropColumn(Field: Field, options?: GenericObject): Promise<void>;
+  public alterColumn(Field: Field, newFieldAttributes: GenericObject, options?: GenericObject): Promise<void>;
+  public addColumn(Field: Field, options?: GenericObject): Promise<void>;
+
+  public addIndex(Model: ModelClass, indexFieldNames?: Array<string>, options?: GenericObject): Promise<void>;
+  public dropIndex(Model: ModelClass, indexFieldNames?: Array<string>, options?: GenericObject): Promise<void>;
+
   public insert(Model: ModelClass, models: Array<Model | GenericObject> | Model | GenericObject, options?: GenericObject): Promise<Array<Models> | undefined>;
   public upsert(Model: ModelClass, models: Array<Model | GenericObject> | Model | GenericObject, options?: GenericObject): Promise<Array<Models> | undefined>;
   public update(Model: ModelClass, models: Array<Model | GenericObject> | Model | GenericObject, options?: GenericObject): Promise<Array<Models> | undefined>;
@@ -171,6 +175,7 @@ declare class ConnectionBase extends EventEmitter {
   public pluck(queryEngine: QueryEngine, fields: Array<Field> | Array<string> | Field | string, options?: GenericObject): Promise<Array<any> | Array<Array<any>>>;
   public exists(queryEngine: QueryEngine, options?: GenericObject): Promise<boolean>;
   public truncate(Model: ModelClass, options?: GenericObject): Promise<void>;
+
   public query(sql: string | GenericObject, options?: GenericObject): Promise<any>;
   public transaction(callback: (connection: ConnectionBase) => any, options?: GenericObject): Promise<any>;
   public getDefaultFieldValue(type: string | LiteralBase, context: DefaultValueContext): Promise<any>;
