@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { Moment } from 'moment';
+import { DateTime } from 'luxon';
 import { Literals } from '.';
 import Field from '../field';
 import { GenericObject } from '../interfaces/common';
@@ -120,7 +120,7 @@ declare class ConnectionBase extends EventEmitter {
   public _uuidV5TypeToString(type: UUIDV5Type): string;
   public _xidTypeToString(type: XIDType): string;
   public typeToString(type: Type, options?: GenericObject): string;
-  public convertDateToDBTime(value: Date | Moment): Date;
+  public convertDateToDBTime(value: Date | DateTime, type: Type): Date;
   public ensureAllModelsAreInstances(Model: ModelClass, models: Array<Model | GenericObject> | PreparedModels, options?: GenericObject): Array<Model>;
   public prepareAllModelsForOperation(Model: ModelClass, models: Array<Model | GenericObject> | PreparedModels, options?: GenericObject): PreparedModels;
   public splitModelAndSubModels(Model: ModelClass, primaryModel: Model, relationMap?: Map<string, Set<Model>>): Map<string, Set<Model>>;

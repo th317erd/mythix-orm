@@ -13,12 +13,12 @@ class ExtendedUser extends User {
       unique:       true, // should be ignored when create table query is generated
     },
     'createdAt': {
-      type:         Types.DATETIME(null, 'MM.DD.YYYY HH:mm:ss'),
+      type:         Types.DATETIME(null, 'MM.dd.yyyy HH:mm:ss'),
       defaultValue: Types.DATETIME.Default.NOW,
       allowNull:    false,
     },
     'updatedAt': {
-      type:         Types.DATETIME(null, 'MM.DD.YYYY HH:mm:ss'),
+      type:         Types.DATETIME(null, 'MM.dd.yyyy HH:mm:ss'),
       defaultValue: Types.DATETIME.Default.NOW.UPDATE,
       allowNull:    false,
     },
