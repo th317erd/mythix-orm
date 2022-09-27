@@ -18,7 +18,7 @@ export declare interface RelationStatus {
 }
 
 export declare interface ModelsRelationStatuses {
-  [ key: string ]: RelationStatus
+  [key: string]: RelationStatus
 }
 
 export declare function isUUID(value: any): boolean;
@@ -70,7 +70,7 @@ export declare function setRelationalValues<T extends Model = Model>(
   targetModelInstance: T,
   SourceModel: ModelClass,
   sourceModelInstance: Model,
-): T;
+): boolean;
 
 export declare function assignRelatedModels(model: Model, relatedModels: Model | Array<Model>): void;
 export declare function getPrimaryKeysForModels(
@@ -81,7 +81,7 @@ export declare function getPrimaryKeysForModels(
     includeRelations?: boolean | Array<string>,
     skipRelations?: Array<string>,
   },
-): Array<any> | { [ key: string ]: Array<any> };
+): Array<any> | { [key: string]: Array<any> };
 
 export declare function buildQueryFromModelsAttributes(
   connection: ConnectionBase,
