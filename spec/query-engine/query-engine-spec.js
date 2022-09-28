@@ -2,16 +2,20 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeAll */
+/* global describe, it, fit, expect, beforeAll */
 
 const { ConnectionBase, QueryEngine } = require('../../lib');
 const matchesSnapshot = require('../support/snapshots');
+const { createRunners } = require('../support/test-helpers');
 
 describe('QueryEngine', () => {
   let connection;
   let User;
   let ScopedUser;
   let UserThing;
+
+  // eslint-disable-next-line no-unused-vars
+  const { it, fit } = createRunners(() => connection);
 
   beforeAll(() => {
     connection = new ConnectionBase({

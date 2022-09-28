@@ -83,6 +83,10 @@ declare class ConnectionBase extends EventEmitter {
   public toQueryEngine(queryEngineLike: any): QueryEngine | undefined;
   public registerModel<T = ModelClass>(Model: T): T;
   public registerModels(models: Models | Array<ModelClass>): Models | undefined;
+  public getContextValue(key: any, defaultValue?: any): any;
+  public setContextValue(key: any, value: any): any;
+  public buildConnectionContext(connection?: ConnectionBase): Map<any, any>;
+  public createContext(callback: Function, connection?: ConnectionBase, thisArg?: any): Promise<any>;
   public findModelField(finder: IterateFieldsCallback): Array<Field>;
   public parseQualifiedName(fullyQualifiedName: string): FullyQualifiedFieldDefinition;
   public getModels(): Models;

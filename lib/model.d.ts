@@ -15,7 +15,7 @@ export declare interface ModelOptions extends GenericObject {
 export declare type ModelClass = typeof Model;
 
 export declare interface Models {
-  [ key: string ]: ModelClass;
+  [key: string]: ModelClass;
 }
 
 export declare interface HookContext {
@@ -25,11 +25,11 @@ export declare interface HookContext {
 }
 
 export declare interface DirtyChanges {
-  [ key: string ]: { previous: any; current: any };
+  [key: string]: { previous: any; current: any };
 }
 
-export declare type LooseFields = Array<Field | FieldDefinition> | { [ key: string ]: Field | FieldDefinition } | Map<string, Field | FieldDefinition> | Set<Field | FieldDefinition>;
-export declare type Fields = Array<Field> | { [ key: string ]: Field } | Map<string, Field> | Set<Field>;
+export declare type LooseFields = Array<Field | FieldDefinition> | { [key: string]: Field | FieldDefinition } | Map<string, Field | FieldDefinition> | Set<Field | FieldDefinition>;
+export declare type Fields = Array<Field> | { [key: string]: Field } | Map<string, Field> | Set<Field>;
 
 export declare interface IterateFieldsContext {
   field: Field;
@@ -53,6 +53,18 @@ export declare class Model {
   public static isModelClass(value: any): boolean;
   public static isModel(value: any): boolean;
   public static toString(showFields: boolean): string;
+
+  static getContextValue(key: any, defaultValue?: any): any;
+  getContextValue(key: any, defaultValue?: any): any;
+
+  static setContextValue(key: any, value: any): void;
+  setContextValue(key: any, value: any): void;
+
+  public static getModelContext(): GenericObject;
+  getModelContext(): GenericObject;
+
+  static updateModelContext(value: GenericObject): void;
+  updateModelContext(value: GenericObject): void;
 
   public static _getConnection(connection?: ConnectionBase): ConnectionBase;
   public _getConnection(connection?: ConnectionBase): ConnectionBase;

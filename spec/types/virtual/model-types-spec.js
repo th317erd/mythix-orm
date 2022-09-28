@@ -3,9 +3,10 @@
 
 'use strict';
 
-/* global describe, it, expect, beforeAll, spyOn */
+/* global describe, expect, beforeAll */
 
 const { Types, ConnectionBase } = require('../../../lib');
+const { createRunners } = require('../../support/test-helpers');
 
 describe('ModelType', () => {
   let connection;
@@ -13,6 +14,9 @@ describe('ModelType', () => {
   let RoleThing;
   let UserThing;
   let Role;
+
+  // eslint-disable-next-line no-unused-vars
+  const { it, fit } = createRunners(() => connection);
 
   beforeAll(() => {
     try {

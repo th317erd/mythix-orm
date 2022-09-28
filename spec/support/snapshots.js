@@ -50,7 +50,7 @@ function getSnapshotNameAndPath() {
   const getFileName = (stackLine) => {
     let fileName;
 
-    stackLine.replace(/\(([^(]+):\d+:\d+\)$/, (_, str) => {
+    stackLine.replace(/\(?([^(]+):\d+:\d+\)?$/, (_, str) => {
       fileName = str;
     });
 
@@ -60,7 +60,7 @@ function getSnapshotNameAndPath() {
   const getLineNumber = (stackLine) => {
     let number;
 
-    stackLine.replace(/(\d+):\d+\)$/, (_, numStr) => {
+    stackLine.replace(/(\d+):\d+\)?$/, (_, numStr) => {
       number = parseInt(numStr, 10);
     });
 
