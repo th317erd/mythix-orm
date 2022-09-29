@@ -1,65 +1,214 @@
 # Connection Binding
 
-TODO: Blurb about connection binding
+Connection binding is the process of binding a connection to a model. By default when you create a Mythix ORM connection, it will bind the connection to the models provided unless you pass the option `{ bindModels: false }` to the connection when you create it.
+
+Connection binding works by setting a `static _mythixBoundConnection = connection` property onto the model class itself. This however comes with its own side-effects, not the least of which is modifying your class directly. While this generally isn't an issue, it may become an issue if you wish to use more than one connection in your application, and it can be a very big issue during unit testing.
+
+Mythix ORM works this way because while architecting Mythix ORM, it was decided that there would be no use (or minimal use) of globals, and that any application can and should be able to use multiple connections simultaneously.
+
+Because of this design decision, it becomes difficult to provide a needed connection to each model. The solution to this problem is to bind the connection used for your application to each model class directly via a static property on the model class itself.
 
 ## The Connection binding problem
 
-By default, Mythix ORM will "bind" your models to a connection when you first supply them to said connection. It does this by setting a `static _getConnection` method on each of your model classes. This allows all underlying Mythix ORM code to then fetch the connection whenever needed.
+Mythix ORM will only allow you to bind a connection to a model class once. Attempting to bind a connection more than once to a specific model will throw an exception (unless you specify `{ forceConnectionBinding: true }` as an option to the connection when you create your connection... which you should only ever do if you know exactly what you are doing).
 
-However, this can cause big problems during unit testing. Tests are often ran in random order, or in parallel, and so you might (and probably do) have multiple connections in use at the same time. Mythix ORM will throw an error if you attempt to bind a connection to a model more than once, and so when each of your test suites creates a connection, and binds the connection to your models, now your models already have a `static _getConnection` method bound at the "root" level of your application, on the models themselves. This will then cause big issues, because each test will try to bind your models, but at the model level a connection is already bound, and your tests will explode.
+This can cause very big issues for you when you go to write unit tests for your application. Generally unit tests will run randomly, or in parallel. Because of this, it is often desired to have a connection instance per-test-suite. However, as you may have guessed, since the default connection binding scheme works by modifying your model classes directly, and attempting to bind more than once will throw an exception, this will cause big problems when your model spans unit tests, but connections do not span unit tests, and still need to be bound to the model somehow.
 
-Not ideal, I know... The reason for this is that Mythix ORM was designed from the ground up to be able to use multiple connections simultaneously, so there is no "global scope" to access connections from, and so we are stuck with this problem.
+## Opting out of connection binding
 
-Now you *can* ask Mythix ORM not to bind the connection to your model's by passing `bindModels: false` to the options of any connection driver. However, when you do this, you are then required to pass a `connection` instance to most method calls (and to all query interfaces). Because this is far from ideal, and quite annoying, when you request `bindModels: false` to a connection, then the connection *will still* bind the models, but instead of injecting a `static _getConnection` on your models, it will instead subclass all your models, essentially doing:
+Because of the issues connecting binding can cause, Mythix ORM allows the user to opt-out of connection binding if they choose to do so. All you need to do is pass a `{ bindModels: false }` option to your connection when you create it. When you do this, Mythix ORM will no longer modify your model class, and hence won't bind any connection to your models.
+
+...but, now where does Mythix ORM look to find a connection?
+
+By default, Mythix ORM will generally always call the model method <see>Model.getConnection</see>. This method will search for a connection in the following order, and will return the first valid connection found:
+
+  1. The provided `connection` via the arguments to the call (if provided).
+  2. The connection provided to the model instance itself (if any was provided) via `model.connection`. A connection can be provided to a model as the "options" when you create a model, i.e. `new MyModel(attributes, { connection })`.
+  3. Finally, if both of those fail, <see>Model.getConnection</see> will call <see>Model._getConnection</see> to attempt to find a connection that way.
+
+<see>Model._getConnection</see> is a static per-model "global helper" method for finding the connection for a model. By default, it will search for a connection in the following order, and will return the first valid connection found:
+
+  1. The provided `connection` via the arguments to the call (if provided).
+  2. The connection on the [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html) "model context", if any exists.
+  3. The `connection` property directly on the [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html), if any exists (which is set by transactions).
+  4. Finally, it will see if the `static _mythixBoundConnection` property on the class is a valid connection, and if so, return that.
+
+## Connection binding solution #1
+
+The best solution to connection binding issues, especially in unit tests, is to simply wrap your tests in a <see>connection.createContext</see> call. <see>connection.createContext</see> will create a connection context using [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html), that will be available for every method inside your callback to <see>connection.createContext</see>.
+
+Using this method, your unit test connection can opt-out of connection binding to the models by passing a `{ bindModels: false }` to your test connection. Then, when you wrap all your tests with a <see>connection.createContext</see> call, the connection will be provided to all models and all operations in your application that uses your models via the [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html) context.
+
+This can be fairly easily done in most test runners by simply hijacking the `it` or `test` methods. For example:
 
 ```javascript
-class BoundModel extends UserProvidedModel {
+// The following methods should probably
+// be included from some test-helper file
+
+/* global it, fit */
+const _it = it;
+const _fit = fit;
+
+// Hijack the "it" method, wrapping the test
+// in a `connection.createContext` call.
+function createIT(func, getConnection) {
+  return function it(desc, runner) {
+    return func.call(this, desc, async () => {
+      await getConnection().createContext(runner);
+    });
+  };
+}
+
+function createFIT(func, getConnection) {
+  return function fit(desc, runner) {
+    return func.call(this, desc, async () => {
+      await getConnection().createContext(runner);
+    });
+  };
+}
+
+function createRunners(getConnection) {
+  return {
+    it:   createIT(_it, getConnection),
+    fit:  createFIT(_fit, getConnection),
+  };
+}
+
+const models = require('./my-models');
+
+describe('MyModelTest', () => {
+  let connection;
+
+  // Hijack "it" and "fit" so that each test is
+  // wrapped in a `connection.createContext` call
+  const { it, fit } = createRunners(() => connection);
+
+  beforeAll(async () => {
+    connection = createTestConnection({
+      bindModels: false,
+      models: models,
+    });
+
+    await connection.createTables(models);
+  });
+
+  afterEach(async () => {
+    await connection.dropTables(models);
+  });
+
+  it('can create a model', async () => {
+    let myModel = await models.MyModel.create({ someAttribute: 'test' });
+    expect(myModel.someAttribute).toEqual('test');
+  });
+});
+```
+
+As you can see, this way of solving the connection binding problem can easily solve the issues by providing a connection to all your model and application code via an [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html) context.
+
+## Connection binding solution #2
+
+Another method that will give okay results (as long as you are careful how you write your code) is to subclass all your models, and bind the connection on a subclass.
+
+This can solve the problem entirely if you write your code correctly, but caution needs to be taken on how you use models in your application. You must **always** call <see>connection.getModel</see> or <see>connection.getModels</see> everywhere throughout your code for **every** single model class you interact with. The benefit to this painstaking endeavour is that at least model auto-reloading will work flawlessly for you 😊.
+
+Let's see an example of how this might work:
+
+```javascript
+
+let { MyModel: _MyModel } = require('./my-models);
+
+describe('MyModelTest', () => {
+  let connection;
+  let models;
+
+  // Hijack "it" and "fit" so that each test is
+  // wrapped in a `connection.createContext` call
+  const { it, fit } = createRunners(() => connection);
+
+  beforeAll(async () => {
+    // Bind the connection by subclassing your model
+    class MyModel extends _MyModel {
+      static getConnection() {
+        return connection;
+      }
+    }
+
+    connection = createTestConnection({
+      bindModels: false,
+      models: [
+        MyModel,
+      ],
+    });
+
+    // Now we need to ensure we always use our
+    // subclass instead of the imported model class.
+    models = connection.getModels();
+
+    await connection.createTables(models);
+  });
+
+  afterEach(async () => {
+    await connection.dropTables(models);
+  });
+
+  it('can create a model', async () => {
+    // now all this code will work...
+    // AS LONG AS _all_ your application code
+    // also uses `connection.getModels` so that
+    // your application always gets the
+    // subclassed model
+    let myModel = await models.MyModel.create({ someAttribute: 'test' });
+    expect(myModel.someAttribute).toEqual('test');
+  });
+});
+
+```
+
+## Connection binding solution #3
+
+The final solution is just to provide a truly global connection to your models. This might be a wee bit difficult to figure out, especially for unit testing, but can still be accomplished. To make this work, simply overwrite the `static _getConnection` method on all your models, and return the global connection. This is generally best done by providing a base model class that all your other models inherit from.
+
+For example:
+
+```javascript
+const globalApplicationConnection = require('./global-connection');
+
+class ModelBase {
   static _getConnection() {
-    return thisConnection;
+    return globalApplicationConnection;
   }
+}
+
+class MyModel extends ModelBase {
+  ...
 }
 ```
 
-This is great, and it fixes most of the problem, but now we have a new problem... now we have two copies of all models, the "default" models as the user defined them, and "bound" copies, that exist on the connection itself. This is why it is recommended to always use `connection.getModel` and `connection.getModels`, because no matter how your models were bound, these methods will always give you the correct version of your models.
+Keep in mind the possible issues this might cause, especially when unit testing. By sharing a global connection across tests, you might end up with data in your database that you don't expect from other tests that are running in parallel. If you go the route of a global connection, it is highly recommended that you request your test runner to run tests serially, instead of randomly, or in parallel.
 
-As just stated however, these two methods don't work very well in TypeScript, because TypeScript can't know the return type of your models. So now if you rely on model imports to access your models, they must be bound, so that we get that `static _getConnection` method injected into all your model classes. But... this breaks unit testing. Dang!
+## Connection binding solution #4
 
-I don't currently have a great solution to this problem, **and am certainly open to any creative ideas anyone might have to fix it**. One idea I have been toying around with is using the [node:async_hooks](https://nodejs.org/docs/latest-v16.x/api/async_context.html) module to resolve some of these issues, by providing the connection via an `async_hooks` context. However, this comes with its own set of problems, not the least of which is a considerable hit to performance, and it is still difficult to use an `async_hooks` context in unit tests.
+The most tedious solution to the connection binding problem is to simply always supply every model you create with a connection.
 
-Hopefully at least understanding the problem will help you come up with a creative solution for your specific application code. You can always provide a `static getConnection` method on your model classes (notice no underscore on this method name, as `static _getConnection` is reserved for injecting connections), and then from this method figure out whatever works best for your application and unit testing to provide a valid `connection` to your models.
+For example:
 
-## Subclass your connection and model classes
-
-Another option is to subclass your connection, and provide a custom `ModelBase` class that all your other models inherit from, and in these subclasses overload `getModel` and `getModels` methods to properly return your model types.
-
-## Ditch TypeScript
-
-Another option that will probably turn me into a heretic just by mentioning it is to ditch TypeScript altogether and just use vanilla JavaScript. This way, you can easily call `connection.getModel` and `connection.getModels` anywhere without having type errors, and away you go without issues. Just make sure you ALWAYS use these methods everywhere, and it is recommended that you prefix your model classes with an underscore, or use some other mechanism to ensure you never use a model class directly by accident without it coming from one of these two methods first.
-
-## Get a better test runner
-
-As all the issues discussed in this page are generally encountered during unit testing, where more than one connection is in use at the same time, maybe get a better test runner, one that won't run tests randomly, or one that runs each test suite in its own VM/context. This won't entirely solve your problem however if you choose **not** to bind your models to a connection, as some of your application code might still be using different copies of your models than the connection is using.
-
-## Provide your own connection globally
-
-One other possible solution is to globally instantiate your connection, and re-export all your models through a single "models" module that will bind all your models to the global connection. This will fix all the issues listed on this page, even for unit testing. You might for example have a *different* connection you globally bind all your models to while testing, such as to a `SQLite` connection. This method might look something like below:
-
-`application-models.ts`
-```javascript
-import { globalConnection } from './my-connection-creator'
-import * as MyApplicationModels from './models';
-
-globalConnection.registerModels(MyApplicationModels);
-
-const models = globalConnection.getModels();
-const MyBoundApplicationModels = {
-  User: models.User as User,
-  ...
-};
-
-export default MyBoundApplicationModels;
+```
+let myModel = new MyModel(attributes, { connection });
 ```
 
-And then you would always import all your models from `application-models` always, and away you go. You could then create a second `test-application-models` that does the same thing, but using a different connection for your unit tests.
+However, you *also* need to supply a connection to the query engine for every query you create:
 
-One side effect of this possible solution is that now your unit tests will all be sharing a connection, so you need to be extra careful to properly clean up data, to prevent data "leaks" in your tests from other tests that are sharing the same database.
+```
+let query = MyModel.where(connection).something.EQ('test');
+```
+
+And you may be required to provided a connection in other circumstances as well.
+
+## Final notes:
+
+  1. Generally, Mythix ORM will call <see>Connection.getConnection</see> first, before calling the lower-level <see>Connection._getConnection</see> if possible. This will allow the connection to be provided by the model instance itself.
+  2. When <see>Connection.getConnection</see> is not available (for example, in a context where there is no instance of a model), then <see>Connection._getConnection</see> will be called directly to fetch a connection.
+  3. The static property `_mythixBoundConnection` on a model class is where Mythix ORM will finally attempt to locate a connection.
+  4. An [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html) context can always be used, anywhere in your code, to provide all code beneath a connection. This can be accomplished by calling <see>Connection.createContext</see> and providing it an async callback.
+  5. Lastly, you can manually supply connections to your models when you create your models, and manually supply your connection elsewhere that it is needed, such as to queries.
+  6. Relational fields, such as <see>ForeignKeyType</see>, <see>ModelType</see>, and <see>ModelsType</see> require a connection, or things will explode. Most other model operations will attempt to do their best without a connection, but these field types will throw exceptions if no connection is available.
