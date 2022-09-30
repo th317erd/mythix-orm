@@ -8,6 +8,7 @@ To start with, we highly recommend reading the following articles:
 
   1. [Query Engine](./QueryEngine)
   2. [Associations](./Associations)
+  3. [Connection Binding](./ConnectionBinding)
 
 These should give you a basic idea on how to work with Mythix ORM.
 

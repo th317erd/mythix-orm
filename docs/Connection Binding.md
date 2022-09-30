@@ -1,12 +1,12 @@
 # Connection Binding
 
-Connection binding is the process of binding a connection to a model. By default when you create a Mythix ORM connection, it will bind the connection to the models provided unless you pass the option `{ bindModels: false }` to the connection when you create it.
+Connection binding is the process of binding a connection to a model. By default when you create a Mythix ORM connection, it will bind the connection to the models provided, unless you pass the option `{ bindModels: false }` to the connection when you create it.
 
 Connection binding works by setting a `static _mythixBoundConnection = connection` property onto the model class itself. This however comes with its own side-effects, not the least of which is modifying your class directly. While this generally isn't an issue, it may become an issue if you wish to use more than one connection in your application, and it can be a very big issue during unit testing.
 
 Mythix ORM works this way because while architecting Mythix ORM, it was decided that there would be no use (or minimal use) of globals, and that any application can and should be able to use multiple connections simultaneously.
 
-Because of this design decision, it becomes difficult to provide a needed connection to each model. The solution to this problem is to bind the connection used for your application to each model class directly via a static property on the model class itself.
+Because of this design decision, it becomes difficult to provide a needed connection to each model. The solution to this problem is to bind the connection used for your application to each model class directly via a static property on the model class itself, or to provide a connection via other means (discussed below).
 
 ## The Connection binding problem
 
@@ -35,9 +35,9 @@ By default, Mythix ORM will generally always call the model method <see>Model.ge
 
 ## Connection binding solution #1
 
-The best solution to connection binding issues, especially in unit tests, is to simply wrap your tests in a <see>connection.createContext</see> call. <see>connection.createContext</see> will create a connection context using [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html), that will be available for every method inside your callback to <see>connection.createContext</see>.
+The best solution to connection binding issues, especially in unit tests, is to simply wrap your tests in a <see>Connection.createContext</see> call. <see>Connection.createContext</see> will create a connection context using [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html), that will be available for every method inside your callback to <see>Connection.createContext</see>.
 
-Using this method, your unit test connection can opt-out of connection binding to the models by passing a `{ bindModels: false }` to your test connection. Then, when you wrap all your tests with a <see>connection.createContext</see> call, the connection will be provided to all models and all operations in your application that uses your models via the [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html) context.
+Using this method, your unit test connection can opt-out of connection binding to the models by passing a `{ bindModels: false }` to your test connection. Then, when you wrap all your tests with a <see>Connection.createContext</see> call, the connection will be provided to all models and all operations in your application that uses your models via the [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html) context.
 
 This can be fairly easily done in most test runners by simply hijacking the `it` or `test` methods. For example:
 
@@ -121,10 +121,6 @@ describe('MyModelTest', () => {
   let connection;
   let models;
 
-  // Hijack "it" and "fit" so that each test is
-  // wrapped in a `connection.createContext` call
-  const { it, fit } = createRunners(() => connection);
-
   beforeAll(async () => {
     // Bind the connection by subclassing your model
     class MyModel extends _MyModel {
@@ -161,12 +157,13 @@ describe('MyModelTest', () => {
     expect(myModel.someAttribute).toEqual('test');
   });
 });
-
 ```
+
+This example is incomplete, because in the real-world you would also need to provide this same test connection to your application code... but I will leave that challenge up to you to figure out 🙂.
 
 ## Connection binding solution #3
 
-The final solution is just to provide a truly global connection to your models. This might be a wee bit difficult to figure out, especially for unit testing, but can still be accomplished. To make this work, simply overwrite the `static _getConnection` method on all your models, and return the global connection. This is generally best done by providing a base model class that all your other models inherit from.
+Another solution is just to provide a truly global connection to your models. This might be a wee bit difficult to figure out, especially for unit testing, but can still be accomplished. To make this work, simply overwrite the `static _getConnection` method on all your models, and return the global connection. This is generally best done by providing a base model class that all your other models inherit from.
 
 For example:
 
@@ -188,7 +185,7 @@ Keep in mind the possible issues this might cause, especially when unit testing.
 
 ## Connection binding solution #4
 
-The most tedious solution to the connection binding problem is to simply always supply every model you create with a connection.
+The final and most tedious solution to the connection binding problem is to simply always supply every model you create with a connection.
 
 For example:
 
@@ -206,8 +203,8 @@ And you may be required to provided a connection in other circumstances as well.
 
 ## Final notes:
 
-  1. Generally, Mythix ORM will call <see>Connection.getConnection</see> first, before calling the lower-level <see>Connection._getConnection</see> if possible. This will allow the connection to be provided by the model instance itself.
-  2. When <see>Connection.getConnection</see> is not available (for example, in a context where there is no instance of a model), then <see>Connection._getConnection</see> will be called directly to fetch a connection.
+  1. Generally, Mythix ORM will call <see>Model.getConnection</see> first (if possible), before calling the lower-level <see>Model._getConnection</see>. This will allow the connection to be provided by the model instance itself.
+  2. When <see>Model.getConnection</see> is not available (for example, in a context where there is no instance of a model), then <see>Model._getConnection</see> will be called directly to fetch a connection.
   3. The static property `_mythixBoundConnection` on a model class is where Mythix ORM will finally attempt to locate a connection.
   4. An [AsyncLocalStorage](https://nodejs.org/docs/latest-v16.x/api/async_context.html) context can always be used, anywhere in your code, to provide all code beneath a connection. This can be accomplished by calling <see>Connection.createContext</see> and providing it an async callback.
   5. Lastly, you can manually supply connections to your models when you create your models, and manually supply your connection elsewhere that it is needed, such as to queries.
