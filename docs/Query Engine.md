@@ -21,12 +21,12 @@ let roles = await Role.where.userID.EQ(User.where.id).all();
 Example 3: Query a user's roles with a sub-query
 
 ```javascript
-let roles = await Role.where.userID.EQ(User.where.firstName.EQ('Bob').lastName.EQ('Brown')).all();
+let roles = await Role.where.userID.EQ(User.where.firstName.EQ('Bob').lastName.EQ('Brown').PROJECT('id')).all();
 ```
 
 ## Terminology
 
-In this document will will commonly refer to some items. A brief overview here may assist the reader:
+In this document we will refer to some common items. A brief overview of terminology here may assist the reader:
 
   1. "root model" (sometimes also referred to as the "target model") refers to the first model used in a query. For example, for the following query "`User.where`" the root model is "`User`".
   2. "query engine" the query engine class and related family (`ModelScope` and `FieldScope`)
