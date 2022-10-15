@@ -1,5 +1,3 @@
-# Mythix ORM associations
-
 Mythix ORM makes associations really easy.
 
 In many other ORMs you need to define how two models are related... and what fields are related on those models, and if the relationship is polymorphic, and if it should load related models while accessing the relation, and if there is a default scope that should be applied, and...

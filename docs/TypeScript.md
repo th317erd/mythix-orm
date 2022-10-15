@@ -1,5 +1,3 @@
-# TypeScript
-
 Mythix ORM is fully typed and ready for TypeScript.
 
 However, there are some important things to know when using TypeScript with Mythix ORM:

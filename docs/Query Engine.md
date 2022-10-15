@@ -1,5 +1,3 @@
-# Query Engine
-
 Mythix ORM uses an advanced (but simple) custom query engine that is unique. The query engine uses and requires JavaScript [Proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy) support. Because of this, Mythix ORM won't run on Node versions less than `6.0`. If Mythix ORM is being used in the browser, then it will require browser support for [Proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy).
 
 ## Getting started

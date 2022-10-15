@@ -1,5 +1,3 @@
-# Connection Binding
-
 Connection binding is the process of binding a connection to a model. By default when you create a Mythix ORM connection, it will bind the connection to the models provided, unless you pass the option `{ bindModels: false }` to the connection when you create it.
 
 Connection binding works by setting a `static _mythixBoundConnection = connection` property onto the model class itself. This however comes with its own side-effects, not the least of which is modifying your class directly. While this generally isn't an issue, it may become an issue if you wish to use more than one connection in your application, and it can be a very big issue during unit testing.

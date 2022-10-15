@@ -1,5 +1,3 @@
-# Models
-
 Models encapsulate the functionality of a single entity. For example, a `User`, `Product`, or a `ScientificMeasurement`.
 
 In Mythix ORM, models are defined by class, inheriting from the `Model` class exported by Mythix ORM. Models have a few moving parts built-in to make the developers life nicer. At a high level, a model has the following functionality:

@@ -1,5 +1,3 @@
-# Mythix ORM library certifications
-
 On this page you can find a list of libraries that have been certified for use by the Mythix team. You will also find a list of Blacklisted libraries that you should **avoid**. To read more about the Mythix certification process, please see our [Home](./Home) page.
 
 ## Certified
