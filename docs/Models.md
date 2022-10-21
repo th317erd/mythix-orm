@@ -161,7 +161,7 @@ class User extends Model {
 }
 ```
 
-Because the `static fields` property of a model is simply an object, fields can and should be merged. For example, if you would like a `created_at` and `updated_at` field on every one of your models, then simply create a "base" model that all your other models inherit from. For example:
+Because the `static fields` property of a model is simply an object, fields can and should be merged. For example, if you would like `createdAt` and `updatedAt` fields on every one of your models, then simply create a "base" model that all your other models inherit from. For example:
 
 ```javascript
 const { Model, Types } = require('mythix-orm');
@@ -269,7 +269,7 @@ class User extends ModelBase {
 
 The `mergeFields` method will take the `static fields` defined on the class it is called from, and will merge those with the provided fields. If a `fieldName` matches between the parent class and the provided fields, then the field itself will be merged. In short, this is not a simple "concat" or spread operation, but even for `Array` and `Set` types, the fields will be individually merged if they have matching `fieldName` properties.
 
-This method will allow you to conveniently and consistently merge fields from other sources, regardless of the format those fields are defined as. `mergeFields` can also be used to clone fields, as it always will make copies of the fields provided to it. The first argument to provide fields is optional. If no fields are provided as arguments to the call, then the fields defined on the model it is called from are simply cloned.
+This method will allow you to conveniently and consistently merge fields from other sources, regardless of the format those fields are defined as. `mergeFields` can also be used to clone fields, as it always will make copies of all fields it operates on (from the source model, plus any provided fields). Providing fields to this call is optional. If no fields are provided as arguments to the call, then the fields defined on the model it is called from are simply cloned.
 
 Please note that there is no important "magic" in the `mergeFields` method, except that it will be able to iterate and merge fields across different data types. If you want to define all your model fields as objects and use the spread operator to merge them, go for it! If you want to define all model fields as arrays and `concat` them, do so!
 
@@ -422,9 +422,9 @@ class User extends Model {
 }
 ```
 
-Any `validate` property defined **must** be a method (patterns and `RegExp` are not supported--outside your validate method that is). A `validate` method can be asynchronous. A `validate` method will "pass" validation if no error is thrown in the method.
+Any `validate` property defined **must** be a method (patterns, and regular expressions are not supported--outside your validate method that is). A `validate` method can be asynchronous. A `validate` method will "pass" validation if no error is thrown in the method.
 
-You can also define your own <see>Model.onValidate</see> method on the model itself to validate your model however you choose. Note that field validation happens via the default implementation of the `onValidate` method on the `Model` class itself. If you overload this method, you must either completely provide your own model validation, or call `super.onValidate` inside your overloaded method to fall-back to Mythix ORM default model validation. It is also important to note that the default `onValidate` method for models is called from the default `onBeforeSave` hook, so if you overload (or skip) this hook, make certain you call `super.onBeforeSave`, or directly call `this.onValidate` yourself.
+You can also define your own <see>Model.onValidate</see> method on the model itself to validate your model however you choose. Note that field validation happens via the default implementation of the `onValidate` method on the `Model` class itself. If you overload this method, you must either completely provide your own model validation, or call `super.onValidate` inside your overloaded method to fall-back to Mythix ORM default model validation. It is also important to note that the default `onValidate` method is called from the default `onBeforeSave` hook, so if you overload (or skip) this hook, make certain you call `super.onBeforeSave`, or directly call `this.onValidate` yourself.
 
 The default `onValidate` method Mythix ORM provides will collect and return the results from all `validate` methods on fields. Mythix ORM itself completely ignores these return values from field validators (it only cares about exceptions thrown), however it still collects and returns the results, in case the developer needs them.
 
@@ -535,3 +535,203 @@ set: ({ set, get }) => {
 ```
 
 By sticking with the provided `get` and `set` methods passed to your functions, you will escape any shenanagin leprechauns hiding in the shadows. The provided `get` method will always return the exact same value as provided by the `value` argument.
+
+# Model relationships (associations)
+
+Models can be related to each other. If they are, then a <see>Connection</see> **must** be used. A <see>Connection</see> instance is used to fetch related models, and walk model relationships.
+
+A model can be related to another model in one of three ways:
+
+  1. Through a `FOREIGN_KEY` relationship.
+  2. Through a 1x1 relationship defined by the singular `Model` virtual type.
+  3. Through a one to many, or many to many relationship, as defined by the plural `Models` virtual type.
+
+For example, to define a relationship using foreign keys:
+
+```javascript
+const { Model, Types } = require('mythix-orm');
+
+class Role extends Model {
+  static fields = {
+    id: {
+      type: Types.XID(),
+      defaultValue: Types.XID.Defaults.XID,
+      allowNull: false,
+      primaryKey: true,
+    },
+    // The name of the role, i.e. "admin",
+    // "member", or "superadmin"
+    name: {
+      type: Types.STRING(32),
+      allowNull: false,
+      index: true,
+    },
+    // User that owns this role,
+    // as a foreign key
+    userID: {
+      type: Types.FOREIGN_KEY('User:id', {
+        // When the user is deleted or updated
+        // also delete or update this role
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      }),
+      allowNull:    false,
+      index:        true,
+    },
+  };
+}
+
+class User extends Model {
+  static fields = {
+    id: {
+      type: Types.XID(),
+      defaultValue: Types.XID.Defaults.XID,
+      allowNull: false,
+      primaryKey: true,
+    },
+    email: {
+      type: Types.STRING(128),
+      allowNull: false,
+      index: true,
+      unique: true,
+    },
+    firstName: {
+      type: Types.STRING(64),
+      allowNull: false,
+      index: true,
+    },
+    lastName: {
+      type: Types.STRING(64),
+      allowNull: false,
+      index: true,
+    },
+  };
+}
+```
+
+As you can see, we use the `Types.FOREIGN_KEY` type to define a foreign key. The foreign key type is simple: It is created on its source (child) table as the exact same type of the field it points to on the target (parent) table. Since in our case we defined (as the first argument) that it targets the `'User:id'` column (the `id` field in the `User` table), it will itself be the same type as this field, a `Types.XID` type. Mythix ORM will then apply the proper constraints to this field when the table/bucket is created in the underlying database.
+
+Mythix ORM also uses this field to know how to update related values on store operations. For example, if instead of having a one to many relationship as we have defined here, if we instead had a one to one relationship, such as a `primaryRoleID` field on the `User` model, then the `primaryRoleID` field for the `User` will be updated to the `id` of a `Role` when that role is saved for a given user. In short, Mythix ORM will walk all foreign keys during a store operation, and if two models are being stored that are related to each other, then Mythix ORM will cross-update their related fields with each other, both before and after the store operation. Mythix ORM updates related fields _before_ store and _after_ store because if you are using client-generated values, for example, an `XID` type, then it can update the foreign key field before it stores the model, saving an extra trip to the database. If however you are using auto-incrementing ids, then Mythix ORM is not able to update foreign fields until it has the proper id from the database, and so will update the related fields _after_ models are persisted. Mythix ORM will do its best to persist the models in the "correct order", so for example, if the `Role` model has a foreign key to `User`, then the `User` model will be persisted first, since the `Role` model needs the `id` field from the `User` model in order to properly save. In theory, the only time Mythix ORM might get the order incorrect is when you have cyclic relationships.
+
+Now that we have used a foreign key in our models, let's go ahead and expand on this a bit, making it more useful by creating a virtual many to many relationship.
+
+Example:
+
+```javascript
+const { Model, Types } = require('mythix-orm');
+
+class Role extends Model {
+  static fields = {
+    id: {
+      type: Types.XID(),
+      defaultValue: Types.XID.Defaults.XID,
+      allowNull: false,
+      primaryKey: true,
+    },
+    // The name of the role, i.e. "admin",
+    // "member", or "superadmin"
+    name: {
+      type: Types.STRING(32),
+      allowNull: false,
+      index: true,
+    },
+    // User that owns this role,
+    // as a foreign key
+    userID: {
+      type: Types.FOREIGN_KEY('User:id', {
+        // When the user is deleted or updated
+        // also delete or update this role
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      }),
+      allowNull:    false,
+      index:        true,
+    },
+  };
+}
+
+class User extends Model {
+  static fields = {
+    id: {
+      type: Types.XID(),
+      defaultValue: Types.XID.Defaults.XID,
+      allowNull: false,
+      primaryKey: true,
+    },
+    email: {
+      type: Types.STRING(128),
+      allowNull: false,
+      index: true,
+      unique: true,
+    },
+    firstName: {
+      type: Types.STRING(64),
+      allowNull: false,
+      index: true,
+    },
+    lastName: {
+      type: Types.STRING(64),
+      allowNull: false,
+      index: true,
+    },
+    // Add this new field, which creates a virtual
+    // many to many relationship with the Role model.
+    //
+    // Notice how a type can always be used directly as
+    // the field definition, instead of defining an object
+    // with a "type" property.
+    roles: Types.Models('Role', (context, connectionModels, ...userArgs) => {
+      // Get the model we need from the connection,
+      // which is conveniently passed the models
+      // to us here
+      let { Role } = connectionModels;
+
+      // Get the "self", which is the model instance
+      // calling this method
+      let { self } = context;
+
+      // Now return a relationship query
+      return Role.where
+        .userID
+          .EQ(self.id)
+        .AND
+        // The user themselves may have added to the query
+        // so merge in the user provided query here
+        .MERGE(userArgs[0]);
+    }),
+  };
+}
+
+// ... later on
+// get roles for the "first" user in the database
+let user = await User.first();
+let userRoles = await user.getRoles();
+
+// Since we added the `.MERGE(userArgs[0])` above to
+// our relationship, we can pass in `userArgs`, the
+// first which we have defined as an extra query the
+// user can add to the base query. This allows the user
+// to modify the relationship query, such that the final
+// result for this example would be:
+// Role.where
+//   .userID
+//     .EQ(self.id)
+//   .AND
+//   .name
+//     .EQ([ 'admin', 'superadmin' ])
+//   .PROJECT('Role:name')
+
+let isAdmin = ((await user.getRoles(Role.where.name.EQ([ 'admin', 'superadmin' ]).PROJECT('Role:name'))).length > 0);
+```
+
+Most other frameworks define related fields in tedious ways, where you must define the target model name, if it is a one to one, one to many, or many to many relationship, if it is polymorphic, what fields to join on, what through tables to go through, etc... tedious...
+
+Mythix ORM instead gets straight to the point by requiring the user to return a _query_ for related fields. This makes it crystal clear simply by looking at the method what is happening, removes the tedium, and also allows for very complex operations, including table joins, polymorphism, and even allowing the user to add on to the relationship query at the call-site. These relationship "query generating" methods can also be asynchronous, so for example, if you wanted to query the database first for a list of values to provide to your base query, you can.
+
+All virtual fields added by `Types.Model` or `Types.Models` become "relationship sets", that have a number of different methods that can be used to interact with the set. For example, with the code we have above, we could also add to the user's roles simply by calling `user.addToRoles({ name: 'admin' })`, or `user.destroyRoles(role)`, or `user.setRoles(newRoles)` to completely overwrite all user roles with a new set. For a complete list of methods available in sets, please refer to <see>ModelType</see> and <see>ModelsType</see>. It might also be useful to check out the article on associations here: [Associations](./Associations).
+
+One method that is always available for both the <see>ModelType</see> and the <see>ModelsType</see> is `queryFor*`. So for example, given our above code, we could call `let rolesQuery = user.queryForRoles();`. This would return the _relationship query itself_, instead of interacting with any models. This allows you to fetch a relationship query, and then add onto it, or modify it before you execute the query.
+
+Polymorphic relationships are supported in Mythix ORM, however they are a little more "manual" than other frameworks. To define a polymorphic relationship, simply create two columns, one that stores a foreign id (that is *not* a foreign key, since it can point to many different tables), and one that stores the model type. You can then manually query against the stored model type and id.
+
+Please checkout the [Associations](./Associations) article for an in-depth dive into associations in Mythix ORM.
