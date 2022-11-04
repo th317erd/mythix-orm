@@ -107,7 +107,7 @@ As you can see, this way of solving the connection binding problem can easily so
 
 Another method that will give okay results (as long as you are careful how you write your code) is to subclass all your models, and bind the connection on a subclass.
 
-This can solve the problem entirely if you write your code correctly, but caution needs to be taken on how you use models in your application. You must **always** call <see>connection.getModel</see> or <see>connection.getModels</see> everywhere throughout your code for **every** single model class you interact with. The benefit to this painstaking endeavour is that at least model auto-reloading will work flawlessly for you 😊.
+This can solve the problem entirely if you write your code correctly, but caution needs to be taken on how you use models in your application. You must **always** call <see>Connection.getModel</see> or <see>Connection.getModels</see> everywhere throughout your code for **every** single model class you interact with. The benefit to this painstaking endeavour is that at least model auto-reloading will work flawlessly for you 😊.
 
 Let's see an example of how this might work:
 
