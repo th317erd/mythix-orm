@@ -1,0 +1,74 @@
+[
+  {
+    "operator": "MODEL",
+    "modelName": "UserThing",
+    "dialect": "none",
+    "rootModelName": "UserThing",
+    "currentScopeName": "model",
+    "isMapped": true
+  },
+  {
+    "operator": "FIELD",
+    "fieldName": "userID",
+    "Field": {
+      "primaryKey": false,
+      "allowNull": false,
+      "index": true,
+      "unique": false,
+      "columnName": "userID",
+      "type": {
+        "options": {
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "modelName": "User",
+          "fieldName": "id",
+          "fullyQualifiedName": "User:id"
+        },
+        "fullyQualifiedName": "User:id"
+      },
+      "fieldName": "userID"
+    },
+    "rootFieldName": "userID",
+    "rootField": {
+      "primaryKey": false,
+      "allowNull": false,
+      "index": true,
+      "unique": false,
+      "columnName": "userID",
+      "type": {
+        "options": {
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "modelName": "User",
+          "fieldName": "id",
+          "fullyQualifiedName": "User:id"
+        },
+        "fullyQualifiedName": "User:id"
+      },
+      "fieldName": "userID"
+    },
+    "currentScopeName": "field",
+    "isMapped": true
+  },
+  {
+    "value": {
+      "_isQueryEngine": true
+    },
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ",
+    "hasCondition": true,
+    "isMapped": true
+  },
+  {
+    "value": {
+      "_isQueryEngine": true
+    },
+    "logical": true,
+    "operator": "AND",
+    "and": true,
+    "or": false,
+    "not": false,
+    "isMapped": true
+  }
+]

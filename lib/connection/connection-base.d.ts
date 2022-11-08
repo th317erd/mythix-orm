@@ -81,6 +81,7 @@ declare class ConnectionBase extends EventEmitter {
   public getOptions(): ConnectionBaseOptions;
   public isStarted(): boolean;
   public toQueryEngine(queryEngineLike: any): QueryEngine | undefined;
+  public finalizeQuery(operation: string, query: QueryEngine): Promise<QueryEngine>
   public registerModel<T = ModelClass>(Model: T, options?: GenericObject): T;
   public registerModels(models: Models | Array<ModelClass>, options?: GenericObject): Models | undefined;
   public getContextValue(key: any, defaultValue?: any): any;

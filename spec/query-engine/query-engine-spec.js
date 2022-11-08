@@ -2,7 +2,7 @@
 
 'use strict';
 
-/* global describe, it, fit, expect, beforeAll */
+/* global describe, expect, beforeAll */
 
 const { ConnectionBase, QueryEngine } = require('../../lib');
 const matchesSnapshot = require('../support/snapshots');
@@ -101,6 +101,92 @@ describe('QueryEngine', () => {
       let subQuery = UserThing.where.userID.EQ(User.where.id).AND(User.where.firstName.EQ('Bob').OR.lastName.EQ('Brown'));
       let context = UserThing.where.id.EQ('test').AND.MERGE(subQuery)._getRawQuery();
       expect(matchesSnapshot(getFilteredContext(context))).toEqual(true);
+    });
+  });
+
+  describe('clone', () => {
+    it('can clone a query', () => {
+      let query1    = UserThing.where.userID.EQ(User.where.id).AND(User.where.firstName.EQ('Bob').OR.lastName.EQ('Brown'));
+      let query2    = query1.clone();
+      let context1  = query1._getRawQuery();
+      let context2  = query2._getRawQuery();
+
+      expect(context1.length).toEqual(context2.length);
+
+      for (let i = 0, il = context1.length; i < il; i++) {
+        expect(getFilteredContext([ context1[i] ])).toEqual(getFilteredContext([ context2[i] ]));
+
+        context1[i].testIndex = i;
+        expect(context2[i].testIndex).toBe(undefined);
+      }
+    });
+  });
+
+  describe('filter', () => {
+    it('can filter a query', () => {
+      let query1    = UserThing.where.userID.EQ(User.where.id).AND(User.where.firstName.EQ('Bob').OR.lastName.EQ('Brown'));
+      let query2    = query1.filter((part) => {
+        if (Object.prototype.hasOwnProperty.call(part, 'condition'))
+          return false;
+
+        return true;
+      });
+      let context1  = query1._getRawQuery();
+      let context2  = query2._getRawQuery();
+
+      expect(context1.length).not.toEqual(context2.length);
+
+      expect(matchesSnapshot(getFilteredContext(context1))).toEqual(true);
+      expect(matchesSnapshot(getFilteredContext(context2))).toEqual(true);
+    });
+  });
+
+  describe('map', () => {
+    it('can map a query', () => {
+      let query1    = UserThing.where.userID.EQ(User.where.id).AND(User.where.firstName.EQ('Bob').OR.lastName.EQ('Brown'));
+      let query2    = query1.map((part) => {
+        return {
+          ...part,
+          isMapped: true,
+        };
+      });
+      let context1  = query1._getRawQuery();
+      let context2  = query2._getRawQuery();
+
+      expect(matchesSnapshot(getFilteredContext(context1))).toEqual(true);
+      expect(matchesSnapshot(getFilteredContext(context2))).toEqual(true);
+    });
+  });
+
+  describe('walk', () => {
+    it('can walk queries', () => {
+      let subQuery1 = User.where.id;
+      let subQuery2 = User.where.firstName.EQ('Bob').OR.lastName.EQ('Brown');
+      let subQuery3 = UserThing.where.userID.EQ(subQuery1).AND(subQuery2);
+      let query     = UserThing.where.id.EQ('test').AND(subQuery3);
+
+      let queries = [];
+
+      query.walk((query, parent, contextKey, depth) => {
+        queries.push({ query, parent, contextKey, depth });
+      });
+
+      expect(queries.length).toEqual(3);
+
+      expect(queries[0].query).toBe(subQuery1);
+      expect(queries[0].parent.operator).toEqual('EQ');
+      expect(queries[0].contextKey).toEqual('value');
+      expect(queries[0].depth).toEqual(2);
+
+      expect(queries[1].query).toBe(subQuery2);
+      expect(queries[1].parent.operator).toEqual('AND');
+      expect(queries[1].contextKey).toEqual('value');
+      expect(queries[1].depth).toEqual(2);
+
+      expect(queries[2].query).toBe(subQuery3);
+      expect(queries[2].parent.operator).toEqual('AND');
+      expect(queries[2].contextKey).toEqual('value');
+      expect(queries[2].depth).toEqual(1);
     });
   });
 });

@@ -1,9 +1,9 @@
 'use strict';
 
+const Path          = require('node:path');
+const FileSystem    = require('node:fs');
 const jsDiff        = require('diff');
 const colors        = require('colors/safe');
-const Path          = require('path');
-const FileSystem    = require('fs');
 
 const MAX_FILE_NAME_LENGTH = 100;
 
@@ -79,7 +79,7 @@ function getSnapshotNameAndPath() {
     };
 
     let specFilePatterns  = [ /-spec\.js/ ];
-    let stack             = (new Error()).stack.split(/\s+at\s+/g).slice(1).map((part) => part.trim());
+    let stack             = (new Error()).stack.split(/\s+at\s+|\s+\(/g).slice(1).map((part) => part.trim());
     let file;
 
     for (let i = 0, il = stack.length; i < il; i++) {
@@ -113,8 +113,10 @@ function getSnapshotNameAndPath() {
     lines = lines.map((line, lineIndex) => {
       let specName;
       let indentAmount;
+      let type;
 
-      line.replace(/([\s\t]*)f?(?:describe|it)\s*\(\s*(['"])((?:\\.|.)*?)\2/, (m, indent, q, name) => {
+      line.replace(/([\s\t]*)(f?describe|f?it)\s*\(\s*(['"])((?:\\.|.)*?)\3/, (m, indent, _type, q, name) => {
+        type = _type;
         specName = name.replace(/\\(.)/g, '$1');
         indentAmount = indent.replace(/\t/g, '  ').length;
       });
@@ -122,7 +124,7 @@ function getSnapshotNameAndPath() {
       if (!specName)
         return;
 
-      return { specName, indentAmount, lineNumber: lineIndex + 1 };
+      return { type, specName, indentAmount, lineNumber: lineIndex + 1 };
     }).filter(Boolean);
 
     let nodes = [];
@@ -132,7 +134,7 @@ function getSnapshotNameAndPath() {
 
     for (let i = 0, il = lines.length; i < il; i++) {
       let line = lines[i];
-      let { specName, indentAmount, lineNumber } = line;
+      let { type, specName, indentAmount, lineNumber } = line;
 
       if (previousNode) {
         if (previousNode.indentAmount < indentAmount) {
@@ -147,7 +149,7 @@ function getSnapshotNameAndPath() {
         }
       }
 
-      let node = { parent, indentAmount, name: specName, lineNumber, children: [] };
+      let node = { type, parent, indentAmount, name: specName, lineNumber, children: [] };
       currentChildren.push(node);
 
       previousNode = node;
@@ -158,39 +160,41 @@ function getSnapshotNameAndPath() {
     return nodes;
   };
 
-  const findCorrectNode = (nodes, lineNumber, parentNode) => {
-    const findChildNode = (nodes, lineNumber) => {
+  const findCorrectNode = (nodes, lineNumber) => {
+    const flattenNodes = (nodes, finalNodes) => {
       for (let i = 0, il = nodes.length; i < il; i++) {
         let node = nodes[i];
-        let childNode = findCorrectNode(node.children, lineNumber, node);
-        if (childNode)
-          return childNode;
+        if (!node)
+          continue;
+
+        let isIT = (node.type === 'it' || node.type === 'fit');
+        if (isIT)
+          finalNodes.push(node);
+
+        if (!node.children || node.children.length === 0)
+          continue;
+
+        flattenNodes(node.children, finalNodes);
       }
+
+      return finalNodes;
     };
 
-    const findLargerNode = (nodes, lineNumber) => {
-      for (let i = 0, il = nodes.length; i < il; i++) {
-        let node = nodes[i];
-        if (node.lineNumber > lineNumber)
-          return i;
-      }
+    let flattenedNodes = flattenNodes(nodes, []).sort((a, b) => {
+      let x = a.lineNumber;
+      let y = b.lineNumber;
 
-      return -1;
-    };
+      if (x === y)
+        return 0;
 
-    let childNode = findChildNode(nodes, lineNumber);
-    if (childNode) {
-      while (childNode.lineNumber > lineNumber)
-        childNode = childNode.parent;
+      return (x < y) ? -1 : 1;
+    }).reverse();
 
-      return childNode;
-    }
+    let nodeIndex = flattenedNodes.findIndex((node) => (node.lineNumber < lineNumber));
+    if (nodeIndex < 0)
+      return flattenedNodes[flattenedNodes.length - 1];
 
-    let largerNodeIndex = findLargerNode(nodes, lineNumber);
-    if (largerNodeIndex <= 0)
-      return (largerNodeIndex === 0) ? parentNode : undefined;
-
-    return nodes[largerNodeIndex - 1];
+    return flattenedNodes[nodeIndex];
   };
 
   const getLastNode = (nodes) => {
@@ -220,21 +224,12 @@ function getSnapshotNameAndPath() {
   };
 
   const getCorrectNodePath = (nodes, lineNumbers) => {
-    let nodePaths = lineNumbers.map((lineNumber) => {
-      let node = findCorrectNode(nodes, lineNumber);
-      if (!node)
-        node = getLastNode(nodes);
+    let lineNumber = lineNumbers.sort()[lineNumbers.length - 1];
+    let node = findCorrectNode(nodes, lineNumber);
+    if (!node)
+      node = getLastNode(nodes);
 
-      return getNodePath(node);
-    }).filter(Boolean);
-
-    let nodePath = nodePaths.sort((a, b) => {
-      if (a.length === b.length)
-        return 0;
-
-      return (a.length < b.length) ? 1 : -1;
-    })[0];
-
+    let nodePath  = getNodePath(node);
     let callCount = callCountCache[nodePath];
     if (!callCount)
       callCount = 0;
