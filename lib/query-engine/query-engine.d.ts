@@ -31,15 +31,15 @@ export declare class QueryEngine<T = ConnectionBase> {
   public _newModelScope(Model: ModelClass): QueryEngine;
   public _newFieldScope(Field: Field): QueryEngine;
   public constructor(context: QueryEngineOptions);
-  public _getTopContextID(): number;
-  public _getRawQueryContext(): GenericObject;
-  public _getRawQuery(): Array<GenericObject>;
-  public _isLastPartControl(): boolean;
-  public _isLastPartCondition(): boolean;
-  public _queryHasConditions(): boolean;
-  public _queryHasJoins(): boolean;
-  public _debugQuery(): void;
-  public _addToQuery(queryPart: GenericObject, context: GenericObject): void;
+  public getQueryID(): number;
+  public getOperationContext(): GenericObject;
+  public getOperationStack(): Array<GenericObject>;
+  public isLastOperationControl(): boolean;
+  public isLastOperationCondition(): boolean;
+  public queryHasConditions(): boolean;
+  public queryHasJoins(): boolean;
+  public logQueryOperations(): void;
+  public _pushOperationOntoStack(queryPart: GenericObject, context: GenericObject): void;
   public getConnection(): ConnectionBase;
   public getModel(modelName: string): ModelClass | undefined;
   public getQueryEngineScope(): QueryEngine;
@@ -52,6 +52,7 @@ export declare class QueryEngine<T = ConnectionBase> {
   // QueryEngine
   public getModelScopeClass(): QueryEngineClass;
   public getFieldScopeClass(): QueryEngineClass;
+  public getQueryEngineScopeClass(): QueryEngineClass;
   public Model(modelName: string): QueryEngine;
   public unscoped(context?: GenericObject): QueryEngine;
   public toString(options?: GenericObject): string;
@@ -60,7 +61,7 @@ export declare class QueryEngine<T = ConnectionBase> {
   public cursor<T extends Model = Model>(options?: GenericObject): AsyncGenerator<T>;
   public first<T extends Model = Model>(limit?: number | null | undefined, options?: GenericObject): Promise<T | undefined>;
   public last<T extends Model = Model>(limit?: number | null | undefined, options?: GenericObject): Promise<T | undefined>;
-  public update<T extends Model = Model>(attributes: T | GenericObject, options?: GenericObject): Promise<number>;
+  public updateAll<T extends Model = Model>(attributes: T | GenericObject, options?: GenericObject): Promise<number>;
   public destroy(options?: GenericObject): Promise<number>;
   public average(field: Field | string, options?: GenericObject): Promise<number>;
   public count(field: Field | string, options?: GenericObject): Promise<number>;
@@ -69,7 +70,7 @@ export declare class QueryEngine<T = ConnectionBase> {
   public sum(field: Field | string, options?: GenericObject): Promise<number>;
   public pluck(fields: string | Array<string>, options?: GenericObject): Promise<Array<any>>;
   public exists(options?: GenericObject): Promise<boolean>;
-  public finalizeQuery(operation: string): Promise<QueryEngine>;
+  public finalizeQuery(operation: string, options: GenericObject): Promise<QueryEngine>;
 
   // ModelScope
   public _getField(fieldName: string): Field | undefined;

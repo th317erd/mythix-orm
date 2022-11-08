@@ -42,6 +42,21 @@ export declare interface IterateFieldsContext {
 
 export declare type IterateFieldsCallback = (context: IterateFieldsContext) => any;
 
+export declare interface FinalizeQueryContext {
+  type: 'create' | 'read' | 'update' | 'delete';
+  query: QueryEngine;
+  queryDepth: number;
+  connection: ConnectionBase;
+  Model: Model;
+  modelName: string;
+  operationIndex: number;
+  operation: GenericObject;
+  operations: Array<GenericObject>;
+  parent: GenericObject | null;
+  contextKey: string | null;
+  options: GenericObject | null;
+}
+
 export declare class Model {
   declare public static fields: LooseFields | undefined;
   declare public static _sortedFields: Array<Field> | null;
@@ -82,6 +97,8 @@ export declare class Model {
 
   public static defaultScope(query: QueryEngine): QueryEngine;
   public defaultScope(query: QueryEngine): QueryEngine;
+
+  public static finalizeQuery(context: FinalizeQueryContext): Promise<QueryEngine>;
 
   public static getQueryEngine(connection?: ConnectionBase, options?: GenericObject): QueryEngine;
   public getQueryEngine(connection?: ConnectionBase, options?: GenericObject): QueryEngine;

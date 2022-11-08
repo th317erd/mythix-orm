@@ -42,8 +42,8 @@ describe('ConnectionBase', () => {
   describe('Model', () => {
     describe('where', () => {
       it('should be able to get a query engine from where', () => {
-        expect(User.where(connection)._getRawQuery()[0].rootModelName).toEqual('User');
-        expect(User.where(connection)._getRawQuery()[0].Model.getModelName()).toEqual('User');
+        expect(User.where(connection).getOperationStack()[0].rootModelName).toEqual('User');
+        expect(User.where(connection).getOperationStack()[0].Model.getModelName()).toEqual('User');
       });
     });
 
@@ -51,8 +51,8 @@ describe('ConnectionBase', () => {
       it('should be able to get a query engine from getUnscopedQueryEngine', () => {
         let user = new TestModel();
 
-        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].rootModelName).toEqual('TestModel');
-        expect(user.getUnscopedQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('TestModel');
+        expect(user.getUnscopedQueryEngine().getOperationStack()[0].rootModelName).toEqual('TestModel');
+        expect(user.getUnscopedQueryEngine().getOperationStack()[0].Model.getModelName()).toEqual('TestModel');
       });
     });
 
@@ -60,8 +60,8 @@ describe('ConnectionBase', () => {
       it('should be able to get a query engine from getQueryEngine', () => {
         let user = new TestModel();
 
-        expect(user.getQueryEngine()._getRawQuery()[0].rootModelName).toEqual('TestModel');
-        expect(user.getQueryEngine()._getRawQuery()[0].Model.getModelName()).toEqual('TestModel');
+        expect(user.getQueryEngine().getOperationStack()[0].rootModelName).toEqual('TestModel');
+        expect(user.getQueryEngine().getOperationStack()[0].Model.getModelName()).toEqual('TestModel');
       });
     });
   });

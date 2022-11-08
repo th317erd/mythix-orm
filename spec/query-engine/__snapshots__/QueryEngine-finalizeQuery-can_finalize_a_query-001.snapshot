@@ -1,0 +1,88 @@
+[
+  {
+    "operator": "MODEL",
+    "modelName": "TestModel",
+    "dialect": "none",
+    "rootModelName": "TestModel",
+    "currentScopeName": "model"
+  },
+  {
+    "operator": "FIELD",
+    "fieldName": "id",
+    "Field": {
+      "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "columnName": "id",
+      "type": {},
+      "fieldName": "id"
+    },
+    "rootFieldName": "id",
+    "rootField": {
+      "primaryKey": true,
+      "allowNull": false,
+      "index": false,
+      "unique": false,
+      "columnName": "id",
+      "type": {},
+      "fieldName": "id"
+    },
+    "currentScopeName": "field"
+  },
+  {
+    "value": "test",
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ",
+    "hasCondition": true
+  },
+  {
+    "value": {
+      "_isQueryEngine": true
+    },
+    "logical": true,
+    "operator": "AND",
+    "and": true,
+    "or": false,
+    "not": false
+  },
+  {
+    "logical": true,
+    "operator": "AND",
+    "and": true,
+    "or": false,
+    "not": false
+  },
+  {
+    "operator": "FIELD",
+    "fieldName": "roleThingID",
+    "Field": {
+      "primaryKey": false,
+      "allowNull": false,
+      "index": true,
+      "unique": false,
+      "columnName": "roleThingID",
+      "type": {
+        "options": {
+          "onDelete": "CASCADE",
+          "onUpdate": "CASCADE",
+          "modelName": "RoleThing",
+          "fieldName": "id",
+          "fullyQualifiedName": "RoleThing:id"
+        },
+        "fullyQualifiedName": "RoleThing:id"
+      },
+      "fieldName": "roleThingID"
+    },
+    "currentScopeName": "field"
+  },
+  {
+    "value": "derp",
+    "condition": true,
+    "operator": "EQ",
+    "inverseOperator": "NEQ",
+    "hasCondition": true,
+    "_queryFinalized": true
+  }
+]
