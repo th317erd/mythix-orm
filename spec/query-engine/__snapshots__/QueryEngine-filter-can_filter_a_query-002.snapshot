@@ -1,13 +1,17 @@
 [
   {
+    "value": "UserThing",
     "operator": "MODEL",
+    "queryProp": "Model",
     "modelName": "UserThing",
     "dialect": "none",
     "rootModelName": "UserThing",
     "currentScopeName": "model"
   },
   {
+    "value": "userID",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "userID",
     "Field": {
       "primaryKey": false,
@@ -54,6 +58,7 @@
     },
     "logical": true,
     "operator": "AND",
+    "queryProp": "AND",
     "and": true,
     "or": false,
     "not": false

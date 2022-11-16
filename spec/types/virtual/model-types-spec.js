@@ -48,10 +48,10 @@ describe('ModelType', () => {
   it('can walk a field relation', async () => {
     let relations = [];
     let user = new User({
-      id:             '664e9071-11d9-4544-85fe-1359ce1904b1',
-      firstName:      'Mary',
-      lastName:       'Anne',
-      primaryRoleID:  '5016a9dc-0271-41a0-937a-a0c95acd117b',
+      id:            '664e9071-11d9-4544-85fe-1359ce1904b1',
+      firstName:     'Mary',
+      lastName:      'Anne',
+      primaryRoleID: '5016a9dc-0271-41a0-937a-a0c95acd117b',
     });
 
     await User.fields.userThingRole.type.walkQueryRelations(connection, (context) => {
@@ -64,16 +64,16 @@ describe('ModelType', () => {
         TargetModel:  Role,
         TargetField:  Role.fields.id,
         source:       {
-          Model:      RoleThing,
-          modelName:  'RoleThing',
-          field:      RoleThing.fields.roleID,
-          fieldName:  'roleID',
+          Model:     RoleThing,
+          modelName: 'RoleThing',
+          field:     RoleThing.fields.roleID,
+          fieldName: 'roleID',
         },
-        target:       {
-          Model:      Role,
-          modelName:  'Role',
-          field:      Role.fields.id,
-          fieldName:  'id',
+        target: {
+          Model:     Role,
+          modelName: 'Role',
+          field:     Role.fields.id,
+          fieldName: 'id',
         },
       },
       {
@@ -81,16 +81,16 @@ describe('ModelType', () => {
         TargetModel:  Role,
         TargetField:  Role.fields.id,
         source:       {
-          Model:      UserThing,
-          modelName:  'UserThing',
-          field:      UserThing.fields.roleThingID,
-          fieldName:  'roleThingID',
+          Model:     UserThing,
+          modelName: 'UserThing',
+          field:     UserThing.fields.roleThingID,
+          fieldName: 'roleThingID',
         },
-        target:       {
-          Model:      RoleThing,
-          modelName:  'RoleThing',
-          field:      RoleThing.fields.id,
-          fieldName:  'id',
+        target: {
+          Model:     RoleThing,
+          modelName: 'RoleThing',
+          field:     RoleThing.fields.id,
+          fieldName: 'id',
         },
       },
     ]);

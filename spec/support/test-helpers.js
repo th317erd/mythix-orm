@@ -27,8 +27,8 @@ function createFIT(func, getConnection) {
 
 function createRunners(getConnection) {
   return {
-    it:   createIT(_it, getConnection),
-    fit:  createFIT(_fit, getConnection),
+    it:  createIT(_it, getConnection),
+    fit: createFIT(_fit, getConnection),
   };
 }
 

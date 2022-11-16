@@ -11,22 +11,22 @@ class UserThing extends Model {
       primaryKey:   true,
     },
     'userID': {
-      type:         Types.FOREIGN_KEY('User:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
-      allowNull:    false,
-      index:        true,
+      type:      Types.FOREIGN_KEY('User:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
+      allowNull: false,
+      index:     true,
     },
     'roleThingID': {
-      type:         Types.FOREIGN_KEY('RoleThing:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
-      allowNull:    false,
-      index:        true,
+      type:      Types.FOREIGN_KEY('RoleThing:id', { onDelete: 'CASCADE', onUpdate: 'CASCADE' }),
+      allowNull: false,
+      index:     true,
     },
     'roleThing': {
-      type:         Types.Model('RoleThing', ({ self }, { RoleThing }, userQuery) => {
+      type: Types.Model('RoleThing', ({ self }, { RoleThing }, userQuery) => {
         return RoleThing.$.id.EQ(self.roleThingID).MERGE(userQuery);
       }),
     },
     'role': {
-      type:         Types.Model('Role', ({ self }, { Role, RoleThing }, userQuery) => {
+      type: Types.Model('Role', ({ self }, { Role, RoleThing }, userQuery) => {
         return Role
           .$.id
             .EQ(RoleThing.$.roleID)
@@ -36,7 +36,7 @@ class UserThing extends Model {
       }),
     },
     'user': {
-      type:         Types.Model('User', ({ self }, { User }, userQuery) => {
+      type: Types.Model('User', ({ self }, { User }, userQuery) => {
         return User.$.id.EQ(self.userID).MERGE(userQuery);
       }),
     },

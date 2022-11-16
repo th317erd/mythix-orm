@@ -23,9 +23,9 @@ class ExtendedUser extends User {
       allowNull:    false,
     },
     'email': {
-      type:         Types.STRING(256),
-      allowNull:    false,
-      unique:       true,
+      type:      Types.STRING(256),
+      allowNull: false,
+      unique:    true,
     },
     'playerType': {
       type:         Types.STRING(256),

@@ -37,7 +37,7 @@ module.exports = {
     'implicit-arrow-linebreak':               [ 'error', 'beside' ],
     'indent':                                 [ 'error', 2, { 'SwitchCase': 1, 'MemberExpression': 'off' } ],
     'jsx-quotes':                             [ 'error', 'prefer-double' ],
-    'key-spacing':                            [ 'error', { beforeColon: false, afterColon: true, mode: 'minimum', 'align': 'value' } ],
+    'key-spacing':                            [ 'error', { beforeColon: false, afterColon: true, mode: 'strict', 'align': 'value' } ],
     'keyword-spacing':                        [ 'error', { before: true, after: true } ],
     'linebreak-style':                        [ 'error', 'unix' ],
     'lines-between-class-members':            'error',

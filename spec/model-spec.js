@@ -16,19 +16,19 @@ class User extends Model {
       primaryKey: true,
     },
     'firstName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
+      type:      Types.STRING(64),
+      allowNull: true,
+      index:     true,
     },
     'lastName': {
-      type:       Types.STRING(64),
-      allowNull:  true,
-      index:      true,
+      type:      Types.STRING(64),
+      allowNull: true,
+      index:     true,
     },
     'isOver21': {
-      type:       Types.BOOLEAN,
-      allowNull:  true,
-      index:      true,
+      type:      Types.BOOLEAN,
+      allowNull: true,
+      index:     true,
     },
   };
 }
@@ -74,10 +74,10 @@ class ArrayFieldsModel extends Model {
       primaryKey: true,
     },
     {
-      type:       Types.STRING(64),
-      fieldName:  'test',
-      allowNull:  true,
-      index:      true,
+      type:      Types.STRING(64),
+      fieldName: 'test',
+      allowNull: true,
+      index:     true,
     },
   ];
 }
@@ -143,8 +143,8 @@ describe('Model', () => {
     it('should be able to clone object fields adding extra fields', () => {
       let clonedFields = DefaultValuesModel.mergeFields({
         'derp': {
-          fieldName:  'derp',
-          type:       Types.INTEGER,
+          fieldName: 'derp',
+          type:      Types.INTEGER,
         },
       });
 
@@ -169,14 +169,14 @@ describe('Model', () => {
     it('should be able to clone array fields adding extra fields', () => {
       let clonedFields = ArrayFieldsModel.mergeFields([
         {
-          fieldName:  'derp',
-          type:       Types.STRING(128),
+          fieldName: 'derp',
+          type:      Types.STRING(128),
         },
         {
           fieldName: 'id',
-          type:       Types.INTEGER,
-          allowNull:  true,
-          hello:      'world',
+          type:      Types.INTEGER,
+          allowNull: true,
+          hello:     'world',
         },
       ]);
 
@@ -321,8 +321,8 @@ describe('Model', () => {
     class BadTypeModel extends Model {
       static fields = {
         'name': {
-          fieldName:  'name',
-          allowNull:  false,
+          fieldName: 'name',
+          allowNull: false,
         },
       };
     }
@@ -569,19 +569,19 @@ describe('Model', () => {
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: 1234 },
-        firstName:  { previous: undefined, current: 'Test' },
-        lastName:   { previous: undefined, current: 'User' },
-        isOver21:   { previous: undefined, current: true },
+        id:        { previous: undefined, current: 1234 },
+        firstName: { previous: undefined, current: 'Test' },
+        lastName:  { previous: undefined, current: 'User' },
+        isOver21:  { previous: undefined, current: true },
       });
     });
 
     it('can set field values from constructor', () => {
       let user = new User({
-        id:         1234,
-        firstName:  'Test',
-        lastName:   'User',
-        isOver21:   true,
+        id:        1234,
+        firstName: 'Test',
+        lastName:  'User',
+        isOver21:  true,
       }, { connection });
 
       expect(user.id).toEqual(1234);
@@ -601,19 +601,19 @@ describe('Model', () => {
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: 1234 },
-        firstName:  { previous: undefined, current: 'Test' },
-        isOver21:   { previous: undefined, current: true },
-        lastName:   { previous: undefined, current: 'User' },
+        id:        { previous: undefined, current: 1234 },
+        firstName: { previous: undefined, current: 'Test' },
+        isOver21:  { previous: undefined, current: true },
+        lastName:  { previous: undefined, current: 'User' },
       });
     });
 
     it('can cast field values from constructor', () => {
       let user = new User({
-        id:         '1234',
-        firstName:  'Test',
-        lastName:   'User',
-        isOver21:   'true',
+        id:        '1234',
+        firstName: 'Test',
+        lastName:  'User',
+        isOver21:  'true',
       }, { connection });
 
       expect(user.id).toEqual(1234);
@@ -633,19 +633,19 @@ describe('Model', () => {
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: 1234 },
-        firstName:  { previous: undefined, current: 'Test' },
-        isOver21:   { previous: undefined, current: true },
-        lastName:   { previous: undefined, current: 'User' },
+        id:        { previous: undefined, current: 1234 },
+        firstName: { previous: undefined, current: 'Test' },
+        isOver21:  { previous: undefined, current: true },
+        lastName:  { previous: undefined, current: 'User' },
       });
     });
 
     it('field values from a constructor that are methods should be called automatically', () => {
       let user = new User({
-        id:         () => 1234,
-        firstName:  () => 'Test',
-        lastName:   () => 'User',
-        isOver21:   () => true,
+        id:        () => 1234,
+        firstName: () => 'Test',
+        lastName:  () => 'User',
+        isOver21:  () => true,
       }, { connection });
 
       expect(user.id).toEqual(1234);
@@ -665,10 +665,10 @@ describe('Model', () => {
 
       expect(user.isDirty()).toEqual(true);
       expect(user.changes).toEqual({
-        id:         { previous: undefined, current: 1234 },
-        firstName:  { previous: undefined, current: 'Test' },
-        isOver21:   { previous: undefined, current: true },
-        lastName:   { previous: undefined, current: 'User' },
+        id:        { previous: undefined, current: 1234 },
+        firstName: { previous: undefined, current: 'Test' },
+        isOver21:  { previous: undefined, current: true },
+        lastName:  { previous: undefined, current: 'User' },
       });
     });
 
@@ -717,7 +717,7 @@ describe('Model', () => {
             primaryKey: true,
           },
           'role': {
-            type:       Types.Model('Role', (_, { Role }) => {
+            type: Types.Model('Role', (_, { Role }) => {
               return Role.where;
             }),
           },

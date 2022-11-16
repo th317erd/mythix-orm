@@ -1,6 +1,8 @@
 [
   {
+    "value": "UserThing",
     "operator": "MODEL",
+    "queryProp": "Model",
     "modelName": "UserThing",
     "dialect": "none",
     "rootModelName": "UserThing",
@@ -8,7 +10,9 @@
     "isMapped": true
   },
   {
+    "value": "userID",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "userID",
     "Field": {
       "primaryKey": false,
@@ -56,6 +60,8 @@
     },
     "condition": true,
     "operator": "EQ",
+    "queryProp": "EQ",
+    "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true,
     "isMapped": true
@@ -66,6 +72,7 @@
     },
     "logical": true,
     "operator": "AND",
+    "queryProp": "AND",
     "and": true,
     "or": false,
     "not": false,

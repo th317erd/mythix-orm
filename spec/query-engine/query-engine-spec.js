@@ -59,29 +59,29 @@ describe('QueryEngine', () => {
     });
   };
 
-  describe('isQueryContext', () => {
+  describe('isQueryOperationContext', () => {
     it('can validly detect a query context', () => {
-      expect(QueryEngine.isQueryContext({})).toBe(false);
-      expect(QueryEngine.isQueryContext(User.where)).toBe(false);
-      expect(QueryEngine.isQueryContext(User.where.getOperationContext())).toBe(true);
+      expect(QueryEngine.isQueryOperationContext({})).toBe(false);
+      expect(QueryEngine.isQueryOperationContext(User.where)).toBe(false);
+      expect(QueryEngine.isQueryOperationContext(User.where.getOperationContext())).toBe(true);
     });
   });
 
-  describe('queryContextType', () => {
+  describe('queryOperationInfo', () => {
     it('can validly detect a query context type', () => {
-      expect(QueryEngine.queryContextType(User.where.getOperationContext())).toEqual({
+      expect(QueryEngine.queryOperationInfo(User.where.getOperationContext())).toEqual({
         hasCondition: false,
         hasField:     false,
         hasModel:     true,
       });
 
-      expect(QueryEngine.queryContextType(User.where.id.getOperationContext())).toEqual({
+      expect(QueryEngine.queryOperationInfo(User.where.id.getOperationContext())).toEqual({
         hasCondition: false,
         hasField:     true,
         hasModel:     true,
       });
 
-      expect(QueryEngine.queryContextType(User.where.id.EQ('test').getOperationContext())).toEqual({
+      expect(QueryEngine.queryOperationInfo(User.where.id.EQ('test').getOperationContext())).toEqual({
         hasCondition: true,
         hasField:     true,
         hasModel:     true,

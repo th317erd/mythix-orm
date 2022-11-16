@@ -11,7 +11,7 @@ class BlobTest extends Model {
       primaryKey:   true,
     },
     'data': {
-      type:       Types.BLOB,
+      type: Types.BLOB,
     },
   };
 }

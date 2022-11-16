@@ -19,9 +19,9 @@ export declare interface CallableInterface {
 export declare class QueryEngine<T = ConnectionBase> {
   // QueryEngineBase
   static generateID(): number;
-  static isQueryContext(value: any): boolean;
+  static isQueryOperationContext(value: any): boolean;
   static isQuery(value: any): boolean;
-  static queryContextType(queryContext: GenericObject): { hasCondition: boolean; hasField: boolean; hasModel: boolean; };
+  static queryOperationInfo(queryContext: GenericObject): { hasCondition: boolean; hasField: boolean; hasModel: boolean; };
 
   public getModelScopeClass(): QueryEngine;
   public getFieldScopeClass(): QueryEngine;
@@ -78,8 +78,11 @@ export declare class QueryEngine<T = ConnectionBase> {
   public Field(fieldName: string): QueryEngine;
   public LIMIT(value: number): QueryEngine;
   public OFFSET(value: number): QueryEngine;
-  public ORDER(...args: Array<string | Array<string>>): QueryEngine;
-  public PROJECT(...args: Array<string | ModelClass | LiteralBase | Field>): QueryEngine;
+  public ORDER(...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>): QueryEngine;
+  public GROUP_BY(...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>): QueryEngine;
+  public HAVING(query: QueryEngine): QueryEngine;
+  public EXISTS(query: QueryEngine): QueryEngine;
+  public PROJECT(...args: Array<string | ModelClass | LiteralBase | Field | Array<string | ModelClass | LiteralBase | Field>>): QueryEngine;
 
   declare public NOT: {
     (): QueryEngine;

@@ -1,13 +1,17 @@
 [
   {
+    "value": "ScopedUser",
     "operator": "MODEL",
+    "queryProp": "Model",
     "modelName": "ScopedUser",
     "dialect": "none",
     "rootModelName": "ScopedUser",
     "currentScopeName": "model"
   },
   {
+    "value": "firstName",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "firstName",
     "Field": {
       "primaryKey": false,
@@ -38,11 +42,15 @@
     "value": "Bob",
     "condition": true,
     "operator": "EQ",
+    "queryProp": "EQ",
+    "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true
   },
   {
+    "value": "id",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "id",
     "Field": {
       "primaryKey": true,
@@ -59,6 +67,8 @@
     "value": "test",
     "condition": true,
     "operator": "EQ",
+    "queryProp": "EQ",
+    "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true
   }

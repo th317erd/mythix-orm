@@ -1,13 +1,17 @@
 [
   {
+    "value": "User",
     "operator": "MODEL",
+    "queryProp": "Model",
     "modelName": "User",
     "dialect": "none",
     "rootModelName": "User",
     "currentScopeName": "model"
   },
   {
+    "value": "id",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "id",
     "Field": {
       "primaryKey": true,
@@ -34,6 +38,8 @@
     "value": "test",
     "condition": true,
     "operator": "EQ",
+    "queryProp": "EQ",
+    "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true
   }

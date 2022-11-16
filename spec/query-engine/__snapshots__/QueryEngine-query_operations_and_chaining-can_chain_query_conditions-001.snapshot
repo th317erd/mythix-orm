@@ -1,13 +1,17 @@
 [
   {
+    "value": "User",
     "operator": "MODEL",
+    "queryProp": "Model",
     "modelName": "User",
     "dialect": "none",
     "rootModelName": "User",
     "currentScopeName": "model"
   },
   {
+    "value": "id",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "id",
     "Field": {
       "primaryKey": true,
@@ -34,18 +38,23 @@
     "value": 1,
     "condition": true,
     "operator": "EQ",
+    "queryProp": "EQ",
+    "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true
   },
   {
     "logical": true,
     "operator": "AND",
+    "queryProp": "AND",
     "and": true,
     "or": false,
     "not": false
   },
   {
+    "value": "firstName",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "firstName",
     "Field": {
       "primaryKey": false,
@@ -64,12 +73,15 @@
     "value": "Test",
     "condition": true,
     "operator": "EQ",
+    "queryProp": "EQ",
+    "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true
   },
   {
     "logical": true,
     "operator": "AND",
+    "queryProp": "AND",
     "and": true,
     "or": false,
     "not": false
@@ -77,10 +89,13 @@
   {
     "logical": true,
     "operator": "NOT",
+    "queryProp": "NOT",
     "not": true
   },
   {
+    "value": "lastName",
     "operator": "FIELD",
+    "queryProp": "Field",
     "fieldName": "lastName",
     "Field": {
       "primaryKey": false,
@@ -99,6 +114,8 @@
     "value": "Stuff",
     "condition": true,
     "operator": "EQ",
+    "queryProp": "EQ",
+    "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true
   }

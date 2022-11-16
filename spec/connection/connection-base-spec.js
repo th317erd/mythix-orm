@@ -16,14 +16,14 @@ class TestModel extends Model {
       primaryKey:   true,
     },
     'firstName': {
-      type:         Types.STRING(64),
-      allowNull:    true,
-      index:        true,
+      type:      Types.STRING(64),
+      allowNull: true,
+      index:     true,
     },
     'lastName': {
-      type:         Types.STRING(64),
-      allowNull:    true,
-      index:        true,
+      type:      Types.STRING(64),
+      allowNull: true,
+      index:     true,
     },
   };
 }

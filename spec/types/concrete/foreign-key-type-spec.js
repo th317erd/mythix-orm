@@ -28,8 +28,8 @@ describe('ForeignKeyType', () => {
                 primaryKey:   true,
               },
               'userID': {
-                type:       Types.FOREIGN_KEY('User:id'),
-                allowNull:  true,
+                type:      Types.FOREIGN_KEY('User:id'),
+                allowNull: true,
               },
             };
           },
