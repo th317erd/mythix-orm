@@ -10,6 +10,16 @@
     "isMapped": true
   },
   {
+    "value": [
+      null
+    ],
+    "control": true,
+    "operator": "PROJECT",
+    "queryProp": "PROJECT",
+    "projection": {},
+    "isMapped": true
+  },
+  {
     "value": "userID",
     "operator": "FIELD",
     "queryProp": "Field",

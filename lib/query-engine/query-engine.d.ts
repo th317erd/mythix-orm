@@ -48,6 +48,7 @@ export declare class QueryEngine<T = ConnectionBase> {
   public filter(callback: (operation: GenericObject, index: number, operations: Array<GenericObject>, query: QueryEngine) => GenericObject): QueryEngine;
   public map(callback: (operation: GenericObject, index: number, operations: Array<GenericObject>, query: QueryEngine) => GenericObject): QueryEngine;
   public walk(callback: (query: QueryEngine, parent: GenericObject | null, contextKey: string, depth: number) => GenericObject, checkContextKeys?: Array<string>): void;
+  public getAllModelsUsedInQuery(): Array<ModelClass>;
 
   // QueryEngine
   public getModelScopeClass(): QueryEngineClass;

@@ -69,7 +69,6 @@ export declare interface FieldOrderInfo {
 declare class QueryGeneratorBase {
   public constructor(connection);
   public stackAssign(obj: GenericObject, ...args: Array<GenericObject>): GenericObject;
-  public getOptionsCache(options: GenericObject, keyPath: string, initialValue: any): any;
   public setOptionsCache(options: GenericObject, keyPath: string, value: any): void;
   public escape(field: Field, value: any, options?: GenericObject): string;
   public escapeID(value: LiteralBase | string, options?: GenericObject): string;
@@ -77,11 +76,7 @@ declare class QueryGeneratorBase {
   public getEscapedColumnName(Model: ModelClass | null | undefined, field: Field, options?: GetEscapedColumnNameOptions): string;
   public getEscapedTableName(modelOrField: ModelClass | Field, options?: GetEscapedTableNameNameOptions): string;
   public getEscapedProjectionName(Model: ModelClass | null | undefined, field: Field, options?: GetEscapedProjectionNameOptions): string;
-  public getEscapedModelFields(Model: ModelClass, options?: GetEscapedModelFieldsOptions): { [ key: string ]: string };
-  public getAllModelsUsedInQuery(queryEngine: QueryEngine, options?: GenericObject): Array<ModelClass>;
-  public getProjectionRequiredFields(queryEngine: QueryEngine, options?: GenericObject): Map<string, ProjectedFieldInfo>;
-  public sortedProjectedFields(projectedFields: Array<LiteralBase | string>, options?: GenericObject): Array<LiteralBase | string>;
-  public getProjectionFromQueryEngine(queryEngine: QueryEngine, options?: GenericObject): Array<LiteralBase | string | ProjectedFieldInfo>;
+  public getEscapedModelFields(Model: ModelClass, options?: GetEscapedModelFieldsOptions): { [key: string]: string };
   public isFieldIdentifier(value: string): boolean;
   public getProjectedFields(queryEngine: QueryEngine, options?: GenericObject, asMap?: false | undefined): Array<string>;
   public getProjectedFields(queryEngine: QueryEngine, options?: GenericObject, asMap?: true): Map<string, string>;

@@ -9,6 +9,15 @@
     "currentScopeName": "model"
   },
   {
+    "value": [
+      null
+    ],
+    "control": true,
+    "operator": "PROJECT",
+    "queryProp": "PROJECT",
+    "projection": {}
+  },
+  {
     "value": "firstName",
     "operator": "FIELD",
     "queryProp": "Field",

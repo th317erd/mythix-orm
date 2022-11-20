@@ -107,67 +107,67 @@ describe('Utils::query', () => {
 
   describe('margeFields', function() {
     it('should be able to merge fields from scratch', function() {
-      let result = Utils.margeFields(User, connection, undefined, [ 'firstName', 'lastName' ]);
+      let result = Utils.margeFields(User.where(connection), undefined, [ 'firstName', 'lastName' ]);
       expect(result.size).toEqual(2);
-      expect(result.get('User:firstName')).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName')).toBe(connection.getField('lastName', 'User'));
+      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
+      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
     });
 
     it('should be able to merge fields', function() {
       // Start from blank
-      let result = Utils.margeFields(User, connection, undefined, [ 'firstName', 'lastName' ]);
+      let result = Utils.margeFields(User.where(connection), undefined, [ 'firstName', 'lastName' ]);
       expect(result.size).toEqual(2);
-      expect(result.get('User:firstName')).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName')).toBe(connection.getField('lastName', 'User'));
+      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
+      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
 
       // Add
-      result = Utils.margeFields(User, connection, result, [ '+', 'primaryRoleID' ]);
+      result = Utils.margeFields(User.where(connection), result, [ '+', 'primaryRoleID' ]);
       expect(result.size).toEqual(3);
-      expect(result.get('User:firstName')).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName')).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID')).toBe(connection.getField('primaryRoleID', 'User'));
+      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
+      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
+      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
 
       // Add plus re-add
-      result = Utils.margeFields(User, connection, result, [ '+', User.fields.firstName, '+lastName' ]);
+      result = Utils.margeFields(User.where(connection), result, [ '+', User.fields.firstName, '+lastName' ]);
       expect(result.size).toEqual(3);
-      expect(result.get('User:firstName')).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName')).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID')).toBe(connection.getField('primaryRoleID', 'User'));
+      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
+      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
+      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
 
       // Subtract
-      result = Utils.margeFields(User, connection, result, [ '-', User.fields.primaryRoleID ]);
+      result = Utils.margeFields(User.where(connection), result, [ '-', User.fields.primaryRoleID ]);
       expect(result.size).toEqual(2);
-      expect(result.get('User:firstName')).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName')).toBe(connection.getField('lastName', 'User'));
+      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
+      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
 
       // Mixed add and subtract
-      result = Utils.margeFields(User, connection, result, [ '-firstName', '+', User.fields.primaryRoleID ]);
+      result = Utils.margeFields(User.where(connection), result, [ '-firstName', '+', User.fields.primaryRoleID ]);
       expect(result.size).toEqual(2);
-      expect(result.get('User:lastName')).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID')).toBe(connection.getField('primaryRoleID', 'User'));
+      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
+      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
 
       // Reset with model
-      result = Utils.margeFields(User, connection, result, [ Role ]);
+      result = Utils.margeFields(User.where(connection), result, [ Role ]);
       expect(result.size).toEqual(2);
-      expect(result.get('Role:id')).toBe(connection.getField('id', 'Role'));
-      expect(result.get('Role:name')).toBe(connection.getField('name', 'Role'));
+      expect(result.get('Role:id').value).toBe(connection.getField('id', 'Role'));
+      expect(result.get('Role:name').value).toBe(connection.getField('name', 'Role'));
 
       // Add with model
-      result = Utils.margeFields(User, connection, result, [ '+User' ]);
+      result = Utils.margeFields(User.where(connection), result, [ '+User' ]);
       expect(result.size).toEqual(6);
-      expect(result.get('Role:id')).toBe(connection.getField('id', 'Role'));
-      expect(result.get('Role:name')).toBe(connection.getField('name', 'Role'));
-      expect(result.get('User:id')).toBe(connection.getField('id', 'User'));
-      expect(result.get('User:firstName')).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName')).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID')).toBe(connection.getField('primaryRoleID', 'User'));
+      expect(result.get('Role:id').value).toBe(connection.getField('id', 'Role'));
+      expect(result.get('Role:name').value).toBe(connection.getField('name', 'Role'));
+      expect(result.get('User:id').value).toBe(connection.getField('id', 'User'));
+      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
+      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
+      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
 
       // Subtract field by name
-      result = Utils.margeFields(User, connection, result, [ '-User:firstName' ]);
+      result = Utils.margeFields(User.where(connection), result, [ '-User:firstName' ]);
       expect(result.size).toEqual(5);
 
       // Subtract model by name
-      result = Utils.margeFields(User, connection, result, [ '-Role' ]);
+      result = Utils.margeFields(User.where(connection), result, [ '-Role' ]);
       expect(result.size).toEqual(3);
     });
   });
