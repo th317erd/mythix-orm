@@ -170,8 +170,6 @@ export declare class Model {
   public static getConcreteFieldCount(): number;
   public getConcreteFieldCount(): number;
 
-  public static defaultOrder(options?: GenericObject): Array<string>;
-
   public static getWhereWithConnection(options?: { connection: ConnectionBase }): QueryEngine;
   public getWhereWithConnection(options?: { connection: ConnectionBase }): QueryEngine;
 
