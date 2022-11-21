@@ -374,18 +374,20 @@ let roles = await Role.where.DISTINCT('Role:id').userID.EQ(User.where.id).all();
 
 Connection interface methods are methods which hand off the query to a connection method to interact with the database. The following are methods that can be called directly from a query engine to act upon the query.
 
-  1. `all(options)` - load everything specified in the query from the database. The default `batchSize` is `500`. If the `stream` option is set to `true`, then an async generator will be returned. Without the `stream` option, the entire query is fetched in batches, until the query has been exhausted, and the entire result returned as an array of model instances.
-  2. `first(count, options)` - get only the first (count) rows from the database, using the query provided. If `count` is not specified, or is `null`, then it defaults to `1`. The result(s) (if any) will be returned as a model instance (if a count of `1` was specified), or an array of model instances.
-  3. `last(count, options)` - get only the last (count) rows from the database, using the query provided. If `count` is not specified, or is `null`, then it defaults to `1`. This operation works by ordering the query generator interface to invert the `ORDER` specified on the query, and then selects the first (count) rows specified. The result(s) (if any) will be returned as a model instance (if a count of `1` was specified), or an array of model instances.
-  4. `update(attributes, options)` - update all rows matching the query using the attributes provided. This is a bulk update operation. It expects a single object of attributes (field values) to apply across all matching rows.
-  5. `destroy(options)` - destroy all matching rows. This works by using a sub-query, i.e. `DELETE FROM table WHERE table.id (SELECT id FROM table WHERE ...)`.
-  6. `average(field, options)` - select an average across matching rows for a single column. The underlying connection is required to always return a `number`.
-  7. `count(field, options)` - count the number of rows matching the query. If field is `null` or `undefined` then it will default to `*` (all fields). The underlying connection is required to always return a `number`.
-  8. `min(field, options)` - get the minimum value for a single column for all rows matching the query. The underlying connection is required to always return a `number`.
-  9. `max(field, options)` - get the maximum value for a single column for all rows matching the query. The underlying connection is required to always return a `number`.
-  10. `sum(field, options)` - get the summed value for a single column for all rows matching the query. The underlying connection is required to always return a `number`.
-  11. `pluck(fields, options)` - pluck only certain columns from all matching rows. If a single field is provided, then the return value will be a flat array of column values. If more than one field is specified, then the return value will be a two-dimensional array of row/column values.
-  12. `exists(options)` - check to see if any rows match the query. This will return `true` if one or more rows match the query, and `false` otherwise.
+  1. `all(options)` - load everything specified in the query from the database. The default `batchSize` is `500`. The entire query is fetched in batches, until the query has been exhausted, and the entire result returned as an array of model instances.
+  2. `cursor(options)` - load everything specified in the query from the database. The default `batchSize` is `500`. The entire query is fetched in batches, until the query has been exhausted, and the entire result returned as an array of model instances. Unlike `all`, this returns an async generator, and each model fetched
+  will be streamed from the database (using a `yield` for each model fetched).
+  3. `first(count, options)` - get only the first (count) rows from the database, using the query provided. If `count` is not specified, or is `null`, then it defaults to `1`. The result(s) (if any) will be returned as a model instance (if a count of `1` was specified), or an array of model instances.
+  4. `last(count, options)` - get only the last (count) rows from the database, using the query provided. If `count` is not specified, or is `null`, then it defaults to `1`. This operation works by ordering the query generator interface to invert the `ORDER` specified on the query, and then selects the first (count) rows specified. The result(s) (if any) will be returned as a model instance (if a count of `1` was specified), or an array of model instances.
+  5. `updateAll(attributes, options)` - update all rows matching the query using the attributes provided. This is a bulk update operation. It expects a single object of attributes (field values) to apply across all matching rows. *Note: `on*Save` and `on*Update` hooks **will not be run** when using this operation.*
+  6. `destroy(options)` - destroy all matching rows. This works by using a sub-query, i.e. `DELETE FROM table WHERE table.id (SELECT id FROM table WHERE ...)`.
+  7. `average(field, options)` - select an average across matching rows for a single column. The underlying connection is required to always return a `number`.
+  8. `count(field, options)` - count the number of rows matching the query. If field is `null` or `undefined` then it will default to `*` (all fields). The underlying connection is required to always return a `number`.
+  9. `min(field, options)` - get the minimum value for a single column for all rows matching the query. The underlying connection is required to always return a `number`.
+  10. `max(field, options)` - get the maximum value for a single column for all rows matching the query. The underlying connection is required to always return a `number`.
+  11. `sum(field, options)` - get the summed value for a single column for all rows matching the query. The underlying connection is required to always return a `number`.
+  12. `pluck(fields, options)` - pluck only certain columns from all matching rows. If a single field is provided, then the return value will be a flat array of column values. If more than one field is specified, then the return value will be a two-dimensional array of row/column values.
+  13. `exists(options)` - check to see if any rows match the query. This will return `true` if one or more rows match the query, and `false` otherwise.
 
 ## List of operators
 
