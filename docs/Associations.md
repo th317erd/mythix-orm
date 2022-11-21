@@ -18,7 +18,7 @@ Concrete fields are backed by storage (the database), and will have a direct val
 
 Virtual fields are not backed by storage (at least not directly), and instead will dynamically fetch their value.
 
-A field in Mythix ORM with be "concrete" or "virtual" simply based on its type. For example, the types `Types.Model` and `Types.Models` will by nature define a virtual field. These types define relations to other tables, and so don't have a 1x1 concrete field in the DB themselves, and instead will pull data based on the relationship defined by the type.
+A field in Mythix ORM will be "concrete" or "virtual" simply based on its type. For example, the types `Types.Model` and `Types.Models` will by nature define a virtual field. These types define relations to other tables, and so don't have a 1x1 concrete field in the DB themselves, and instead will pull data based on the relationship defined by the type.
 
 Before we get started, there are a few things to keep in mind:
 
