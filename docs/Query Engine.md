@@ -174,15 +174,17 @@ let roleQuery = Role.where.userID.EQ(User.where.id).name.EQ('admin');
 let finalQuery = userQuery.MERGE(roleQuery);
 ```
 
-Now, first off, I want to say that `MERGE` might be better named as `CONCAT`, as really the engine is just concatenating the `roleQuery` onto the `userQuery`. However, this still works out the way we want it to, because it is identical to the following:
+Merge is mostly a concatenation operation. It works by concatenating the operation stack of the target query unto the source query. There are a few exceptions though that make this unlike a concatenation. First, any "prefixing" logical operators will be ignored. This is intentional so that `.AND.MERGE` and `.OR.MERGE` actually make sense (otherwise, if the target query started with an `.AND` or `.OR` the previous one on the source query would be ignored). The second exception that makes this unlike concatenation is that any `ORDER`, `GROUP_BY`, or `PROJECTION` on the target query are ADDED to their respective parts on the source query. For example, a `PROJECTION` on the target query will not reset the projection, but instead add to it.
+
+After the merge shown above, we can see by concatenating the two queries "operation stacks" together, that we end up with a final query that is equivalent to:
 
 ```javascript
 let finalQuery = User.where.id.EQ('Something').firstName.EQ('Bob').lastName.EQ('Brown').AND.Role.where.userID.EQ(User.where.id).name.EQ('admin');
 ```
 
-A keen reader will have noticed that I threw and `.AND.MERGE` into the above example. Remember how we discussed that `AND` and `OR` operators are toggles, and `AND` is defaulted to "on"? Well, since `AND` is the current logical operator, we "and merge" the query. We could just as easily `.OR.MERGE(query)` and that would `OR` the two queries together instead of `AND`ing them together.
+A keen reader will have noticed that I threw and `.AND.MERGE` into the above example. Remember how we discussed that `AND` and `OR` operators are toggles, and `AND` is defaulted to "on"? Well, since `AND` is the current logical operator, we "and merge" the query. We could just as easily `.OR.MERGE(query)` and that would `OR` the two queries together instead of `AND`ing them together. This might be important if you are merging two conditional queries together, and want `{first conditions} OR {second conditions}` instead of `{first conditions} AND {second conditions}`.
 
-Mythix ORM is smart enough to know what to do with this query. It will always "scan" a query in the generation process to see if there are any table joins as a first step. In our above example, it will find `.Role.where.userID.EQ(User.where.id)`, which is a table join, so this will come first in our query during generation into SQL (or whatever). It will then walk the chain of operators to build the `WHERE` conditions. In short: it doesn't matter where you place table joins. They can be at the beginning of your query, or at the very end, and Mythix ORM will still understand what you want, and do the right thing.
+Mythix ORM is smart enough to know what to do with this query. It will always "scan" a query in the generation process to see if there are any table joins as a first step. In our above example, it will find `.Role.where.userID.EQ(User.where.id)`, which is a table join, so this will come first in our query during generation into SQL (or whatever). It will then walk the chain of operators to build the `WHERE` conditions. In short: it doesn't matter where you place table joins, projections, group clauses, or order clauses. They can be at the beginning of your query, or at the very end, and Mythix ORM will still understand what you want, and do the right thing. The only thing that actually matters is that the order remain consistent in the operation stack.
 
 ## Table joins
 
@@ -238,7 +240,7 @@ So, in short, providing arrays to `EQ` or `NEQ` operators is equivalent to an `I
 
 Projections define which columns you want returned from the database. One important thing to note right up-front is that Mythix ORM by default will *always* **only** return the root model of a query unless you specifically request or project other columns. In Mythix ORM you **never** specify a column name directly. This is a deliberate design decision to try and abstract the engine away from your database so you don't lock yourself into a corner, relying heavily on the exact structure of your database. However, the actual column name can be defined on your field schema, so you can still always target exactly what you *intend* to target.
 
-The next most important thing to inform you of is that there is no "includes" B.S. (Baby Sharky...) in Mythix ORM. If you want to include related models in a query then you **project those model's fields**. Said another way, whatever model fields you project will be the models that are constructed on load.
+The next most important thing to inform you of is that there is no "includes" B.S. in Mythix ORM. If you want to include related models in a query then you **project those model's fields**. Said another way, whatever model fields you project will be the models that are constructed on load.
 
 Let's see some examples:
 
@@ -285,7 +287,7 @@ let justRoles = await Role.where.userID.EQ(User.where.id).PROJECT('Role', 'User'
 You can mix and match `'+'` and `'-'` in any order... the only rule is that any argument following one of these will be either added or subtracted:
 
 ```javascript
-  let strangeQuery = User.where.id.EQ('something').PROJECT('+', 'User:id', 'User:firstName', '-', 'User:lastName', '+', 'User:age')
+let strangeQuery = User.where.id.EQ('something').PROJECT('+', 'User:id', 'User:firstName', '-', 'User:lastName', '+', 'User:age')
 ```
 
 ### Include everything
@@ -317,8 +319,40 @@ Though the previous example would be better using the correct literal:
 const { Literals } = require('mythix-orm');
 ...
 
-let roleCountQuery = Role.where.PROJECT(new Literals.CountLiteral('Role:id'));
+let roleCountQuery = Role.where.PROJECT(new Literals.CountLiteral('Role:id', { as: 'count' }));
 ```
+
+**Note: Everything discussed above also applies to `GROUP_BY` and `ORDER` operations. These also behave the same way with adding and subtracting fields.**
+
+## Order
+
+Query row order can be specified with the `ORDER` operation. `ORDER` behaves exactly the same as the `PROJECT` operation, allowing you to add and remove order fields in the same way.
+
+So, if fields can be added and removed from the order, great! But, how does one specify "ASC" or "DESC" order for the fields provided? Simple! Just use the `.ASC` and `.DESC` sub-calls to the `ORDER` operation. When you do this, any fields that are being added in the operation will be either "ASC" or "DESC" as defined. For example:
+
+```javascript
+let query = User.where.id.EQ('something').ORDER.ASC('+User:firstName').ORDER.DESC('+User:lastName');
+```
+
+Here we are adding the `User:firstName` field to the order, in ASC (ascending) order, and we are also adding
+`User:lastName`, in DESC (descending) order.
+
+## Grouping
+
+Grouping (`GROUP BY`) can be achieved by using the `GROUP_BY` operation. It behaves identically to `PROJECT`, and will allow you to add and remove fields to the `ORDER BY` clause in the same way you would add or remove fields from a projection.
+
+With group by you often want to use literals because you might need aggregates. This is fully supported, and can be provided just like you would provide them to `PROJECT`.
+
+You can always combine a `GROUP_BY` operation with `HAVING`. `HAVING` takes a sub-query with conditions specified. Those conditions will be turned into `HAVING` conditions for the `GROUP BY` clause.
+
+```javascript
+// Get the number of same last-name's across all adult users
+let countLiteral = new Literals.CountLiteral('User:lastName', { as: 'count' });
+let sameLastNameCounts = await User.where.GROUP_BY(countLiteral).HAVING(User.where.age.GTE(18)).PROJECT(new Literals.FieldLiteral('User:lastName', { as: 'lastName' }), countLiteral).all();
+```
+*Note: Mythix ORM will not return models when a `GROUP_BY` is used in a query. When a `GROUP_BY` is active on a query, then the `select` results of the query will always be returned as raw data (the group by results).*
+
+*Note: Mythix ORM will not modify your projection for you simply because a GROUP_BY was specified. You must ensure yourself that your projection matches the GROUP_BY fields that you specify.*
 
 ## Distinct
 
@@ -367,24 +401,36 @@ Connection interface methods are methods which hand off the query to a connectio
 
   1. `EQ(...)` (equals `=`)
   2. `EQ([ ... ])` (in list of values `IN (...)`)
-  3. `NOT.EQ(...)` (not equals `!=`)
-  4. `NOT.EQ([ ... ])` (not in list of values `NOT IN (...)`)
-  3. `NEQ(...)` (not equals `!=`)
-  4. `NEQ([ ... ])` (not in list of values `NOT IN (...)`)
-  5. `NOT.NEQ(...)` (equals `=`)
-  6. `NOT.NEQ([ ... ])` (in list of values `IN (...)`)
-  7. `GT(...)` (greater than `>`)
-  8. `NOT.GT(...)` (less than or equal to `<=`)
-  9. `GTE(...)` (greater than or equal to `>=`)
-  10. `NOT.GTE(...)` (less than `<`)
-  11. `LT(...)` (less than `<`)
-  12. `NOT.LT(...)` (greater than or equal to `>=`)
-  13. `LTE(...)` (less than or equal to `<=`)
-  14. `NOT.LTE(...)` (greater than `>`)
-  15. `LIKE(...)` (pattern match `LIKE '%something%'`)
-  16. `LIKE(..., { caseSensitive: true })` (pattern match `LIKE '%something%'`) [only supported in PostgreSQL -- default is `ILIKE`]
-  17. `NOT.LIKE(...)` (not matching pattern `NOT LIKE '%something%'`)
-  18. `NOT.LIKE(..., { caseSensitive: true })` (not matching pattern `NOT LIKE '%something%'`) [only supported in PostgreSQL -- default is `NOT ILIKE`]
+  3. `EQ.ANY(subQuery)` (equals any in the list returned by the sub-query)
+  4. `EQ.ALL(subQuery)` (equals any in the list returned by the sub-query)
+  5. `NOT.EQ(...)` (not equals `!=`)
+  6. `NOT.EQ([ ... ])` (not in list of values `NOT IN (...)`)
+  7. `NEQ(...)` (not equals `!=`)
+  8. `NEQ([ ... ])` (not in list of values `NOT IN (...)`)
+  9. `NEQ.ANY(subQuery)` (not equals any in the list returned by the sub-query)
+  10. `NEQ.ALL(subQuery)` (not equals any in the list returned by the sub-query)
+  11. `NOT.NEQ(...)` (equals `=`)
+  12. `NOT.NEQ([ ... ])` (in list of values `IN (...)`)
+  13. `GT(...)` (greater than `>`)
+  14. `GT.ANY(subQuery)` (greater than any value returned by sub-query)
+  15. `GT.ALL(subQuery)` (greater than largest value returned by sub-query)
+  16. `NOT.GT(...)` (less than or equal to `<=`)
+  17. `GTE(...)` (greater than or equal to `>=`)
+  18. `GTE.ANY(subQuery)` (greater than or equal to any value returned by sub-query)
+  19. `GTE.ALL(subQuery)` (greater than or equal to largest value returned by sub-query)
+  20. `NOT.GTE(...)` (less than `<`)
+  21. `LT(...)` (less than `<`)
+  22. `LT.ANY(subQuery)` (less than any value returned by sub-query)
+  23. `LT.ALL(subQuery)` (less than the smallest value returned by sub-query)
+  24. `NOT.LT(...)` (greater than or equal to `>=`)
+  25. `LTE(...)` (less than or equal to `<=`)
+  26. `LTE.ANY(subQuery)` (less than or equal to any value returned by sub-query)
+  27. `LTE.ALL(subQuery)` (less than or equal to smallest value returned by sub-query)
+  28. `NOT.LTE(...)` (greater than `>`)
+  29. `LIKE(...)` (pattern match `LIKE '%something%'`)
+  30. `LIKE(..., { caseSensitive: true })` (pattern match `LIKE '%something%'`) [only supported in PostgreSQL -- default in PostgreSQL is `ILIKE`]
+  31. `NOT.LIKE(...)` (not matching pattern `NOT LIKE '%something%'`)
+  32. `NOT.LIKE(..., { caseSensitive: true })` (not matching pattern `NOT LIKE '%something%'`) [only supported in PostgreSQL -- default in PostgreSQL is `NOT ILIKE`]
 
 ### Control
 
@@ -392,35 +438,39 @@ Connection interface methods are methods which hand off the query to a connectio
   2. `PROJECTION('-', ...)` (remove specified fields from the projection)
   3. `PROJECTION(...)` (replace projection with specified fields)
   4. `PROJECTION('+Model:field', '-OtherModel:field')` (mixed addition and removal)
-  5. `DISTINCT` (distinct on primary key)
+  5. `DISTINCT` (distinct across entire projection)
   6. `DISTINCT('Model:field')` (distinct on specified field)
   7. `LIMIT(number)` (limit query to number of rows)
   8. `OFFSET(number)` (offset into rows to start selecting)
-  9. `ORDER(...)` (order by specified fields)
-  10. `ORDER('+Model:field')` (ascending order on specified field)
-  11. `ORDER('-Model:field')` (descending order on specified field)
-  12. `ORDER('+Model:field1', '-Model:field2')` (dual order, ascending and descending)
-  13. `INNER_JOIN` (use an inner table join)
-  14. `LEFT_JOIN` (use a left table join)
-  15. `RIGHT_JOIN` (use a right table join)
-  16. `FULL_JOIN` (use a full table join)
-  17. `CROSS_JOIN` (use a cross table join)
-  18. `JOIN(type)` (use a custom user specified join type)
+  9. `ORDER(...)` (add or remove specified fields from the order clause--added fields are in ascending order)
+  10. `ORDER('+Model:field', '-OtherModel:field')` (mixed addition and removal to the order clause--added fields are in ascending order)
+  11. `ORDER.ASC(...)` (add or remove fields from the order clause--added fields are in ascending order)
+  12. `ORDER.DESC(...)` (add or remove fields from the order clause--added fields are in descending order)
+  13. `GROUP_BY(...)` (add or remove specified fields from the group by clause)
+  14. `GROUP_BY('+Model:field', '-OtherModel:field')` (mixed addition and removal to the group by clause)
+  15. `HAVING(subQueryWithConditions)` (specify conditions for a GROUP_BY clause... will be ignored if no `GROUP_BY` has been applied to the query)
+  16. `INNER_JOIN` (use an inner table join)
+  17. `LEFT_JOIN` (use a left table join)
+  18. `RIGHT_JOIN` (use a right table join)
+  19. `FULL_JOIN` (use a full table join)
+  20. `CROSS_JOIN` (use a cross table join)
+  21. `JOIN(type)` (use a custom user specified join type)
+  22. `EXISTS(subQuery)` (returns true if the sub-query returns at least one row)
 
 ## Other
 
-  1. `MERGE` (merge a query onto this query)
+  1. `MERGE` (merge a query onto this query, without modifying the original query)
   2. `Model(...)` (select a model directly and return a `ModelScope`)
   3. `Field(...)` (select a field directly and return a `FieldScope`)
   4. `toString` (convert the query into a string... generated by the underlying connection)
-  5. `unscoped([context])` (rewind to context provided, or if none is provided reset back to the root model)
+  5. `unscoped()` (reset the query back to its root model, with no default scope applied)
 
 ## Final Notes
 
   1. `$` is a short-hand for `where`, so the following two examples are equivalent: `User.where.id.EQ('something')`, and `User.$.id.EQ('something')`.
   2. Don't forget `$` or `where` in sub-queries. It is easy to do `Role.where.userID.EQ(User.id)`, but this won't work. Mythix ORM doesn't expose the fields directly on the model by design, so `User.id` will simply be `undefined`. Don't forget to turn this properly into a sub-query with `$` or `where`: `Role.where.userID.EQ(User.$.id)`.
   3. You can use `toString` to turn the query into a query string generated by the underlying connection: `query.toString()`
-  4. You can use literals almost anywhere their is an input into the query engine.
+  4. You can use literals almost anywhere there is an input into the query engine.
   5. `Model` is a way to directly specify a model. This can be handy for example if you have a name collision. `query.Model('MyModel')` is the same as `query.MyModel`, but might be important, if for example, your model just happened to be named `Field`, which is the name of another method on the query engine itself: `query.Model('Field')`.
   6. `Field` is a way to directly specify a field. This can be handy for example if you have a name collision. `query.Field('myField')` is the same as `query.myField`, but might be important, if for example, your field just happened to be named `Model`, which is the name of another method on the query engine itself: `query.Field('Model')`.
   7. **Never specify column names directly**. This won't work in Mythix ORM. You must specify the field name defined in your model schema for all operations. Mythix ORM will convert it to the proper column name in all operations. You can always use literals if you need to bypass this constraint.

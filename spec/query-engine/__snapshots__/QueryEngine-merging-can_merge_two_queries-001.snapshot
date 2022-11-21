@@ -62,9 +62,9 @@
   },
   {
     "value": [
+      "+",
       null
     ],
-    "modelName": "UserThing",
     "control": true,
     "operator": "PROJECT",
     "queryProp": "PROJECT",
@@ -72,30 +72,10 @@
   },
   {
     "value": "userID",
-    "modelName": "UserThing",
-    "Field": {
-      "primaryKey": false,
-      "allowNull": false,
-      "index": true,
-      "unique": false,
-      "columnName": "userID",
-      "type": {
-        "options": {
-          "onDelete": "CASCADE",
-          "onUpdate": "CASCADE",
-          "modelName": "User",
-          "fieldName": "id",
-          "fullyQualifiedName": "User:id"
-        },
-        "fullyQualifiedName": "User:id"
-      },
-      "fieldName": "userID"
-    },
-    "fieldName": "userID",
     "operator": "FIELD",
     "queryProp": "Field",
-    "rootFieldName": "userID",
-    "rootField": {
+    "fieldName": "userID",
+    "Field": {
       "primaryKey": false,
       "allowNull": false,
       "index": true,
@@ -119,26 +99,6 @@
     "value": {
       "_isQueryEngine": true
     },
-    "modelName": "UserThing",
-    "Field": {
-      "primaryKey": false,
-      "allowNull": false,
-      "index": true,
-      "unique": false,
-      "columnName": "userID",
-      "type": {
-        "options": {
-          "onDelete": "CASCADE",
-          "onUpdate": "CASCADE",
-          "modelName": "User",
-          "fieldName": "id",
-          "fullyQualifiedName": "User:id"
-        },
-        "fullyQualifiedName": "User:id"
-      },
-      "fieldName": "userID"
-    },
-    "fieldName": "userID",
     "condition": true,
     "operator": "EQ",
     "queryProp": "EQ",
@@ -150,26 +110,6 @@
     "value": {
       "_isQueryEngine": true
     },
-    "modelName": "UserThing",
-    "Field": {
-      "primaryKey": false,
-      "allowNull": false,
-      "index": true,
-      "unique": false,
-      "columnName": "userID",
-      "type": {
-        "options": {
-          "onDelete": "CASCADE",
-          "onUpdate": "CASCADE",
-          "modelName": "User",
-          "fieldName": "id",
-          "fullyQualifiedName": "User:id"
-        },
-        "fullyQualifiedName": "User:id"
-      },
-      "fieldName": "userID"
-    },
-    "fieldName": "userID",
     "logical": true,
     "operator": "AND",
     "queryProp": "AND",
