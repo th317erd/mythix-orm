@@ -1,6 +1,6 @@
 {
   "name": "mythix-orm",
-  "version": "1.11.2",
+  "version": "1.11.3",
   "description": "ORM for Mythix framework",
   "main": "lib/index",
   "type": "commonjs",
