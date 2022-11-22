@@ -79,11 +79,21 @@ export declare class QueryEngine<T = ConnectionBase> {
   public Field(fieldName: string): QueryEngine;
   public LIMIT(value: number): QueryEngine;
   public OFFSET(value: number): QueryEngine;
-  public ORDER(...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>): QueryEngine;
   public GROUP_BY(...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>): QueryEngine;
   public HAVING(query: QueryEngine): QueryEngine;
   public EXISTS(query: QueryEngine): QueryEngine;
   public PROJECT(...args: Array<string | ModelClass | LiteralBase | Field | Array<string | ModelClass | LiteralBase | Field>>): QueryEngine;
+
+  declare public ORDER: {
+    (...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>): QueryEngine;
+
+    ASC: (...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>) => QueryEngine;
+    DESC: (...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>) => QueryEngine;
+    ADD: (...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>) => QueryEngine;
+    REPLACE: (...args: Array<LiteralBase | Field | string | Array<LiteralBase | Field | string>>) => QueryEngine;
+
+    name: QueryEngine;
+  };
 
   declare public NOT: {
     (): QueryEngine;

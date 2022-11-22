@@ -337,6 +337,33 @@ let query = User.where.id.EQ('something').ORDER.ASC('+User:firstName').ORDER.DES
 Here we are adding the `User:firstName` field to the order, in ASC (ascending) order, and we are also adding
 `User:lastName`, in DESC (descending) order.
 
+Sometimes you just need to add to the order fields, while also specifying the direction at the same time. This can be useful for example if you are taking field orders directly from a third-party (i.e. a client). A client for example might send along with its request the fields it wants, and in what order.
+
+For this purpose, Mythix ORM provides `ORDER.ADD` and `ORDER.REPLACE`. Unlike the default mode of operation where `+` and `-` prefixes on fields mean `add` or `subtract` the field, when you use `ORDER.ADD` or `ORDER.REPLACE`, the `+` and `-` prefixes instead mean "ASC" or "DESC" respectively.
+
+So for example, we can add the following fields to the order, while specifying if each field is in "ASC" or "DESC" order:
+
+```javascript
+let adultUsers = await User.where.age.GTE(18).ORDER('createdAt').ORDER.ADD('+firstName', '-lastName').all();
+// will result in SQL like: ... ORDER BY createdAt ASC, firstName ASC, lastName DESC;
+```
+
+`ORDER.REPLACE` will replace any previous `ORDER` specified, while also using the `+` and `-` prefix on fields to define their "ASC" or "DESC" order. For example:
+
+```javascript
+let adultUsers = await User.where.age.GTE(18).ORDER('createdAt').ORDER.REPLACE('+firstName', '-lastName').all();
+// will result in SQL like: ... ORDER BY firstName ASC, lastName DESC;
+// notice how "createdAt" was dropped from the ORDER, because we used REPLACE.
+```
+
+There is no `SUB` (subtract) operation for this style of ORDER operation, because you can still subtract with the normal `ORDER` operator. For example:
+
+```javascript
+let adultUsers = await User.where.age.GTE(18).ORDER('createdAt').ORDER.ADD('+firstName', '-lastName').ORDER('-createdAt').all();
+// will result in SQL like: ... ORDER BY firstName ASC, lastName DESC;
+// notice how "createdAt" was dropped from the ORDER, because we used ORDER('-createdAt').
+```
+
 ## Grouping
 
 Grouping (`GROUP BY`) can be achieved by using the `GROUP_BY` operation. It behaves identically to `PROJECT`, and will allow you to add and remove fields to the `ORDER BY` clause in the same way you would add or remove fields from a projection.
@@ -448,16 +475,18 @@ Connection interface methods are methods which hand off the query to a connectio
   10. `ORDER('+Model:field', '-OtherModel:field')` (mixed addition and removal to the order clause--added fields are in ascending order)
   11. `ORDER.ASC(...)` (add or remove fields from the order clause--added fields are in ascending order)
   12. `ORDER.DESC(...)` (add or remove fields from the order clause--added fields are in descending order)
-  13. `GROUP_BY(...)` (add or remove specified fields from the group by clause)
-  14. `GROUP_BY('+Model:field', '-OtherModel:field')` (mixed addition and removal to the group by clause)
-  15. `HAVING(subQueryWithConditions)` (specify conditions for a GROUP_BY clause... will be ignored if no `GROUP_BY` has been applied to the query)
-  16. `INNER_JOIN` (use an inner table join)
-  17. `LEFT_JOIN` (use a left table join)
-  18. `RIGHT_JOIN` (use a right table join)
-  19. `FULL_JOIN` (use a full table join)
-  20. `CROSS_JOIN` (use a cross table join)
-  21. `JOIN(type)` (use a custom user specified join type)
-  22. `EXISTS(subQuery)` (returns true if the sub-query returns at least one row)
+  13. `ORDER.ADD(...)` (add fields to the order clause--the `+` and `-` prefixes on fields specifies the "ASC" or "DESC" order for each field [instead of specifying to remove or add fields])
+  14. `ORDER.REPLACE(...)` (replace any previous order with this one, and add the specified fields to the order clause--the `+` and `-` prefixes on fields specifies the "ASC" or "DESC" order for each field [instead of specifying to remove or add fields])
+  15. `GROUP_BY(...)` (add or remove specified fields from the group by clause)
+  16. `GROUP_BY('+Model:field', '-OtherModel:field')` (mixed addition and removal to the group by clause)
+  17. `HAVING(subQueryWithConditions)` (specify conditions for a GROUP_BY clause... will be ignored if no `GROUP_BY` has been applied to the query)
+  18. `INNER_JOIN` (use an inner table join)
+  19. `LEFT_JOIN` (use a left table join)
+  20. `RIGHT_JOIN` (use a right table join)
+  21. `FULL_JOIN` (use a full table join)
+  22. `CROSS_JOIN` (use a cross table join)
+  23. `JOIN(type)` (use a custom user specified join type)
+  24. `EXISTS(subQuery)` (returns true if the sub-query returns at least one row)
 
 ## Other
 
