@@ -61,16 +61,6 @@
     "not": false
   },
   {
-    "value": [
-      "+",
-      null
-    ],
-    "control": true,
-    "operator": "PROJECT",
-    "queryProp": "PROJECT",
-    "projection": {}
-  },
-  {
     "value": "userID",
     "operator": "FIELD",
     "queryProp": "Field",

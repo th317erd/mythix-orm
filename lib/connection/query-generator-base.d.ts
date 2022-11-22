@@ -91,15 +91,6 @@ declare class QueryGeneratorBase {
   public getFieldDirectionSpecifier(order: LiteralBase): LiteralBase;
   public getFieldDirectionSpecifier(order: string | Field): FieldDirectionInfo;
 
-  public getOrderLimitOffset(
-    queryEngine: QueryEngine,
-    options?: GenericObject,
-  ): {
-    limit: number | undefined,
-    offset: number | undefined,
-    order: Array<FieldOrderInfo>,
-  };
-
   public getQuerySliceFromQueryPart(queryPart: GenericObject): Array<GenericObject>;
   public _averageLiteralToString(literal: AverageLiteral, options?: GenericObject): string;
   public _countLiteralToString(literal: CountLiteral, options?: GenericObject): string;

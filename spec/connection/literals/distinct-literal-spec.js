@@ -24,7 +24,7 @@ describe('DistinctLiteral', () => {
 
   describe('toString', () => {
     it('can turn a fully qualified name into a projection field', () => {
-      expect((new DistinctLiteral('User:id')).toString(connection)).toEqual('DISTINCT "users"."id" AS "User:id"');
+      expect((new DistinctLiteral('User:id')).toString(connection)).toEqual('DISTINCT ON("users"."id")');
     });
 
     it('will throw an exception if no field is present', () => {
@@ -32,11 +32,11 @@ describe('DistinctLiteral', () => {
     });
 
     it('can turn a raw field into a projection field', () => {
-      expect((new DistinctLiteral(User.fields.firstName)).toString(connection)).toEqual('DISTINCT "users"."firstName" AS "User:firstName"');
+      expect((new DistinctLiteral(User.fields.firstName)).toString(connection)).toEqual('DISTINCT ON("users"."firstName")');
     });
 
     it('can provide a SQL literal', () => {
-      expect((new DistinctLiteral(new Literal('test'))).toString(connection)).toEqual('DISTINCT test');
+      expect((new DistinctLiteral(new Literal('test'))).toString(connection)).toEqual('DISTINCT ON(test)');
     });
   });
 });
