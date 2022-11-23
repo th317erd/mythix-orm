@@ -24,6 +24,7 @@ module.exports = {
     /node_modules|\/spec\//
   ],
   generatorOptions: {
-    baseURL: './',
+    repositoryURL:  'https://github.com/th317erd/mythix-orm',
+    baseURL:        './',
   },
 };

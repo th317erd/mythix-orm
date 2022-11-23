@@ -9,6 +9,7 @@ declare class LiteralBase {
   public static isLiteralClass(value: any): boolean;
   public static isLiteral(value: any): boolean;
   public static isLiteralType(value: any): boolean;
+  public static isAggregate(): boolean;
 
   public constructor(literal: any, options?: GenericObject);
   public fullyQualifiedNameToDefinition(fullyQualifiedName: LiteralBase | string | Field): LiteralBase | FullyQualifiedFieldDefinition;
