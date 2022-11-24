@@ -63,7 +63,7 @@
   },
   {
     "value": {
-      "_isQueryEngine": true
+      "_isMythixQueryEngine": true
     },
     "condition": true,
     "operator": "EQ",
@@ -74,7 +74,7 @@
   },
   {
     "value": {
-      "_isQueryEngine": true
+      "_isMythixQueryEngine": true
     },
     "logical": true,
     "operator": "AND",

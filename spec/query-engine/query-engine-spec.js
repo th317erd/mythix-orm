@@ -67,24 +67,90 @@ describe('QueryEngine', () => {
     });
   });
 
-  describe('queryOperationInfo', () => {
+  describe('getQueryOperationInfo', () => {
     it('can validly detect a query context type', () => {
-      expect(QueryEngine.queryOperationInfo(User.where.getOperationContext())).toEqual({
-        hasCondition: false,
-        hasField:     false,
-        hasModel:     true,
+      expect(QueryEngine.getQueryOperationInfo(User.where)).toEqual({
+        hasDistinct:   false,
+        hasOrder:      false,
+        hasProjection: true,
+        hasGroupBy:    false,
+        hasHaving:     false,
+        hasTableJoins: false,
+        hasCondition:  false,
+        hasField:      false,
+        hasModel:      true,
       });
 
-      expect(QueryEngine.queryOperationInfo(User.where.id.getOperationContext())).toEqual({
-        hasCondition: false,
-        hasField:     true,
-        hasModel:     true,
+      expect(QueryEngine.getQueryOperationInfo(User.where.id)).toEqual({
+        hasDistinct:   false,
+        hasOrder:      false,
+        hasProjection: true,
+        hasGroupBy:    false,
+        hasHaving:     false,
+        hasTableJoins: false,
+        hasCondition:  false,
+        hasField:      true,
+        hasModel:      true,
       });
 
-      expect(QueryEngine.queryOperationInfo(User.where.id.EQ('test').getOperationContext())).toEqual({
-        hasCondition: true,
-        hasField:     true,
-        hasModel:     true,
+      expect(QueryEngine.getQueryOperationInfo(User.where.id.EQ('test'))).toEqual({
+        hasDistinct:   false,
+        hasOrder:      false,
+        hasProjection: true,
+        hasGroupBy:    false,
+        hasHaving:     false,
+        hasTableJoins: false,
+        hasCondition:  true,
+        hasField:      true,
+        hasModel:      true,
+      });
+
+      expect(QueryEngine.getQueryOperationInfo(User.where.id.EQ(ScopedUser.where.id))).toEqual({
+        hasDistinct:   false,
+        hasOrder:      false,
+        hasProjection: true,
+        hasGroupBy:    false,
+        hasHaving:     false,
+        hasTableJoins: true,
+        hasCondition:  true,
+        hasField:      true,
+        hasModel:      true,
+      });
+
+      expect(QueryEngine.getQueryOperationInfo(User.where.DISTINCT.id.EQ(ScopedUser.where.id))).toEqual({
+        hasDistinct:   true,
+        hasOrder:      false,
+        hasProjection: true,
+        hasGroupBy:    false,
+        hasHaving:     false,
+        hasTableJoins: true,
+        hasCondition:  true,
+        hasField:      true,
+        hasModel:      true,
+      });
+
+      expect(QueryEngine.getQueryOperationInfo(User.where.DISTINCT.id.EQ(ScopedUser.where.id).ORDER('id'))).toEqual({
+        hasDistinct:   true,
+        hasOrder:      true,
+        hasProjection: true,
+        hasGroupBy:    false,
+        hasHaving:     false,
+        hasTableJoins: true,
+        hasCondition:  true,
+        hasField:      true,
+        hasModel:      true,
+      });
+
+      expect(QueryEngine.getQueryOperationInfo(User.where.DISTINCT.id.EQ(ScopedUser.where.id).GROUP_BY('id').HAVING(User.where.firstName.EQ('Test')))).toEqual({
+        hasDistinct:   true,
+        hasOrder:      false,
+        hasProjection: true,
+        hasGroupBy:    true,
+        hasHaving:     true,
+        hasTableJoins: true,
+        hasCondition:  true,
+        hasField:      true,
+        hasModel:      true,
       });
     });
   });

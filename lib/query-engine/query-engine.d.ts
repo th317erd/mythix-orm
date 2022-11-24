@@ -16,12 +16,24 @@ export declare interface CallableInterface {
   [key: string]: QueryEngine;
 }
 
+export declare interface QueryInfo {
+  hasDistinct: boolean;
+  hasOrder: boolean;
+  hasProjection: boolean;
+  hasGroupBy: boolean;
+  hasHaving: boolean;
+  hasCondition: boolean;
+  hasTableJoins: boolean;
+  hasField: boolean;
+  hasModel: boolean;
+}
+
 export declare class QueryEngine<T = ConnectionBase> {
   // QueryEngineBase
   static generateID(): number;
   static isQueryOperationContext(value: any): boolean;
   static isQuery(value: any): boolean;
-  static queryOperationInfo(queryContext: GenericObject): { hasCondition: boolean; hasField: boolean; hasModel: boolean; };
+  static getQueryOperationInfo(query: QueryEngine): QueryInfo;
 
   public getModelScopeClass(): QueryEngine;
   public getFieldScopeClass(): QueryEngine;
