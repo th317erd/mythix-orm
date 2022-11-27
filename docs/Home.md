@@ -6,7 +6,7 @@ Here you will not only find documentation for the Mythix ORM API, but also artic
 
 To start with, we highly recommend reading the following articles:
 
-  1. [Query Engine](./QueryEngine)
+  1. [Query Engine](./Queries)
   2. [Associations](./Associations)
   3. [Models](./Models)
   4. [Types](./TypesReference)
