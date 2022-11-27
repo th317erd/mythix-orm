@@ -87,7 +87,6 @@ export declare class QueryEngine<T = ConnectionBase> {
 
   // ModelScope
   public _getField(fieldName: string): Field | undefined;
-  public _getQueryEngineClass(): QueryEngineClass;
   public Field(fieldName: string): QueryEngine;
   public LIMIT(value: number): QueryEngine;
   public OFFSET(value: number): QueryEngine;
