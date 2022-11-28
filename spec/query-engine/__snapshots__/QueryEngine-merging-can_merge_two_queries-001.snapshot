@@ -58,7 +58,9 @@
     "queryProp": "AND",
     "and": true,
     "or": false,
-    "not": false
+    "not": false,
+    "currentScopeName": "queryEngine",
+    "queryEngineScope": {}
   },
   {
     "value": "userID",
@@ -86,9 +88,7 @@
     "currentScopeName": "field"
   },
   {
-    "value": {
-      "_isMythixQueryEngine": true
-    },
+    "value": {},
     "condition": true,
     "operator": "EQ",
     "queryProp": "EQ",
@@ -97,9 +97,7 @@
     "hasCondition": true
   },
   {
-    "value": {
-      "_isMythixQueryEngine": true
-    },
+    "value": {},
     "logical": true,
     "operator": "AND",
     "queryProp": "AND",

@@ -53,15 +53,15 @@
     "hasCondition": true
   },
   {
-    "value": {
-      "_isMythixQueryEngine": true
-    },
+    "value": {},
     "logical": true,
     "operator": "AND",
     "queryProp": "AND",
     "and": true,
     "or": false,
-    "not": false
+    "not": false,
+    "currentScopeName": "queryEngine",
+    "queryEngineScope": {}
   },
   {
     "logical": true,
@@ -69,7 +69,9 @@
     "queryProp": "AND",
     "and": true,
     "or": false,
-    "not": false
+    "not": false,
+    "currentScopeName": "queryEngine",
+    "queryEngineScope": {}
   },
   {
     "value": "roleThingID",
@@ -104,6 +106,8 @@
     "queryExtraArgs": [],
     "inverseOperator": "NEQ",
     "hasCondition": true,
+    "currentScopeName": "queryEngine",
+    "queryEngineScope": {},
     "_queryFinalized": true
   }
 ]

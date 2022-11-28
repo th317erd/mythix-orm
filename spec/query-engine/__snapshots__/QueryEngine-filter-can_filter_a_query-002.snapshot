@@ -62,9 +62,7 @@
     "currentScopeName": "field"
   },
   {
-    "value": {
-      "_isMythixQueryEngine": true
-    },
+    "value": {},
     "logical": true,
     "operator": "AND",
     "queryProp": "AND",
