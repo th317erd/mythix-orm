@@ -24,13 +24,19 @@ let roles = await Role.where.userID.EQ(User.where.firstName.EQ('Bob').lastName.E
 
 ## Terminology
 
-In this document we will refer to some common items. A brief overview of terminology here may assist the reader:
+In this document we will refer to some common terms. A brief overview of terminology here may assist the reader:
 
   1. "root model" (sometimes also referred to as the "target model") refers to the first model used in a query. For example, for the following query "`User.where`" the root model is "`User`".
-  2. "query engine" the query engine class and related family (`ModelScope` and `FieldScope`)
-  3. "operation" is any single call to a query engine method that results in a new "operation frame" being pushed onto the internal stack. `Model`, `Field`, `DISTINCT`, `EQ`, `PROJECTION`, `LEFT_JOIN`, etc... are all "operations" that push a "frame" onto the "operation stack".
-  4. "generator" is the underlying connection generator interface, that takes a query engine and turns it into a query for the underlying database engine.
-  5. "fully qualified field name" is a field that defines both the model and the field. For example: `User:id`, or `User:firstName`. This special pattern can be used nearly everywhere a field can be specified, and is sometimes required. It isn't always required to use fully qualified syntax. Short-hand syntax is just the field name, for example: `firstName`. If there is only one model in the query then Mythix ORM generally won't complain, and will be able to find the field name just fine. However, if there is more than one model in the query, Mythix ORM will require that you use fully qualified syntax for fields.
+  2. "query engine" the query engine class and related family classes (<see>ModelScope</see>, <see>FieldScope</see>, <see>QueryEngine</see>, and <see>QueryEngineBase</see>)
+  3. "operation" is any single call to a query engine method that results in a new "operation frame" being pushed onto the internal operation stack. `Model`, `Field`, `DISTINCT`, `EQ`, `PROJECTION`, `LEFT_JOIN`, etc... are all "operations" that push a "frame" onto the "operation stack".
+  4. "operation stack" is the term used to refer to the internal operation stack that the query engine
+  adds onto with each operation carried out. Each "frame" on this stack is referred to as an "operation frame",
+  or more loosely, an "operation context". "operation context"--while not incorrect while referring to an "operation frame"--has a little more to it, and actually spans the "frame" and all lower frames simultaneously.
+  5. "operation context" is a "frame" on the operation stack, plus all frames below the given frame. The "operation stack" is built by pushing "frames" onto the stack. There is a catch though. All "frames" on the stack have their
+  `prototype` set to the previous frame on the stack. This is where the term "operation context" comes in. Accessing
+  the "operation context" essentially means accessing a frame (usually the top-most frame), but since each frame "inherits" from the previous frame in the stack, the "operation context" has access to all properties across all frames beneath it, making for an entire "context".
+  6. "generator" or "query generator" refers to the underlying connection generator interface. This "query generator" takes a query engine and turns it into a query for the underlying database engine.
+  7. "fully qualified field name" is a field that defines both the model and the field. For example: `User:id`, or `User:firstName`. This special pattern can be used nearly everywhere a field can be specified, and is sometimes required. It isn't always required to use fully qualified syntax. Short-hand syntax is just the field name, for example: `firstName`. If there is only one model in the query then Mythix ORM generally won't complain, and will be able to find the field name just fine. However, if there is more than one model in the query, Mythix ORM will require that you use fully qualified syntax for fields.
 
 ## How the Query Engine works
 
