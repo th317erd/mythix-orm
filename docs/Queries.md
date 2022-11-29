@@ -276,7 +276,7 @@ You can also define `'+'` first, as any argument, and all arguments following it
 
 ### Subtracting from the projection
 
-To subtract in the projection... you guessed it, you just use `-` instead of `+`:
+To subtract from the projection... you guessed it, you just use `-` instead of `+`:
 
 ```javascript
 let justRoles = await Role.where.userID.EQ(User.where.id).PROJECT('Role', 'User').PROJECT('-User').all();
@@ -372,7 +372,7 @@ let adultUsers = await User.where.age.GTE(18).ORDER('createdAt').ORDER.ADD('+fir
 
 ## Grouping
 
-Grouping (`GROUP BY`) can be achieved by using the `GROUP_BY` operation. It behaves identically to `PROJECT`, and will allow you to add and remove fields to the `ORDER BY` clause in the same way you would add or remove fields from a projection.
+Grouping (`GROUP BY`) can be achieved by using the `GROUP_BY` operation. It behaves identically to `PROJECT`, and will allow you to add and remove fields to the `GROUP BY` clause in the same way you would add or remove fields from a projection.
 
 With group by you often want to use literals because you might need aggregates. This is fully supported, and can be provided just like you would provide them to `PROJECT`.
 
