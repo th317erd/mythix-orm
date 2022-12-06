@@ -11,7 +11,7 @@ export declare function generateQueryFromFilter(
   filter: Array<GenericObject | Model> | GenericObject | Model,
 ): QueryEngine;
 
-export declare function margeFields(
+export declare function mergeFields(
   connection: ConnectionBase,
   currentFields: Map<string, any>,
   incomingFields: Array<any>
