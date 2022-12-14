@@ -1,6 +1,8 @@
 # mythix-orm
 
-Mythix ORM aims to replace Sequelize and the few other terrible solutions that the poor destitute Node community has to work with. Mythix ORM has been designed to replace all current ORMs for Node, with a focus on what is lacking in the community, namely good engineering, good documentation, and ease of use.
+![Mythix](docs/mythix-logo-colored.png)
+
+Mythix ORM aims to replace Sequelize, Prisma, and the few other terrible solutions that the poor destitute Node community has to work with. Mythix ORM has been designed to replace all current ORMs for Node, with a focus on what is lacking in the community, namely good engineering, good documentation, and ease of use.
 
 Mythix ORMs feature set includes:
   1. An advanced, seamless, and powerful (yet simple) query engine that is easy to use, and works across database drivers, even for No-SQL databases.

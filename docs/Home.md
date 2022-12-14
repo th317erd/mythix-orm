@@ -1,5 +1,7 @@
 # Welcome to the Mythix ORM wiki
 
+![Mythix](mythix-logo-colored.png)
+
 ## Getting started
 
 Here you will not only find documentation for the Mythix ORM API, but also articles (in the "Pages" section) that explain in detail the inner workings of Mythix ORM.
