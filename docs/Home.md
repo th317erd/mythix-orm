@@ -11,6 +11,7 @@ To start with, we highly recommend reading the following articles:
   3. [Models](./Models)
   4. [Types](./TypesReference)
   5. [Connection Binding](./ConnectionBinding)
+  6. [Examples](https://github.com/th317erd/mythix-orm-examples)
 
 These should give you a basic idea on how to work with Mythix ORM.
 

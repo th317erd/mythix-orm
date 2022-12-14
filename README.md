@@ -28,7 +28,7 @@ Just start creating models!
 
 ```javascript
 const { Model, Types }  = require('mythix-orm');
-const SQLiteConnection  = require('mythix-orm-sqlite');
+const { SQLiteConnection }  = require('mythix-orm-sqlite');
 
 class User extends Model {
   static fields = {

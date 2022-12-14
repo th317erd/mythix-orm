@@ -50,8 +50,8 @@ class User extends Model {
 That is all that is needed to define a model in Mythix ORM. However, though this could be useful and used all by itself, it becomes much more when we also start using a connection. Let's select the `mythix-orm-sqlite` connection for our examples here.
 
 ```javascript
-const { Model, Types }  = require('mythix-orm');
-const SQLiteConnection  = require('mythix-orm-sqlite');
+const { Model, Types } = require('mythix-orm');
+const { SQLiteConnection } = require('mythix-orm-sqlite');
 
 class User extends Model {
   static fields = {
