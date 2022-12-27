@@ -99,7 +99,7 @@ class User extends Model {
 
 ## Notes
 
-1. The [WIKI](https://github.com/th317erd/mythix-orm/wiki) is still being worked on. Most of the documentation is complete, but there is still a lot more to write. Documentation is the main focus right now. If you have any questions, feel free to drop a line, or open an issue! We will be happy to answer any questions. We aren't "done" until our documentation is pristine.
+1. The [WIKI](https://github.com/th317erd/mythix-orm/wiki) is still being worked on. Most of the documentation is complete, but there is still a lot more to write. Documentation is the main focus right now. If you have any questions, feel free to drop a line, or open an issue! We will be happy to answer any questions. We aren't "done" until our documentation is pristine. Feel free to drop us a line in our [Discord](https://discord.gg/DZsAYvym9N) server if you need assistance.
 2. Right now there are only database drivers for [SQLite](https://www.npmjs.com/package/mythix-orm-sqlite) and [PostgreSQL](https://www.npmjs.com/package/mythix-orm-postgresql). More are planned, with a Mongo driver likely to land next, followed by MySQL. Help wanted!
 3. Check out the [Mythix](https://www.npmjs.com/package/mythix) web-app framework. It is also still in active development, and the documentation is poor (to say the least), but it is up and coming, and will soon have fantastic documentation, and even though still in active development is fully functional. To get started try `npx mythix-cli create 'Test App'`
 

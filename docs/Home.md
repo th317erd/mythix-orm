@@ -19,6 +19,8 @@ These should give you a basic idea on how to work with Mythix ORM.
 
 After you have read these articles and understand what you are working with, take a look at the API documentation to understand _what_ you have available to you, and how you can use it.
 
+Feel free to drop us a line in our [Discord](https://discord.gg/DZsAYvym9N) server if you need assistance.
+
 ## What Mythix ORM **is**
 
 Mythix ORM has been designed to fix the "situation" found today with other ORMs for Node. Namely, it focuses on being bloat-free, having a clean usable interface, a simple to use yet advanced query interface, no hidden auto-magic, clean code, and finally, fantastic documentation. These are all points that are shockingly lacking, or extremely poorly handled in other ORMs currently available for Node, and I wanted to do something about it.
