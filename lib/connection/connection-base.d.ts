@@ -74,8 +74,6 @@ declare class ConnectionBase extends EventEmitter {
   public constructor(options?: ConnectionBaseOptions);
   public getLockMode(options: string | LockModeOptions): LockMode;
   public getDefaultOrder(Model: ModelClass, options?: GenericObject): Array<string>;
-  public isLimitSupportedInContext(options?: GenericObject): boolean;
-  public isOrderSupportedInContext(options?: GenericObject): boolean | string;
   public _getFromModelCache(Model: ModelClass, key: string, defaultValue?: any): any;
   public _setToModelCache<T>(Model: ModelClass, key: string, value: T): T;
   public getOptions(): ConnectionBaseOptions;
