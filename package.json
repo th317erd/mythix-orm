@@ -34,18 +34,18 @@
   "homepage": "https://github.com/th317erd/mythix-orm#readme",
   "devDependencies": {
     "@spothero/eslint-plugin-spothero": "github:spothero/eslint-plugin-spothero",
-    "@types/node": "^18.11.18",
-    "better-sqlite3": "^8.0.1",
+    "@types/node": "^20.2.5",
+    "better-sqlite3": "^8.4.0",
     "colors": "^1.4.0",
     "diff": "^5.1.0",
-    "eslint": "^8.31.0",
-    "jasmine": "^4.5.0",
+    "eslint": "^8.42.0",
+    "jasmine": "^5.0.1",
     "nyc": "^15.1.0"
   },
   "dependencies": {
     "events": "^3.3.0",
     "inflection": "^2.0.1",
-    "luxon": "^3.2.1",
+    "luxon": "^3.3.0",
     "nife": "^1.12.1",
     "uuid": "^9.0.0",
     "xid-js": "^1.0.1"
