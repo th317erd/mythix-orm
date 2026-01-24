@@ -4,6 +4,9 @@
   "description": "ORM for Mythix framework",
   "main": "lib/index",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "coverage": "clear ; node ./node_modules/.bin/nyc ./node_modules/.bin/jasmine",
     "test": "node ./node_modules/.bin/jasmine",
@@ -34,20 +37,20 @@
   "homepage": "https://github.com/th317erd/mythix-orm#readme",
   "devDependencies": {
     "@spothero/eslint-plugin-spothero": "github:spothero/eslint-plugin-spothero",
-    "@types/node": "^20.2.5",
-    "better-sqlite3": "^8.4.0",
+    "@types/node": "^22.15.0",
+    "better-sqlite3": "^12.6.2",
     "colors": "^1.4.0",
-    "diff": "^5.1.0",
-    "eslint": "^8.42.0",
-    "jasmine": "^5.0.1",
-    "nyc": "^15.1.0"
+    "diff": "^7.0.0",
+    "eslint": "^8.57.1",
+    "jasmine": "^5.6.0",
+    "nyc": "^17.1.0"
   },
   "dependencies": {
     "events": "^3.3.0",
-    "inflection": "^2.0.1",
-    "luxon": "^3.3.0",
+    "inflection": "^3.0.0",
+    "luxon": "^3.7.2",
     "nife": "^1.12.1",
-    "uuid": "^9.0.0",
+    "uuid": "^11.1.0",
     "xid-js": "^1.0.1"
   },
   "nyc": {
