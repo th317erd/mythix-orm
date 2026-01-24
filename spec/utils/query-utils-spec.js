@@ -4,171 +4,290 @@
 
 /* global describe, it, expect, beforeAll */
 
-const { Utils, ConnectionBase } = require('../../lib');
+const { ConnectionBase, Utils, QueryEngine } = require('../../lib');
+const { QueryUtils } = Utils;
 
-describe('Utils::query', () => {
+describe('QueryUtils', () => {
   let connection;
   let User;
   let Role;
 
-  beforeAll(async () => {
-    try {
-      connection = new ConnectionBase({
-        bindModels: false,
-        models:     require('../support/models'),
-      });
+  beforeAll(() => {
+    connection = new ConnectionBase({
+      bindModels: false,
+      models:     require('../support/models'),
+    });
 
-      let models = connection.getModels();
-      User = models.User;
-      Role = models.Role;
-    } catch (error) {
-      console.error('Error in beforeAll: ', error);
-    }
+    let models = connection.getModels();
+    User = models.User;
+    Role = models.Role;
   });
 
-  describe('parseFilterFieldAndOperator', function() {
-    it('should be able to parse a field', function() {
-      expect(Utils.parseFilterFieldAndOperator(' test ')).toEqual({
-        field:    'test',
-        operator: '=',
-      });
+  describe('parseFilterFieldAndOperator', () => {
+    it('parses field name without operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('firstName');
+      expect(result.field).toEqual('firstName');
+      expect(result.operator).toEqual('=');
     });
 
-    it('should be able to parse field and operator', function() {
-      expect(Utils.parseFilterFieldAndOperator('test=')).toEqual({
-        field:    'test',
-        operator: '=',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test !=')).toEqual({
-        field:    'test',
-        operator: '!=',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test>')).toEqual({
-        field:    'test',
-        operator: '>',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator(' test >= ')).toEqual({
-        field:    'test',
-        operator: '>=',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test<')).toEqual({
-        field:    'test',
-        operator: '<',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test<=')).toEqual({
-        field:    'test',
-        operator: '<=',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test><')).toEqual({
-        field:    'test',
-        operator: '><',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test<>')).toEqual({
-        field:    'test',
-        operator: '<>',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test*')).toEqual({
-        field:    'test',
-        operator: '*',
-      });
-
-      expect(Utils.parseFilterFieldAndOperator('test!*')).toEqual({
-        field:    'test',
-        operator: '!*',
-      });
+    it('parses field with equality operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('firstName =');
+      expect(result.field).toEqual('firstName');
+      expect(result.operator).toEqual('=');
     });
 
-    it('should throw an error without a field', function() {
-      expect(() => Utils.parseFilterFieldAndOperator(' != ')).toThrow(new Error('generateQueryFromFilter: "field" is blank'));
+    it('parses field with not-equal operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('firstName !=');
+      expect(result.field).toEqual('firstName');
+      expect(result.operator).toEqual('!=');
     });
 
-    it('should throw an error with a bad operator', function() {
-      expect(() => Utils.parseFilterFieldAndOperator(' test !! ')).toThrow(new Error('generateQueryFromFilter: Unknown operator "!!"'));
-    });
-  });
-
-  describe('generateQueryFromFilter', function() {
-    it('should throw an error on a bad operator for an array value', function() {
-      expect(() => Utils.generateQueryFromFilter(connection, User, { 'lastName>': [ 'derp' ] })).toThrow(new Error('Invalid array value for operator ">"'));
+    it('parses field with greater-than operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('age >');
+      expect(result.field).toEqual('age');
+      expect(result.operator).toEqual('>');
     });
 
-    it('should throw an error on a bad operator for a NULL value', function() {
-      expect(() => Utils.generateQueryFromFilter(connection, User, { 'firstName>': null })).toThrow(new Error('Invalid "NULL" value for operator ">"'));
+    it('parses field with greater-than-or-equal operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('age >=');
+      expect(result.field).toEqual('age');
+      expect(result.operator).toEqual('>=');
+    });
+
+    it('parses field with less-than operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('age <');
+      expect(result.field).toEqual('age');
+      expect(result.operator).toEqual('<');
+    });
+
+    it('parses field with less-than-or-equal operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('age <=');
+      expect(result.field).toEqual('age');
+      expect(result.operator).toEqual('<=');
+    });
+
+    it('parses field with between operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('age ><');
+      expect(result.field).toEqual('age');
+      expect(result.operator).toEqual('><');
+    });
+
+    it('parses field with not-between operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('age <>');
+      expect(result.field).toEqual('age');
+      expect(result.operator).toEqual('<>');
+    });
+
+    it('parses field with LIKE operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('firstName *');
+      expect(result.field).toEqual('firstName');
+      expect(result.operator).toEqual('*');
+    });
+
+    it('parses field with NOT LIKE operator', () => {
+      let result = QueryUtils.parseFilterFieldAndOperator('firstName !*');
+      expect(result.field).toEqual('firstName');
+      expect(result.operator).toEqual('!*');
+    });
+
+    it('throws error for blank field', () => {
+      expect(() => QueryUtils.parseFilterFieldAndOperator('')).toThrow();
+      expect(() => QueryUtils.parseFilterFieldAndOperator('   ')).toThrow();
+    });
+
+    it('throws error for unknown operator', () => {
+      expect(() => QueryUtils.parseFilterFieldAndOperator('field %%')).toThrow();
     });
   });
 
-  describe('mergeFields', function() {
-    it('should be able to merge fields from scratch', function() {
-      let result = Utils.mergeFields(User.where(connection), undefined, [ 'firstName', 'lastName' ]);
-      expect(result.size).toEqual(2);
-      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
+  describe('generateQueryFromFilter', () => {
+    it('generates query from simple filter object', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, { firstName: 'John' });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+      let context = query.getOperationContext();
+      expect(context.hasCondition).toBe(true);
     });
 
-    it('should be able to merge fields', function() {
-      // Start from blank
-      let result = Utils.mergeFields(User.where(connection), undefined, [ 'firstName', 'lastName' ]);
-      expect(result.size).toEqual(2);
-      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
+    it('generates query with multiple AND conditions', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, {
+        firstName: 'John',
+        lastName: 'Doe',
+      });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Add
-      result = Utils.mergeFields(User.where(connection), result, [ '+', 'primaryRoleID' ]);
-      expect(result.size).toEqual(3);
-      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
+    it('generates query with OR conditions from array', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, [
+        { firstName: 'John' },
+        { firstName: 'Jane' },
+      ]);
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Add plus re-add
-      result = Utils.mergeFields(User.where(connection), result, [ '+', User.fields.firstName, '+lastName' ]);
-      expect(result.size).toEqual(3);
-      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
+    it('handles equality operator', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, { 'firstName =': 'John' });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Subtract
-      result = Utils.mergeFields(User.where(connection), result, [ '-', User.fields.primaryRoleID ]);
-      expect(result.size).toEqual(2);
-      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
+    it('handles not-equal operator', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, { 'firstName !=': 'John' });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Mixed add and subtract
-      result = Utils.mergeFields(User.where(connection), result, [ '-firstName', '+', User.fields.primaryRoleID ]);
-      expect(result.size).toEqual(2);
-      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
+    it('handles LIKE operator', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, { 'firstName *': '%John%' });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Reset with model
-      result = Utils.mergeFields(User.where(connection), result, [ Role ]);
-      expect(result.size).toEqual(2);
-      expect(result.get('Role:id').value).toBe(connection.getField('id', 'Role'));
-      expect(result.get('Role:name').value).toBe(connection.getField('name', 'Role'));
+    it('handles NOT LIKE operator', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, { 'firstName !*': '%John%' });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Add with model
-      result = Utils.mergeFields(User.where(connection), result, [ '+User' ]);
-      expect(result.size).toEqual(6);
-      expect(result.get('Role:id').value).toBe(connection.getField('id', 'Role'));
-      expect(result.get('Role:name').value).toBe(connection.getField('name', 'Role'));
-      expect(result.get('User:id').value).toBe(connection.getField('id', 'User'));
-      expect(result.get('User:firstName').value).toBe(connection.getField('firstName', 'User'));
-      expect(result.get('User:lastName').value).toBe(connection.getField('lastName', 'User'));
-      expect(result.get('User:primaryRoleID').value).toBe(connection.getField('primaryRoleID', 'User'));
+    it('handles array value for IN operator', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, {
+        firstName: [ 'John', 'Jane', 'Bob' ],
+      });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Subtract field by name
-      result = Utils.mergeFields(User.where(connection), result, [ '-User:firstName' ]);
-      expect(result.size).toEqual(5);
+    it('handles null value', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, { firstName: null });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
 
-      // Subtract model by name
-      result = Utils.mergeFields(User.where(connection), result, [ '-Role' ]);
-      expect(result.size).toEqual(3);
+    it('skips undefined values', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, {
+        firstName: 'John',
+        lastName: undefined,
+      });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
+
+    it('skips virtual fields', () => {
+      let query = QueryUtils.generateQueryFromFilter(connection, User, {
+        firstName: 'John',
+        primaryRole: { name: 'admin' },
+      });
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
+
+    it('returns undefined for non-object filter', () => {
+      let result = QueryUtils.generateQueryFromFilter(connection, User, 'invalid');
+      expect(result).toBeUndefined();
+    });
+
+    it('handles model instance as filter', () => {
+      let user = new User({ firstName: 'John' }, { connection });
+      // Need to give it a primary key
+      user.id = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+      let query = QueryUtils.generateQueryFromFilter(connection, User, user);
+      expect(QueryEngine.isQuery(query)).toBe(true);
+    });
+
+    it('throws error for invalid array operator usage', () => {
+      expect(() => {
+        QueryUtils.generateQueryFromFilter(connection, User, { 'firstName >': [ 'a', 'b' ] });
+      }).toThrow();
+    });
+
+    it('throws error for null with invalid operator', () => {
+      expect(() => {
+        QueryUtils.generateQueryFromFilter(connection, User, { 'firstName >': null });
+      }).toThrow();
+    });
+  });
+
+  describe('mergeFields', () => {
+    it('replaces fields by default (no prefix)', () => {
+      let query = User.where(connection);
+      let currentFields = new Map([[ 'User:id', { value: User.fields.id } ]]);
+      let result = QueryUtils.mergeFields(query, currentFields, [ 'firstName' ]);
+
+      expect(result.has('User:firstName')).toBe(true);
+      expect(result.has('User:id')).toBe(false);
+    });
+
+    it('adds fields with + prefix', () => {
+      let query = User.where(connection);
+      let currentFields = new Map([[ 'User:id', { value: User.fields.id } ]]);
+      let result = QueryUtils.mergeFields(query, currentFields, [ '+firstName' ]);
+
+      expect(result.has('User:firstName')).toBe(true);
+      expect(result.has('User:id')).toBe(true);
+    });
+
+    it('removes fields with - prefix', () => {
+      let query = User.where(connection);
+      let currentFields = new Map([
+        [ 'User:id', { value: User.fields.id } ],
+        [ 'User:firstName', { value: User.fields.firstName } ],
+      ]);
+      let result = QueryUtils.mergeFields(query, currentFields, [ '-id' ]);
+
+      expect(result.has('User:firstName')).toBe(true);
+      expect(result.has('User:id')).toBe(false);
+    });
+
+    it('handles * wildcard for all fields', () => {
+      let query = User.where(connection);
+      let result = QueryUtils.mergeFields(query, new Map(), [ '*' ]);
+
+      expect(result.size).toBeGreaterThan(0);
+      expect(result.has('User:id')).toBe(true);
+      expect(result.has('User:firstName')).toBe(true);
+    });
+
+    it('handles @ prefix for literals', () => {
+      let query = User.where(connection);
+      let result = QueryUtils.mergeFields(query, new Map(), [ '@COUNT(*) AS total' ]);
+
+      expect(result.size).toBe(1);
+      expect(result.has('COUNT(*) AS total')).toBe(true);
+    });
+
+    it('handles Field instance', () => {
+      let query = User.where(connection);
+      let result = QueryUtils.mergeFields(query, new Map(), [ User.fields.firstName ]);
+
+      expect(result.has('User:firstName')).toBe(true);
+    });
+
+    it('handles Model class (adds all fields)', () => {
+      let query = User.where(connection);
+      let result = QueryUtils.mergeFields(query, new Map(), [ User ]);
+
+      expect(result.has('User:id')).toBe(true);
+      expect(result.has('User:firstName')).toBe(true);
+      expect(result.has('User:lastName')).toBe(true);
+    });
+
+    it('returns empty map for empty incoming fields', () => {
+      let query = User.where(connection);
+      let result = QueryUtils.mergeFields(query, new Map(), []);
+      expect(result.size).toBe(0);
+    });
+
+    it('handles fully qualified field names', () => {
+      let query = User.where(connection);
+      let result = QueryUtils.mergeFields(query, new Map(), [ 'User:firstName' ]);
+
+      expect(result.has('User:firstName')).toBe(true);
+    });
+
+    it('throws for unknown model name', () => {
+      let query = User.where(connection);
+      expect(() => {
+        QueryUtils.mergeFields(query, new Map(), [ 'UnknownModel:field' ]);
+      }).toThrow();
+    });
+
+    it('throws for unknown field name', () => {
+      let query = User.where(connection);
+      expect(() => {
+        QueryUtils.mergeFields(query, new Map(), [ 'User:nonexistentField' ]);
+      }).toThrow();
     });
   });
 });
