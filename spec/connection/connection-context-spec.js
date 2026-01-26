@@ -31,7 +31,7 @@ describe('Connection Context', () => {
 
     it('sets connection in context', () => {
       let context = connection.buildConnectionContext();
-      expect(context.get('connection')).toBe(connection);
+      expect(context.get(Utils.CONNECTION_KEY)).toBe(connection);
     });
 
     it('sets context for each model', () => {
@@ -52,7 +52,7 @@ describe('Connection Context', () => {
         models:     AllModels,
       });
       let context = connection.buildConnectionContext(otherConnection);
-      expect(context.get('connection')).toBe(otherConnection);
+      expect(context.get(Utils.CONNECTION_KEY)).toBe(otherConnection);
     });
   });
 
@@ -80,7 +80,7 @@ describe('Connection Context', () => {
 
     it('makes connection available via getContextValue', async () => {
       await connection.createContext(() => {
-        let conn = Utils.getContextValue('connection');
+        let conn = Utils.getContextValue(Utils.CONNECTION_KEY);
         expect(conn).toBe(connection);
       });
     });
@@ -211,7 +211,7 @@ describe('Connection Context', () => {
 
       await connection.createContext((conn) => {
         expect(conn).toBe(otherConnection);
-        const contextConn = Utils.getContextValue('connection');
+        const contextConn = Utils.getContextValue(Utils.CONNECTION_KEY);
         expect(contextConn).toBe(otherConnection);
       }, otherConnection);
     });
